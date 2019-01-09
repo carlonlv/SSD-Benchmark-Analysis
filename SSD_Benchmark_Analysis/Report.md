@@ -111,14 +111,14 @@ These 16 threads already cause the CPU utilization to max out at 100% for all 28
 
 ## Access Frequency
 
-![Cassandra Access Frequency](img/cassandra_all.jpg){ width=50% }\ ![RocksDB Access Frequency](img/rocksdb_all.jpg){ width=50% }
+![Cassandra Access Frequency](plots/exponential_scale_line_plots/cassandra_all_log_scatter.jpg){ width=50% }\ ![RocksDB Access Frequency](plots/exponential_scale_line_plots/rocksdb_all_log_scatter.jpg){ width=50% }
 
 Looking at all of the access frequencies (read/write/both), we see that they all roughly follow an zipfian curve that can be attributed to the fact that `YCSB` was configured to access blocks with a zipfian distribution. Furthermore some of them has a slight irregularities at some points. The irregularities, however, doesn't seem to be too far out of the ordinary as they occured at lower access frequencies. Meaning where these irregularities can be observed, the access frequency was not very high. Furthermore, the regions around these irregularities appear fairly regular, leading us to believe that should the benchmark be allowed to continue running, these irregularities would dissappear with enough data.
 
 Something interesting here is that even though the benchmark for `Cassandra` on `btrfs` has less records and less operations, there were a significant number of blocks that were accessed more than for `Cassandra` on `ext4` and `f2fs`.
 
-![Cassandra ext4 Access Frequency](img/cassandra_ext4_all.jpg){ width=33% }\ ![Cassandra f2fs Access Frequency](img/cassandra_f2fs_all.jpg){ width=33% }\ ![Cassandra btrfs Access Frequency](img/cassandra_btrfs_all.jpg){ width=33% }
-![RocksDB ext4 Access Frequency](img/rocksdb_ext4_all.jpg){ width=33% }\ ![RocksDB f2fs Access Frequency](img/rocksdb_f2fs_all.jpg){ width=33% }\ ![RocksDB btrfs Access Frequency](img/rocksdb_btrfs_all.jpg){ width=33% }
+![Cassandra ext4 Access Frequency](plots/exponentially_scale_scatter_plots/cassandra_ext4_run_250M_1B_all_scatter.jpg){ width=33% }\ ![Cassandra f2fs Access Frequency](plots/exponentially_scale_scatter_plots/cassandra_f2fs_run_250M_1B_all_scatter.jpg){ width=33% }\ ![Cassandra btrfs Access Frequency](plots/exponentially_scale_scatter_plots/cassandra_btrfs_run_150M_300M_all_scatter.jpg){ width=33% }
+![RocksDB ext4 Access Frequency](plots/exponentially_scale_scatter_plots/rocksdb_ext4_run_250M_1B_all_scatter.jpg){ width=33% }\ ![RocksDB f2fs Access Frequency](plots/exponentially_scale_scatter_plots/rocksdb_f2fs_run_250M_1B_all_scatter.jpg){ width=33% }\ ![RocksDB btrfs Access Frequency](plots/exponentially_scale_scatter_plots/rocksdb_btrfs_run_250M_1B_all_scatter.jpg){ width=33% }
 
 Another point of interest is that looking at all of the read frequencies, `btrfs` has less blocks with very high access frequencies, whereas `f2fs` and `ext4` has relatively higher number of blocks with very high access frequencies. This pattern appears for both `Cassandra` and `RocksDB`. Based on the characteristics of each of the file systems, one possibility is that in the case of `f2fs` and `ext4`, these blocks corresponds to those storing file system metadata such as the super block on an `ext4` file system. This read pattern doesn't appear on `btrfs` can be attributed to the fact that on a SSD, `btrfs` turns off metadata duplication by default. And as a result, the operating system no longer has do all the same operations on the metadata since it is already handled at the SSD level.
 
