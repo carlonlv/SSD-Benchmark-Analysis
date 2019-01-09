@@ -156,7 +156,7 @@ Comparing the three file systems for `RocksDB`, we see that `f2fs` was significa
 
 `YCSB` was set to perform its operations as quickly as possible, thus allowing us to use the operations per second as a metric of the `blktrace` overhead. We will only look at the run stage and not the load stage because it is for populating the database with some initial data, and is not a accurate representation of most real-world workloads.
 
-![Cassandra Blktrace Overhead](img/cassandra_overhead.png "Cassandra Overhead"){ width=50% }\ ![RocksDB Blktrace Overhead](img/rocksdb_overhead.png "RocksDB Overhead"){ width=50% }
+![Cassandra Blktrace Overhead](plots/overhead_plots/cassandra_overhead.png "Cassandra Overhead") ![RocksDB Blktrace Overhead](plots/overhead_plots/rocksdb_overhead.png "RocksDB Overhead")
 
 Looking at the results from `Cassandra`, we see that `blktrace` is pretty consistent in that it has some overhead ranging from approximately 24% to 36% less operations per second during the workload.
 
