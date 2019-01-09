@@ -148,6 +148,8 @@ Comparing `ext4` with `f2fs`, we see that there isn't a significant difference i
 | ext4  | 70G | 9.67H |
 | f2fs  | 79G | 4.82H |
 
+![blktrace size plot](plots/blktrace Size for different configurations "blktrace size")
+
 We can see that `Cassandra` produced significantly larger trace files when compared to `RocksDB`. This can be attributed to the fact that `Cassandra` keeps more metadata relative to `RocksDB`. The trace files for `Cassandra` only include the data directory; all of meta such as the commit logs and hints were written to another disk. However, the trace files for the metadata directories were less than 100M for the entirety of the workload, and thus we have chosen to leave them out. Accounting for all this, the final trace files were all relatively similar in size for each of the three file systems.
 
 Comparing the three file systems for `RocksDB`, we see that `f2fs` was significantly faster, and we can likely attribute this to the fact that `RocksDB` was designed with flash storage in mind for optimal performance. Next `btrfs` wasn't noticably faster than `ext4`, but that is likely because `btrfs` was built with ease of adminitration in mind and thus is not as well optimized as `f2fs`. And we have `ext4` in last place, which isn't too far behind `btrfs`.
@@ -176,7 +178,7 @@ This slowdown was only experience when running `Cassandra` on `btrfs`, but not w
 
 Looking at the throughput of all the benchmarks, we see that `Cassandra` has a significantly higher read throughput, but much lower in write throughput. Whereas for `RocksDB` has a something in between for both read and write throughput. This seems very reasonable as noted earlier, `Cassandra` stores data in a series of large files which makes random writes to them slower due to the nature of SSDs but fast to read from. `RocksDB` stores data in lots of smaller files meaning writing to them is faster and reading from them is also relatively quick.
 
-The actual diagrams were not included in this report because they do not fit, instead you can find svg versions of them at [https://github.com/Zylphrex/blkplt/tree/master/img](https://github.com/Zylphrex/blkplt/tree/master/img).
+The actual diagrams were not included in this report because they do not fit, instead you can find svg versions of them at [https://github.com/Zylphrex/blkplt/tree/master/img](https://github.com/carlonlv/Research-Projects/tree/master/SSD_Benchmark_Analysis/plots/through_put_plots).
 
 ## Conclusion
 
