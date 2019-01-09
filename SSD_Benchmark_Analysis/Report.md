@@ -148,7 +148,7 @@ Comparing `ext4` with `f2fs`, we see that there isn't a significant difference i
 | ext4  | 70G | 9.67H |
 | f2fs  | 79G | 4.82H |
 
-![blktrace size plot](plots/blktrace Size for different configurations "blktrace size")
+![blktrace size plot](plots/blktrace_Size_for_different_configurations.jpg "blktrace size")
 
 We can see that `Cassandra` produced significantly larger trace files when compared to `RocksDB`. This can be attributed to the fact that `Cassandra` keeps more metadata relative to `RocksDB`. The trace files for `Cassandra` only include the data directory; all of meta such as the commit logs and hints were written to another disk. However, the trace files for the metadata directories were less than 100M for the entirety of the workload, and thus we have chosen to leave them out. Accounting for all this, the final trace files were all relatively similar in size for each of the three file systems.
 
