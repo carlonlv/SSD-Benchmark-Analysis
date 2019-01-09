@@ -111,7 +111,7 @@ These 16 threads already cause the CPU utilization to max out at 100% for all 28
 
 ## Access Frequency
 
-![Cassandra Access Frequency](plots/exponential_scale_line_plots/cassandra_all_log_scatter.jpg){ width=50% }\ ![RocksDB Access Frequency](plots/exponential_scale_line_plots/rocksdb_all_log_scatter.jpg){ width=50% }
+![Cassandra Access Frequency](plots/exponential_scale_line_plots/cassandra_all_log_scatter.jpg) ![RocksDB Access Frequency](plots/exponential_scale_line_plots/rocksdb_all_log_scatter.jpg)
 
 Looking at all of the access frequencies (read/write/both), we see that they all roughly follow an zipfian curve that can be attributed to the fact that `YCSB` was configured to access blocks with a zipfian distribution. Furthermore some of them has a slight irregularities at some points. The irregularities, however, doesn't seem to be too far out of the ordinary as they occured at lower access frequencies. Meaning where these irregularities can be observed, the access frequency was not very high. Furthermore, the regions around these irregularities appear fairly regular, leading us to believe that should the benchmark be allowed to continue running, these irregularities would dissappear with enough data.
 
@@ -121,6 +121,8 @@ Something interesting here is that even though the benchmark for `Cassandra` on 
 ![RocksDB ext4 Access Frequency](plots/exponentially_scale_scatter_plots/rocksdb_ext4_run_250M_1B_all_scatter.jpg) ![RocksDB f2fs Access Frequency](plots/exponentially_scale_scatter_plots/rocksdb_f2fs_run_250M_1B_all_scatter.jpg) ![RocksDB btrfs Access Frequency](plots/exponentially_scale_scatter_plots/rocksdb_btrfs_run_250M_1B_all_scatter.jpg)
 
 Another point of interest is that looking at all of the read frequencies, `btrfs` has less blocks with very high access frequencies, whereas `f2fs` and `ext4` has relatively higher number of blocks with very high access frequencies. This pattern appears for both `Cassandra` and `RocksDB`. Based on the characteristics of each of the file systems, one possibility is that in the case of `f2fs` and `ext4`, these blocks corresponds to those storing file system metadata such as the super block on an `ext4` file system. This read pattern doesn't appear on `btrfs` can be attributed to the fact that on a SSD, `btrfs` turns off metadata duplication by default. And as a result, the operating system no longer has do all the same operations on the metadata since it is already handled at the SSD level.
+
+For more visualizations, you can visit [https://github.com/carlonlv/Research-Projects/tree/master/SSD_Benchmark_Analysis/plots](https://github.com/carlonlv/Research-Projects/tree/master/SSD_Benchmark_Analysis/plots).
 
 ## blktrace
 
@@ -166,6 +168,8 @@ However, once we examine the results for `RocksDB`, the results begin to vary mo
 
 Overall, these results are somewhat inconclusive. However, in the process of running these tests, there was something perculiar with the results. When running the benchmark without `blktrace` for `RocksDB` on `ext4`, there were times when it was significantly underperforming, reaching only half the operations per second compared to with `blktrace`. But after some time, the performance slowly recovered to a more expected level. This leads us to believe our results may be an exception and not the rule and that there is some other factor at play here. Meaning that `blktrace` overhead would likely be in the 24% to 36% range.
 
+For more visualizations, you can visit [https://github.com/carlonlv/Research-Projects/tree/master/SSD_Benchmark_Analysis/plots/overhead_plots](https://github.com/carlonlv/Research-Projects/tree/master/SSD_Benchmark_Analysis/plots/overhead_plots).
+
 ## Btrfs Slow
 
 For the actual experiment, we had to adjust the configurations when running the benchmark for `Cassandra` on `btrfs` due to time constraints. Unlike the other benchmarks, `Cassandra` on `btrfs` resulted in a very slow run, spanning multiple days whereas all the other ones were complete within a single day.
@@ -178,7 +182,7 @@ This slowdown was only experience when running `Cassandra` on `btrfs`, but not w
 
 Looking at the throughput of all the benchmarks, we see that `Cassandra` has a significantly higher read throughput, but much lower in write throughput. Whereas for `RocksDB` has a something in between for both read and write throughput. This seems very reasonable as noted earlier, `Cassandra` stores data in a series of large files which makes random writes to them slower due to the nature of SSDs but fast to read from. `RocksDB` stores data in lots of smaller files meaning writing to them is faster and reading from them is also relatively quick.
 
-The actual diagrams were not included in this report because they do not fit, instead you can find svg versions of them at [https://github.com/Zylphrex/blkplt/tree/master/img](https://github.com/carlonlv/Research-Projects/tree/master/SSD_Benchmark_Analysis/plots/through_put_plots).
+The actual diagrams were not included in this report because they do not fit, instead you can find svg versions of them at [https://github.com/carlonlv/Research-Projects/tree/master/SSD_Benchmark_Analysis/plots/through_put_plots](https://github.com/carlonlv/Research-Projects/tree/master/SSD_Benchmark_Analysis/plots/through_put_plots).
 
 ## Conclusion
 
