@@ -287,7 +287,7 @@ You can run `python main.py --help` for more details.
 
 ## Saved Experiment Data
 
-The results are not distributied online but you can find the results of `blktrace` on `mel-012.syslab.sandbox` at `/home/xiaoche5/traces`
+The results are not distributed online but you can find the results of `blktrace` on `mel-012.syslab.sandbox` at `/home/xiaoche5/traces`
 
 The names of the files tells you the contents. They are named as follows:
 
