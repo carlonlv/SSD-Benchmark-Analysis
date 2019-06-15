@@ -1,0 +1,180 @@
+---
+title: "TimeSeriesCPU"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+bg_service <- read.csv(file.choose())
+library("forecast")
+library("fpp2")
+library("ggplot2")
+library("ggfortify")
+library("dplyr")
+library("DataCombine")
+library("MASS")
+library("plotly")
+bg_service$timestamp <- as.integer((bg_service$timestamp - min(bg_service$timestamp))/60)
+```
+
+## Time Series Modelling
+
+
+### Time Series Visualization
+
+```{r}
+ts_model <- ts(data = bg_service[order(bg_service$timestamp),]$maxcpu, start = 0, frequency = 288)
+autoplot(ts_model) + 
+  ggtitle("Figure 1. Time Series Plot") + 
+  ylab("Cpu Occupancy") + 
+  xlab("Timestamp") +
+  theme(plot.title = element_text(size=8, face="bold"))
+
+```
+
+
+
+### Check for Homescedaticity and Stationarity
+
+
+```{r}
+boxcox.reversetransformtaion <- function(transformed_dataset, lambda) {
+  if (lambda == 0) {
+    original_dataset <- exp(transformed_dataset)
+  } else {
+    original_dataset <- (transformed_dataset + 1)^(1/lambda)
+  }
+}
+boxcox(bg_service$maxcpu~bg_service$timestamp, lambda = seq(-4,4, by=0.01))
+lambda <- BoxCox.lambda(ts_model, "loglik", lower = -3, upper = 3)
+print(paste("lambda is", lambda))
+transformed.tsmodel <- ts(BoxCox(ts_model, lambda), start=0, frequency = 288)
+autoplot(transformed.tsmodel) + 
+  ggtitle("Figure 2. Transformed Time Series Plot") + 
+  ylab("Cpu Occupancy") + 
+  xlab("Timestamp") +
+  theme(plot.title = element_text(size=8, face="bold"))
+```
+
+### Decompose Time Series
+
+```{r}
+ts_model.decomposed <- stl(transformed.tsmodel, s.window="periodic", robust = TRUE)
+plotly::plotly_build(autoplot(ts_model.decomposed))
+```
+
+### Check ACF PACF
+
+```{r}
+ggAcf(transformed.tsmodel, lwd=0.5, col="black")
+ggPacf(transformed.tsmodel, lwd=0.5, col="black")
+```
+
+### Fit Model
+
+```{r}
+mod.auto2<-auto.arima(transformed.tsmodel,seasonal=TRUE, stationary=FALSE, allowmean = TRUE)
+mod.auto2
+```
+
+## Prediction
+
+```{r}
+autoplot(forecast(ts_model, method = "arima", level = 95, h=288, lambda="auto", biasadj = TRUE))
+```
+
+### Prediction on Trend
+
+```{r}
+ts_model.trend <- ts_model.decomposed$time.series[,"trend"]
+autoplot(ts_model.trend)
+```
+
+Since the original time series is bounded below by 0 and above by 100, from a long term perspective, there will not be a upward or a downward trend, so it is reasonable to assume that the trend is 0.
+
+However, there might be some local fluctuations locally, and we can use local polynomial regression(loess) to predict some local changes on the trend.
+
+```{r}
+x<- seq(0,8561*5,by=5)
+p<-data.frame(ts_model.trend, x)
+model <- loess(sample_n(p,500), control=loess.control(surface = "direct"), span = 0.10)
+plot(model)
+summary(model)
+predict_x <- seq(8562*5, 8849*5, by=5)
+lines(y=predict(model, predict_x), x=predict_x, type = 'o', col='red')
+```
+
+Another option would be polynomial curve fitting or ARMA models.
+
+### Prediction on Seasonal Components
+
+```{r}
+ts_model.seasonal <- ts_model.decomposed$time.series[,"seasonal"]
+autoplot(ts_model.seasonal)
+```
+
+
+
+### Prediction on Residuals
+
+```{r}
+ts_model.remainder <- ts_model.decomposed$time.series[,"remainder"]
+autoplot(ts_model.remainder, type="o", 
+         main="The irregular components after transformation")
+qqnorm(ts_model.remainder)
+shapiro.test(sample(ts_model.remainder, 5000, FALSE))
+mean(ts_model.remainder)
+```
+
+#### Brownian Motion Approximation
+
+```{r}
+brownian.motion.approx <- function(time_lag, boundary) {
+  return(2 * (1 - pnorm(boundary, mean = 0, sd=time_lag)))
+}
+```
+
+#### Martingale Approximation
+
+```{r}
+```
+
+Martingale has property that $E[X_t] = E[X_0]$ for all $t \geq 0$.
+
+By Optional Stopping Lemma. If {Xt} is a martingale, and T is a stopping time which is bounded, then $E(X_T) = E(X_0)$.
+
+In our case, $T = inf\{t \geq 0: t=h \enspace or \enspace X_t = B\}$ where $h$ is the time limit that we want to check and $B$ is the boundary we want to see if the martingale would hit. Note that since the martingale is continuous, it must be equal to $B$ before getting past $B$.
+
+Therefore, since $E[X_T] = 0 = B * P(X_t \enspace hit \enspace B \enspace within \enspace time \enspace h) + Z * P(X_t \enspace does \enspace not \enspace hit \enspace B \enspace within \enspace time \enspace h)$
+
+Denote $p = P(X_t \enspace hit \enspace B \enspace within \enspace time \enspace h)$, then $1 - p = P(X_t \enspace does \enspace not \enspace hit \enspace B \enspace within \enspace time \enspace h)$.
+
+Since if the martingale does not hit $B$ within time $h$, it will be somewhere below $B$ at the stopping time $h$. $Z$ can then be calculated using the expected value of $X_h$ where $X_h < B$.
+$Z = \int_{-\infty}^B x*pdf_{X_h}(x)dx$ where $X_h$ follows $N(0,\delta^2)$.
+Then $p$ can be cacluated by substituting $Z$ into $B * p + Z*(1-p) = 0$.
+$p = \frac{Z}{Z-B}$
+
+```{r}
+martingale.approx <- function(time_lag, boundary, sd) {
+  xpdfx <- function(x) x* dnorm(x, sd =sd)
+  Z <- integral(xpdfx, -Inf, boundary)
+  return(Z / (Z - bound))
+}
+```
+
+
+#### Time Series Approximation
+
+```{r}
+ggAcf(ts_model.remainder, lwd=0.5, col="black")
+ggPacf(ts_model.remainder, lwd=0.5, col="black")
+mod.auto<-auto.arima(ts_model.remainder,seasonal=FALSE, stationary=TRUE, allowmean = FALSE)
+mod.auto
+```
+
+### Prediction on Original Time Series
+
+```{r}
+```
