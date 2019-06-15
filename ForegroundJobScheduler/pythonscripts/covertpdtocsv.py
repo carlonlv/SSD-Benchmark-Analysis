@@ -1,6 +1,4 @@
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as mp
 
 if __name__ == '__main__':
     file_list = [1227464, 1926479]
