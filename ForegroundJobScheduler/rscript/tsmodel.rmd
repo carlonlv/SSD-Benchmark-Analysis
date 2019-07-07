@@ -1,180 +1,418 @@
 ---
-title: "TimeSeriesCPU"
-output:
-  html_document:
-    df_print: paged
+title: "test"
+output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-bg_service <- read.csv(file.choose())
-library("forecast")
-library("fpp2")
+```{r}
 library("ggplot2")
 library("ggfortify")
 library("dplyr")
-library("DataCombine")
-library("MASS")
-library("plotly")
-bg_service$timestamp <- as.integer((bg_service$timestamp - min(bg_service$timestamp))/60)
-```
-
-## Time Series Modelling
-
-
-### Time Series Visualization
-
-```{r}
-ts_model <- ts(data = bg_service[order(bg_service$timestamp),]$maxcpu, start = 0, frequency = 288)
-autoplot(ts_model) + 
-  ggtitle("Figure 1. Time Series Plot") + 
-  ylab("Cpu Occupancy") + 
-  xlab("Timestamp") +
-  theme(plot.title = element_text(size=8, face="bold"))
-
+library("forecast")
+library("mvtnorm")
+library("dict")
 ```
 
 
-
-### Check for Homescedaticity and Stationarity
-
+### Histogram of VMs
 
 ```{r}
-boxcox.reversetransformtaion <- function(transformed_dataset, lambda) {
-  if (lambda == 0) {
-    original_dataset <- exp(transformed_dataset)
+vmtable <- read.csv("C://Users//carlo//Documents//datasets//vmtable.csv")
+header_for_vmtable <- c('vmid','subscriptionid','deploymentid','vmcreated', 'vmdeleted', 'maxcpu', 'avgcpu', 'p95maxcpu', 'vmcategory', 'vmcorecount', 'vmmemory')
+names(vmtable) <- header_for_vmtable
+vmtable$lifetime = round((vmtable$vmdeleted - vmtable$vmcreated) / 3600)
+```
+
+```{r}
+hist(vmtable$lifetime, labels = TRUE)
+hist(vmtable$lifetime, plot = FALSE)
+```
+
+
+## Impletemt Growing Predictive Model
+
+```{r}
+cov_cal <- function(variance, l, k, phi) {
+  #### input variance: A vector of length min(l,k), var(an+min(l,k)) to var(an+1)
+  #### input l: row number of var-cov matrix, minimal value 1
+  #### input k: column number of var-cov matrix, minimal value 1
+  #### input phi: coeff of AR1 model
+  
+  phi_mul <- phi^(seq((l+k-2*min(l,k)), l+k-2, by=2))
+  result <- sum(phi_mul*variance)
+  return(result)
+}
+
+calculate_var_cov_matrix_ar1 <-function(var, l, phi) {
+  #### input var: A vector from var(an+l) to var(an+1) of length l
+  #### input l: number of prediction
+  #### input phi: coeff of AR1 model
+  var_cov <- matrix(nrow = l, ncol = l)
+  for (i in 1:l) {
+    for (j in 1:l) {
+      variance <- var[seq(l-min(i,j)+1, l, by=1)]
+      var_cov[i, j] <- cov_cal(variance, i, j, phi)
+    }
+  }
+  return(var_cov)
+}
+
+do_prediction <- function(model_selection="AR1", last_obs, phi, mean, variance, predict_size, level) {
+  if (model_selection == "AR1") {
+    # Construct mean
+    mu <- rep(last_obs, predict_size)
+    mu <- mu * phi^(1:predict_size) + (1 - phi^(1:predict_size)) * mean
+    # Construct Var-cov matrix
+    var <- rep(variance, predict_size)
+    var_cov <- calculate_var_cov_matrix_ar1(var, predict_size, phi)
+    # caclulate probability
+    up_bound <- rep(level, predict_size)
+    lower_bound <- rep(0, predict_size)
+    prob <- 1 - pmvnorm(upper = up_bound, lower = lower_bound, mean = mu, sigma = var_cov)
+    return(prob)
+    
   } else {
-    original_dataset <- (transformed_dataset + 1)^(1/lambda)
+    return(NULL)
   }
 }
-boxcox(bg_service$maxcpu~bg_service$timestamp, lambda = seq(-4,4, by=0.01))
-lambda <- BoxCox.lambda(ts_model, "loglik", lower = -3, upper = 3)
-print(paste("lambda is", lambda))
-transformed.tsmodel <- ts(BoxCox(ts_model, lambda), start=0, frequency = 288)
-autoplot(transformed.tsmodel) + 
-  ggtitle("Figure 2. Transformed Time Series Plot") + 
+
+find_pi_upperbound <- function(model_selection='AR1', last_obs, phi, mean, variance, predict_size, prob_cutoff) {
+  if (model_selection == "AR1") {
+    # Construct mean
+    mu <- rep(last_obs, predict_size)
+    mu <- mu * phi^(1:predict_size) + (1 - phi^(1:predict_size)) * mean
+    var <- rep(variance, predict_size)
+    var_cov <- calculate_var_cov_matrix_ar1(var, predict_size, phi)
+    upper_bounds <- rep(NA, predict_size)
+    for (i in 1:length(upper_bounds)) {
+      upper_bounds[i] <- min(mu[i] + qnorm((1-prob_cutoff), 0, 1) * sqrt(var_cov[i,i]), 100)
+    }
+    return(max(upper_bounds))
+    
+  } else {
+    return(NULL)
+  }
+}
+```
+
+Suppose we use AR(1) model for the entire model, and $\{Z_t\}$ is the process with zero mean, i.e., the original time series subtracted by its mean.
+
+Then $Z_t = \phi Z_{t-1} + a_t$ where $a_t$ is theoretically white noise process with mean 0 and variance 1.
+
+Using MA representation, $Z_t = \sum_{j=0}^\infty \theta_jB^ja_t = \frac{1}{1-\phi B}a_t$, then
+\[(\theta_0+\theta_1B + \theta_2B^2 + \theta_3B^3 +...)(1-\phi B) = 1\]
+\[(\theta_0 + (\theta_1 - \phi\theta_0)B + (\theta_2 - \phi\theta_1)B^2 +...) = 1\]
+
+This implies that $\theta_j = \phi^j, \enspace \forall j \geq 0$, that is, $Z_t = a_t + \phi a_{t-1} + \phi^2 a_{t-2} + ...$, let $t = n+l$, then $Z_{n+l} = a_{n+l} + \phi a_{n+l-1} + \phi^2a_{n+l-2} + ... + \phi^l a_{n} + \phi^{l+1}a_{n-1}+...$.
+
+Using least squares estimates, the $l$th estimate after $n$ is, $\hat{Z}_n(l) = \theta_la_n + \theta_{l+1}a_{n-1} + ...$. Since $E[a_{n+j}|Z_n, Z_{n-1},...] = 0$ 
+
+if $j>0$, $E[a_{n+j}|Z_n, Z_{n-1},...] = a_{n+j}$ if $j \leq 0$, then
+$E[Z_{n+l}|Z_n, Z_{n-1}] = \theta_l a_n + \theta_{l+1}a_{n-1} +...= \hat{Z}_n(l)$.
+
+The forecast error, $e_n(l) = Z_{n+l} - \hat{Z}_n(l) = \sum_{j=0}^{l-1}\theta_ja_{n+l-j}$. 
+
+$E[e_n(l)] = 0$, $Var[e_n(l)] = \sum_{j=0}^{l-1}\theta_j^2 Var(a_{n+l-j})$.
+
+$Cov[e_n(l), e_n(k)] = \sum_{p=0}^{min(l,k)-1}\theta_{l-1-p}\theta_{k-1-p}Var(a_{n+1+p})$.
+
+```{r}
+mvt_growing_model <- function(dataset, initial_train_size = round(length(dataset) / 4, 1),job_length=5, cpu_required=10, prob_cut_off=0.01, update_freq=1) {
+  #### input dataset: N by M matrix, N being number of observations, M being number of time series
+  #### input initial_train_size: The number of observations used to train the model
+  #### input job_length: The time that the foreground job will be runing
+  #### input cpu_required: The cpu that the foreground job requires in percentage
+  #### input prob_cut_off: If the probability of background job exceeding 100-cpu_required is smaller than prob_cut_off, then schedule it. Otherwise, don't.
+  #### input update_freq: The number of observations for each update of the model, and do the prediction
+  
+  ## N by M dataframe
+  loglikelihood <- data.frame(row.names = 1)
+  ## N by M dataframe
+  probability <- data.frame(row.names = 1)
+  ## N by M dataframe
+  predict_result <- data.frame(row.names = 1)
+  ## N by M dataframe
+  actual_result <- data.frame(row.names = 1)
+  ## 4 by M dataframe
+  scheduling_summary <- data.frame(matrix(nrow = 4, ncol = ncol(dataset)))
+  
+  ## Dictionaries
+  ts_models <- dict()
+  end_time_testing_queue <- numvecdict()
+  
+  ## Summary Counts
+  scheduled_num <- rep(0, ncol(dataset))
+  unscheduled_num <- rep(0, ncol(dataset))
+  falsely_scheduled_num <- rep(0, ncol(dataset))
+  falsely_unscheduled_num <- rep(0, ncol(dataset))
+  
+  current_end <- initial_train_size
+  start_pos <- rep(1, ncol(dataset))
+  current_percent <- 0.00
+  while (current_end < nrow(dataset)) {
+    
+    ## Initialize Model and Update Loglikelihood
+    loglik <- c()
+    prob_vector <- c()
+    prediction <- c()
+    actual <- c()
+    
+    for (ts_num in 1:ncol(dataset)) {
+      
+      ## Update Models
+      ts_model <- arima(dataset[start_pos[ts_num]:current_end, ts_num], order = c(1,0,0), include.mean = TRUE)
+      ts_models[[ts_num]] <- ts_model
+      
+      ## Find Loglikelihood
+      loglik[ts_num] <- ts_model$loglik
+      
+      ## Schedule the job
+      last_obs <- dataset[current_end, ts_num]
+      prob_vector[ts_num] <- do_prediction(last_obs = last_obs, phi = ts_model$coef[1], mean = ts_model$coef[2], predict_size = job_length, level = (100 - cpu_required))[job_length]
+      if (prob_vector[ts_num] < prob_cut_off) {
+        prediction[ts_num] <- 1
+        scheduled_num[ts_num] <- scheduled_num[ts_num] + 1
+      } else {
+        prediction[ts_num] <- 0
+        unscheduled_num[ts_num] <- unscheduled_num[ts_num] + 1
+      }
+      
+      
+      ## Check correctness of previous schedulings
+      if (length(end_time_testing_queue[[current_end]]) != 0) {
+        info_lst <- end_time_testing_queue[[current_end]]
+        lst_len <- length(info_lst)
+        for (i in seq(1, lst_len, 3)) {
+          start_time <- info_lst[i]
+          end_time <- info_lst[i+1]
+          row_num <- info_lst[i+2]
+          
+          position_vec <- dataset[start_time:end_time, ts_num]
+          if (all(position_vec < (100 - cpu_required))) {
+            actual[ts_num] <- 1
+            if (predict_result[row_num, ts_num] == 0) {
+              falsely_unscheduled_num[ts_num] <- falsely_unscheduled_num[ts_num] + 1
+            }
+          } else {
+            actual[ts_num] <- 0
+            if (predict_result[row_num, ts_num] == 1) {
+              falsely_scheduled_num[ts_num] <- falsely_scheduled_num[ts_num] + 1
+            }
+          } 
+        }
+      }
+    }
+    
+    ## Store Loglikelihood v
+    loglikelihood <- rbind(loglikelihood, loglik)
+    ## Store probability
+    probability <- rbind(probability, prob_vector)
+    ## Store Prediction
+    predict_result <- rbind(predict_result, prediction)
+    ## Store Actual
+    actual_result <- rbind(actual_result, actual)
+    
+    ## Queue the jobs to check their correctness later
+    closest_update <- current_end + ceiling(job_length / update_freq) * update_freq
+    end_time_testing_queue$append_number(closest_update, current_end + 1)
+    end_time_testing_queue$append_number(closest_update, current_end + job_length)
+    end_time_testing_queue$append_number(closest_update, nrow(predict_result))
+    
+    ## Update current_end
+    current_end <- current_end + update_freq
+    if (current_percent != round((current_end - initial_train_size) / (nrow(dataset) - initial_train_size), digits = 2)) {
+      print(current_percent)
+      current_percent <- round((current_end - initial_train_size) / (nrow(dataset) - initial_train_size), digits = 2)
+    }
+  }
+  
+  ## Change column and row names, N by M
+  colnames(loglikelihood) <- colnames(dataset)
+  rownames(loglikelihood) <- seq(initial_train_size, initial_train_size + update_freq * (nrow(loglikelihood) - 1), update_freq)
+  
+  colnames(probability) <- colnames(dataset)
+  rownames(probability) <- seq(initial_train_size + 1, initial_train_size + 1 + update_freq * (nrow(probability) - 1), update_freq)
+  
+  colnames(predict_result) <- colnames(dataset)
+  rownames(predict_result) <- seq(initial_train_size + 1, initial_train_size + 1 + update_freq * (nrow(predict_result) - 1), update_freq)
+  
+  colnames(actual_result) <- colnames(dataset)
+  rownames(actual_result) <- seq(initial_train_size + 1, initial_train_size + 1 + update_freq * (nrow(actual_result) - 1), update_freq)
+  
+  colnames(scheduling_summary) <- colnames(dataset)
+  scheduling_summary[1,] <- scheduled_num
+  scheduling_summary[2,] <- unscheduled_num
+  scheduling_summary[3,] <- falsely_scheduled_num
+  scheduling_summary[4,] <- falsely_unscheduled_num
+  rownames(scheduling_summary) <- c('Scheduled_Num', 'Unscheduled_Num', 'Falsly_scheduled_Num', 'Falsely_unscheduled_Num')
+  
+  result <- list('loglik' = loglikelihood, 'prob' = probability, 'predict' = predict_result, 'actual' = actual_result, 'scheduling_summary' = scheduling_summary)
+  
+  return(result)
+}
+```
+
+```{r}
+mvt_stationary_model <- function(dataset, initial_train_size = round(length(dataset) / 4, 1),job_length=5, cpu_required=rep(10, ncol(dataset)), prob_cut_off=0.01, update_freq=1) {
+  #### input dataset: N by M matrix, N being number of observations, M being number of time series
+  #### input initial_train_size: The number of first observations used to train the model
+  #### input job_length: The time that the foreground job will be runing
+  #### input cpu_required: A vector, the cpu that the foreground job requires in percentage
+  #### input prob_cut_off: If the probability of background job exceeding 100-cpu_required is smaller than prob_cut_off, then schedule it. Otherwise, don't.
+  #### input update_freq: The number of observations for each update of the model, and do the prediction
+  
+  ## N by M dataframe
+  probability <- data.frame(row.names = 1)
+  ## N by M dataframe
+  predict_result <- data.frame(row.names = 1)
+  ## N by M dataframe
+  actual_result <- data.frame(row.names = 1)
+  ## 4 by M dataframe
+  scheduling_summary <- data.frame(matrix(nrow = 4, ncol = ncol(dataset)))
+  
+  ## Dictionaries
+  ts_models <- dict()
+  end_time_testing_queue <- numvecdict()
+  
+  ## Summary Counts
+  scheduled_num <- rep(0, ncol(dataset))
+  unscheduled_num <- rep(0, ncol(dataset))
+  falsely_scheduled_num <- rep(0, ncol(dataset))
+  falsely_unscheduled_num <- rep(0, ncol(dataset))
+  
+  
+  ## Train Model
+  coeffs <- rep(NA, ncol(dataset))
+  means <- rep(NA, ncol(dataset))
+  for (ts_num in 1:ncol(dataset)) {
+    ts_model <- arima(dataset[1:initial_train_size, ts_num], order = c(1,0,0), include.mean = TRUE)
+    ts_models[[ts_num]] <- ts_model
+    coeffs[ts_num] <- as.numeric(ts_model$coef[1])
+    means[ts_num] <- as.numeric(ts_model$coef[2])
+  }
+  current_end <- initial_train_size
+  current_percent <- 0.00
+  while (current_end < nrow(dataset)) {
+    
+    ## Initialize Model 
+    prob_vector <- c()
+    prediction <- c()
+    actual <- c()
+    
+    for (ts_num in 1:ncol(dataset)) {
+      
+      ## Schedule the job
+      last_obs <- dataset[current_end, ts_num]
+      ts_model <- ts_models[[ts_num]] 
+      prob_vector[ts_num] <- do_prediction(last_obs = last_obs, phi = ts_model$coef[1], mean = ts_model$coef[2], predict_size = job_length, level = (100 - cpu_required[ts_num]))[job_length]
+      if (prob_vector[ts_num] < prob_cut_off) {
+        prediction[ts_num] <- 1
+        scheduled_num[ts_num] <- scheduled_num[ts_num] + 1
+      } else {
+        prediction[ts_num] <- 0
+        unscheduled_num[ts_num] <- unscheduled_num[ts_num] + 1
+      }
+      
+      ## Check correctness of previous schedulings
+      if (length(end_time_testing_queue[[current_end]]) != 0) {
+        info_lst <- end_time_testing_queue[[current_end]]
+        lst_len <- length(info_lst)
+        for (i in seq(1, lst_len, 3)) {
+          start_time <- info_lst[i]
+          end_time <- info_lst[i+1]
+          row_num <- info_lst[i+2]
+          
+          position_vec <- dataset[start_time:end_time, ts_num]
+          if (all(position_vec < (100 - cpu_required[ts_num]))) {
+            actual[ts_num] <- 1
+            if (predict_result[row_num, ts_num] == 0) {
+              falsely_unscheduled_num[ts_num] <- falsely_unscheduled_num[ts_num] + 1
+            }
+          } else {
+            actual[ts_num] <- 0
+            if (predict_result[row_num, ts_num] == 1) {
+              falsely_scheduled_num[ts_num] <- falsely_scheduled_num[ts_num] + 1
+            }
+          } 
+        }
+      }
+    }
+    
+    ## Store probability
+    probability <- rbind(probability, prob_vector)
+    ## Store Prediction
+    predict_result <- rbind(predict_result, prediction)
+    ## Store Actual
+    actual_result <- rbind(actual_result, actual)
+    
+    ## Queue the jobs to check their correctness later
+    closest_update <- current_end + ceiling(job_length / update_freq) * update_freq
+    end_time_testing_queue$append_number(closest_update, current_end + 1)
+    end_time_testing_queue$append_number(closest_update, current_end + job_length)
+    end_time_testing_queue$append_number(closest_update, nrow(predict_result))
+    
+    ## Update current_end
+    current_end <- current_end + update_freq
+    if (current_percent != round((current_end - initial_train_size) / (nrow(dataset) - initial_train_size), digits = 2)) {
+      print(current_percent)
+      current_percent <- round((current_end - initial_train_size) / (nrow(dataset) - initial_train_size), digits = 2)
+    }
+  }
+  
+  ## Change column and row names, N by M
+  colnames(probability) <- colnames(dataset)
+  rownames(probability) <- seq(initial_train_size + 1, initial_train_size + 1 + update_freq * (nrow(probability) - 1), update_freq)
+  
+  colnames(predict_result) <- colnames(dataset)
+  rownames(predict_result) <- seq(initial_train_size + 1, initial_train_size + 1 + update_freq * (nrow(predict_result) - 1), update_freq)
+  
+  colnames(actual_result) <- colnames(dataset)
+  rownames(actual_result) <- seq(initial_train_size + 1, initial_train_size + 1 + update_freq * (nrow(actual_result) - 1), update_freq)
+  
+  colnames(scheduling_summary) <- colnames(dataset)
+  scheduling_summary[1,] <- scheduled_num
+  scheduling_summary[2,] <- unscheduled_num
+  scheduling_summary[3,] <- falsely_scheduled_num
+  scheduling_summary[4,] <- falsely_unscheduled_num
+  rownames(scheduling_summary) <- c('Scheduled_Num', 'Unscheduled_Num', 'Falsly_scheduled_Num', 'Falsely_unscheduled_Num')
+  
+  result <- list('prob' = probability, 'predict' = predict_result, 'actual' = actual_result, 'scheduling_summary' = scheduling_summary)
+  
+  return(result)
+}
+```
+
+
+## Analysis on Sample Job 1
+
+```{r}
+vmjob1 <- read.csv("C://Users//carlo//Documents//datasets//csvalldata//1227464.csv")
+```
+
+\textbf{1. Time Series Plot}
+
+```{r}
+ts_model1 <- ts(data = vmjob1$max_cpu, start = 0, frequency = 288)
+autoplot(ts_model1) + 
+  ggtitle("Figure 1. Time Series Plot of Job 1") + 
   ylab("Cpu Occupancy") + 
   xlab("Timestamp") +
   theme(plot.title = element_text(size=8, face="bold"))
 ```
 
-### Decompose Time Series
+
+## Analysis on Sample Job 2
 
 ```{r}
-ts_model.decomposed <- stl(transformed.tsmodel, s.window="periodic", robust = TRUE)
-plotly::plotly_build(autoplot(ts_model.decomposed))
+vmjob2 <- read.csv("C://Users//carlo//Documents//datasets//csvalldata//1926479.csv")
 ```
 
-### Check ACF PACF
+\textbf{1. Time Series Plot}
 
 ```{r}
-ggAcf(transformed.tsmodel, lwd=0.5, col="black")
-ggPacf(transformed.tsmodel, lwd=0.5, col="black")
-```
-
-### Fit Model
-
-```{r}
-mod.auto2<-auto.arima(transformed.tsmodel,seasonal=TRUE, stationary=FALSE, allowmean = TRUE)
-mod.auto2
-```
-
-## Prediction
-
-```{r}
-autoplot(forecast(ts_model, method = "arima", level = 95, h=288, lambda="auto", biasadj = TRUE))
-```
-
-### Prediction on Trend
-
-```{r}
-ts_model.trend <- ts_model.decomposed$time.series[,"trend"]
-autoplot(ts_model.trend)
-```
-
-Since the original time series is bounded below by 0 and above by 100, from a long term perspective, there will not be a upward or a downward trend, so it is reasonable to assume that the trend is 0.
-
-However, there might be some local fluctuations locally, and we can use local polynomial regression(loess) to predict some local changes on the trend.
-
-```{r}
-x<- seq(0,8561*5,by=5)
-p<-data.frame(ts_model.trend, x)
-model <- loess(sample_n(p,500), control=loess.control(surface = "direct"), span = 0.10)
-plot(model)
-summary(model)
-predict_x <- seq(8562*5, 8849*5, by=5)
-lines(y=predict(model, predict_x), x=predict_x, type = 'o', col='red')
-```
-
-Another option would be polynomial curve fitting or ARMA models.
-
-### Prediction on Seasonal Components
-
-```{r}
-ts_model.seasonal <- ts_model.decomposed$time.series[,"seasonal"]
-autoplot(ts_model.seasonal)
-```
-
-
-
-### Prediction on Residuals
-
-```{r}
-ts_model.remainder <- ts_model.decomposed$time.series[,"remainder"]
-autoplot(ts_model.remainder, type="o", 
-         main="The irregular components after transformation")
-qqnorm(ts_model.remainder)
-shapiro.test(sample(ts_model.remainder, 5000, FALSE))
-mean(ts_model.remainder)
-```
-
-#### Brownian Motion Approximation
-
-```{r}
-brownian.motion.approx <- function(time_lag, boundary) {
-  return(2 * (1 - pnorm(boundary, mean = 0, sd=time_lag)))
-}
-```
-
-#### Martingale Approximation
-
-```{r}
-```
-
-Martingale has property that $E[X_t] = E[X_0]$ for all $t \geq 0$.
-
-By Optional Stopping Lemma. If {Xt} is a martingale, and T is a stopping time which is bounded, then $E(X_T) = E(X_0)$.
-
-In our case, $T = inf\{t \geq 0: t=h \enspace or \enspace X_t = B\}$ where $h$ is the time limit that we want to check and $B$ is the boundary we want to see if the martingale would hit. Note that since the martingale is continuous, it must be equal to $B$ before getting past $B$.
-
-Therefore, since $E[X_T] = 0 = B * P(X_t \enspace hit \enspace B \enspace within \enspace time \enspace h) + Z * P(X_t \enspace does \enspace not \enspace hit \enspace B \enspace within \enspace time \enspace h)$
-
-Denote $p = P(X_t \enspace hit \enspace B \enspace within \enspace time \enspace h)$, then $1 - p = P(X_t \enspace does \enspace not \enspace hit \enspace B \enspace within \enspace time \enspace h)$.
-
-Since if the martingale does not hit $B$ within time $h$, it will be somewhere below $B$ at the stopping time $h$. $Z$ can then be calculated using the expected value of $X_h$ where $X_h < B$.
-$Z = \int_{-\infty}^B x*pdf_{X_h}(x)dx$ where $X_h$ follows $N(0,\delta^2)$.
-Then $p$ can be cacluated by substituting $Z$ into $B * p + Z*(1-p) = 0$.
-$p = \frac{Z}{Z-B}$
-
-```{r}
-martingale.approx <- function(time_lag, boundary, sd) {
-  xpdfx <- function(x) x* dnorm(x, sd =sd)
-  Z <- integral(xpdfx, -Inf, boundary)
-  return(Z / (Z - bound))
-}
-```
-
-
-#### Time Series Approximation
-
-```{r}
-ggAcf(ts_model.remainder, lwd=0.5, col="black")
-ggPacf(ts_model.remainder, lwd=0.5, col="black")
-mod.auto<-auto.arima(ts_model.remainder,seasonal=FALSE, stationary=TRUE, allowmean = FALSE)
-mod.auto
-```
-
-### Prediction on Original Time Series
-
-```{r}
+ts_model2 <- ts(data = vmjob2$max_cpu, start = 0, frequency = 288)
+autoplot(ts_model2) + 
+  ggtitle("Figure 2. Time Series Plot of Job 2") + 
+  ylab("Cpu Occupancy") + 
+  xlab("Timestamp") +
+  theme(plot.title = element_text(size=8, face="bold"))
 ```
