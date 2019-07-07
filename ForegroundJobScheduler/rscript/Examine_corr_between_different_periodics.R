@@ -15,7 +15,7 @@ generate_dataframe_for_plotting <- function(vec_5m, dict_lst, mode, nobs=NA, lag
     cutoff_hi <- 1.96 / sqrt(nobs - lag)
     cutoff_lo <- -1.96 / sqrt(nobs - lag)
   }
-  for (freq in 1:24) {
+  for (freq in 1:3) {
     length_vec <- c(length_vec, length(dict_lst[[freq]]))
     if (mode == 'pacf') {
       cutoff_hi <- c(cutoff_hi, 1.96 / sqrt(floor(nobs / (12 * freq))))
@@ -27,7 +27,7 @@ generate_dataframe_for_plotting <- function(vec_5m, dict_lst, mode, nobs=NA, lag
     data_vec <- c(data_vec, dict_lst[[freq]])
   }
   
-  new_factor <- factor(rep(c('5m', 1:24), length_vec), levels = c('5m', 1:24))
+  new_factor <- factor(rep(c('5m', 1:3), length_vec), levels = c('5m', 1:3))
   if (mode == 'pacf' | mode == 'acf') {
     cutoff_hi <- as.numeric(rep(cutoff_hi, length_vec))
     cutoff_lo <- as.numeric(rep(cutoff_lo, length_vec))
@@ -56,6 +56,8 @@ bg_job_file_lst <- list.files(path = data_path, full.names = FALSE, recursive = 
 frequency_lst <- seq(1, 3, by=1) * 12
 
 #########################################################Previous Maxes########################################################################################
+correlation_max_max_lst <- numvecdict()
+
 current_percent <- -1
 counter <- 0
 for (file_name in bg_job_file_lst) {
@@ -65,41 +67,43 @@ for (file_name in bg_job_file_lst) {
     print(current_percent)
   }
   vmjob <- read.csv(paste(data_path, "//",file_name, sep = ""))[4033:8032,]
-  # 5min. lag in lag_pool
-  ts_5min <- ts(vmjob$max_cpu, start = 0, frequency = 1)
-  for (l in lag_pool) {
-    result <- find_sig_corrs(ts_5min, lag = l, mode = 'pacf')
-    max_all_data_5m$append_number(l, result$val)
-  }
-  
-  ## Count max lags
-  max_signif_count_lst$append_number('5m', find_sig_corrs(ts_5min, 1, mode = 'pacf', recursive = TRUE))
-  
-  # 1:24h. lag in lag_pool for 1 and 2 h
+  correlation_max_max_lst$append_number('5m', cor(vmjob$max_cpu[-1], vmjob$max_cpu[-length(vmjob$max_cpu)], method = "pearson"))
   for (i in 1:length(frequency_lst)) {
-    new_max_cpu <- convert_frequency_dataset(vmjob$max_cpu, frequency_lst[i], mode = 'max')
-    new_ts <- ts(new_max_cpu, start = 0, frequency = frequency_lst[i])
-    
-    if (i == 1 | i == 2) {
-      for (l in lag_pool) {
-        result <- find_sig_corrs(new_ts, lag = l, mode = 'pacf')
-        if (i == 1) {
-          
-          max_all_data_1h$append_number(l, result$val)
-        } else {
-          
-          max_all_data_2h$append_number(l, result$val)
-        } 
-      }
-    } 
-    
-    result <- find_sig_corrs(new_ts, lag = 1, mode = 'pacf')
-    max_all_data_lst$append_number(i, result$val)
-    
-    ## Count max lags
-    max_signif_count_lst$append_number(i, find_sig_corrs(new_ts, 1, length(new_max_cpu), mode = 'pacf', recursive = TRUE))
+    previous_obs <- construct_previous_obs_lst(vmjob$max_cpu, frequency = frequency_lst[i], mode = 'max')
+    correlation_max_max_lst$append_number(i, cor(vmjob$max_cpu[(frequency_lst[i]+1):length(vmjob$max_cpu)], previous_obs, method = "pearson"))
   }
 }
 
+new_dat <- generate_dataframe_for_plotting(correlation_max_max_lst[['5m']], correlation_max_max_lst, mode = 'NULL')
+colnames(new_dat)[1] <- 'corr'
+ggplot(subset(new_dat, !is.na(corr)), aes(corr, colour = frequency)) + 
+  stat_ecdf() + 
+  ylab("Fraction of Data") + 
+  ggtitle("ECDF of correlation between Max at 5min and Max at previous window")
 
 #########################################################Previous Avgs#########################################################################################
+
+correlation_max_avg_lst <- numvecdict()
+
+current_percent <- -1
+counter <- 0
+for (file_name in bg_job_file_lst) {
+  counter <- counter + 1
+  if (round(counter / length(bg_job_file_lst), digits = 2) != current_percent) {
+    current_percent <- round(counter / length(bg_job_file_lst), digits = 2)
+    print(current_percent)
+  }
+  vmjob <- read.csv(paste(data_path, "//",file_name, sep = ""))[4033:8032,]
+  correlation_max_avg_lst$append_number('5m', cor(vmjob$max_cpu[-1], vmjob$avg_cpu[-length(vmjob$avg_cpu)], method = "pearson"))
+  for (i in 1:length(frequency_lst)) {
+    previous_obs <- construct_previous_obs_lst(vmjob$max_cpu, vmjob$avg_cpu, frequency = frequency_lst[i], mode = 'avg')
+    correlation_max_avg_lst$append_number(i, cor(vmjob$max_cpu[(frequency_lst[i]+1):length(vmjob$max_cpu)], previous_obs, method = "pearson"))
+  }
+}
+
+new_dat <- generate_dataframe_for_plotting(correlation_max_avg_lst[['5m']], correlation_max_avg_lst, mode = 'NULL')
+colnames(new_dat)[1] <- 'corr'
+ggplot(subset(new_dat, !is.na(corr)), aes(corr, colour = frequency)) + 
+  stat_ecdf() + 
+  ylab("Fraction of Data") + 
+  ggtitle("ECDF of correlation between Max at 5min and Avg at previous window")
