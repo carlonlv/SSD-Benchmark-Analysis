@@ -115,7 +115,6 @@ for (file_name in bg_job_file_lst) {
     print(current_percent)
   }
   vmjob <- read.csv(paste(data_path, "//", file_name, sep = ""))[4033:8032,]
-  # 5min. 
   ## Entropy
   max_entropy_data_5m <- c(max_entropy_data_5m, entropy(discretize(vmjob$avg_cpu, numBins = 20, r=c(0,100))))
   ## Coefficient of Variation

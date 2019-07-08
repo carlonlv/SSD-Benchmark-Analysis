@@ -196,7 +196,7 @@ for (l in lag_pool) {
           geom_vline(aes(xintercept=cutoff_hi, colour=frequency), linetype='dashed') + 
           geom_vline(aes(xintercept=cutoff_lo, colour=frequency), linetype='dashed') + 
           ylab("Fraction of Data") + 
-          ggtitle(paste("ECDF of Partial Autocorrelation of Maxes at lag", l)))
+          ggtitle(paste("ECDF of Autocorrelation of Maxes at lag", l)))
 }
 
 ## Plot all freq at lag 1
@@ -207,7 +207,7 @@ ggplot(subset(new_dat, !is.na(acf)), aes(acf, colour = frequency)) +
   geom_vline(aes(xintercept=cutoff_hi, colour=frequency), linetype='dashed') + 
   geom_vline(aes(xintercept=cutoff_lo, colour=frequency), linetype='dashed') + 
   ylab("Fraction of Data") + 
-  ggtitle("ECDF of Partial Autocorrelation of Maxes at lag 1")
+  ggtitle("ECDF of Autocorrelation of Maxes at lag 1")
 
 ## Plot maximum number of significant acfs
 #new_dat <- generate_dataframe_for_plotting(max_signif_count_lst[['5m']], max_signif_count_lst, mode = 'NULL')
@@ -275,7 +275,7 @@ for (l in lag_pool) {
           geom_vline(aes(xintercept=cutoff_hi, colour=frequency), linetype='dashed') + 
           geom_vline(aes(xintercept=cutoff_lo, colour=frequency), linetype='dashed') + 
           ylab("Fraction of Data") + 
-          ggtitle(paste("ECDF of Partial Autocorrelation of Avgs at lag", l)))
+          ggtitle(paste("ECDF of Autocorrelation of Avgs at lag", l)))
 }
 
 
@@ -287,7 +287,7 @@ ggplot(subset(new_dat, !is.na(acf)), aes(acf, colour = frequency)) +
   geom_vline(aes(xintercept=cutoff_hi, colour=frequency), linetype='dashed') + 
   geom_vline(aes(xintercept=cutoff_lo, colour=frequency), linetype='dashed') + 
   ylab("Fraction of Data") + 
-  ggtitle("ECDF of Partial Autocorrelation of Avgs at lag 1")
+  ggtitle("ECDF of Autocorrelation of Avgs at lag 1")
 
 ## Plot maximum number of significant acfs
 #new_dat <- generate_dataframe_for_plotting(avg_signif_count_lst[['5m']], avg_signif_count_lst, mode = 'NULL')
