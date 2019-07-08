@@ -17,8 +17,8 @@ avg_all_data_2h <- numvecdict()
 #key: frequency 1:24, value: list of observations
 max_all_data_lst <- numvecdict()
 avg_all_data_lst <- numvecdict()
-max_signif_count_lst <- numvecdict()
-avg_signif_count_lst <- numvecdict()
+#max_signif_count_lst <- numvecdict()
+#avg_signif_count_lst <- numvecdict()
 
 
 ##########################################################################################################################################################
@@ -150,12 +150,12 @@ for (file_name in bg_job_file_lst) {
   # 5min. lag in lag_pool
   ts_5min <- ts(vmjob$max_cpu, start = 0, frequency = 1)
   for (l in lag_pool) {
-    result <- find_sig_corrs(ts_5min, lag = l, mode = 'pacf')
+    result <- find_sig_corrs(ts_5min, lag = l, mode = 'acf')
     max_all_data_5m$append_number(l, result$val)
   }
   
   ## Count max lags
-  max_signif_count_lst$append_number('5m', find_sig_corrs(ts_5min, 1, mode = 'pacf', recursive = TRUE))
+  #max_signif_count_lst$append_number('5m', find_sig_corrs(ts_5min, 1, mode = 'acf', recursive = TRUE))
   
   # 1:24h. lag in lag_pool for 1 and 2 h
   for (i in 1:length(frequency_lst)) {
@@ -164,7 +164,7 @@ for (file_name in bg_job_file_lst) {
     
     if (i == 1 | i == 2) {
       for (l in lag_pool) {
-        result <- find_sig_corrs(new_ts, lag = l, mode = 'pacf')
+        result <- find_sig_corrs(new_ts, lag = l, mode = 'acf')
         if (i == 1) {
 
           max_all_data_1h$append_number(l, result$val)
@@ -175,11 +175,11 @@ for (file_name in bg_job_file_lst) {
       }
     } 
     
-    result <- find_sig_corrs(new_ts, lag = 1, mode = 'pacf')
+    result <- find_sig_corrs(new_ts, lag = 1, mode = 'acf')
     max_all_data_lst$append_number(i, result$val)
 
     ## Count max lags
-    max_signif_count_lst$append_number(i, find_sig_corrs(new_ts, 1, length(new_max_cpu), mode = 'pacf', recursive = TRUE))
+    #max_signif_count_lst$append_number(i, find_sig_corrs(new_ts, 1, length(new_max_cpu), mode = 'acf', recursive = TRUE))
   }
 }
 
@@ -190,8 +190,8 @@ for (l in lag_pool) {
   cutoff_lo <- c(-1.96 / sqrt(4000), -1.96 / sqrt(floor(4000 / 12)), -1.96 / sqrt(floor(4000 / 24)))
   cutoff_hi <- as.numeric(rep(cutoff_hi, c(length(max_all_data_5m[[l]]), length(max_all_data_1h[[l]]), length(max_all_data_2h[[l]]))))
   cutoff_lo <- as.numeric(rep(cutoff_lo, c(length(max_all_data_5m[[l]]), length(max_all_data_1h[[l]]), length(max_all_data_2h[[l]]))))
-  new_dat <- data.frame(pacf = c(max_all_data_5m[[l]], max_all_data_1h[[l]], max_all_data_2h[[l]]), frequency = new_vector, cutoff_hi = cutoff_hi, cutoff_lo = cutoff_lo)
-  print(ggplot(subset(new_dat, !is.na(pacf)), aes(pacf, colour = frequency)) + 
+  new_dat <- data.frame(acf = c(max_all_data_5m[[l]], max_all_data_1h[[l]], max_all_data_2h[[l]]), frequency = new_vector, cutoff_hi = cutoff_hi, cutoff_lo = cutoff_lo)
+  print(ggplot(subset(new_dat, !is.na(acf)), aes(acf, colour = frequency)) + 
           stat_ecdf() + 
           geom_vline(aes(xintercept=cutoff_hi, colour=frequency), linetype='dashed') + 
           geom_vline(aes(xintercept=cutoff_lo, colour=frequency), linetype='dashed') + 
@@ -200,22 +200,22 @@ for (l in lag_pool) {
 }
 
 ## Plot all freq at lag 1
-new_dat <- generate_dataframe_for_plotting(max_all_data_5m[[1]], max_all_data_lst, mode = 'pacf', nobs = 4000, lag = 1)
-colnames(new_dat)[1] <- "pacf"
-ggplot(subset(new_dat, !is.na(pacf)), aes(pacf, colour = frequency)) + 
+new_dat <- generate_dataframe_for_plotting(max_all_data_5m[[1]], max_all_data_lst, mode = 'acf', nobs = 4000, lag = 1)
+colnames(new_dat)[1] <- "acf"
+ggplot(subset(new_dat, !is.na(acf)), aes(acf, colour = frequency)) + 
   stat_ecdf() +
   geom_vline(aes(xintercept=cutoff_hi, colour=frequency), linetype='dashed') + 
   geom_vline(aes(xintercept=cutoff_lo, colour=frequency), linetype='dashed') + 
   ylab("Fraction of Data") + 
   ggtitle("ECDF of Partial Autocorrelation of Maxes at lag 1")
 
-## Plot maximum number of significant pacfs
-new_dat <- generate_dataframe_for_plotting(max_signif_count_lst[['5m']], max_signif_count_lst, mode = 'NULL')
-colnames(new_dat)[1] <- 'count'
-ggplot(subset(new_dat, !is.na(count)), aes(count, colour = frequency)) + 
-  stat_ecdf() + 
-  ylab("Fraction of Data") + 
-  ggtitle("ECDF of maximum counts of significant PACF of Maxes")
+## Plot maximum number of significant acfs
+#new_dat <- generate_dataframe_for_plotting(max_signif_count_lst[['5m']], max_signif_count_lst, mode = 'NULL')
+#colnames(new_dat)[1] <- 'count'
+#ggplot(subset(new_dat, !is.na(count)), aes(count, colour = frequency)) + 
+  #stat_ecdf() + 
+  #ylab("Fraction of Data") + 
+  #ggtitle("ECDF of maximum counts of significant ACF of Maxes")
 
 ######################################################avgs################################################################################################
 
@@ -231,12 +231,12 @@ for (file_name in bg_job_file_lst) {
   # 5min. lag in lag_pool
   ts_5min <- ts(vmjob$avg_cpu, start = 0, frequency = 1)
   for (l in lag_pool) {
-    result <- find_sig_corrs(ts_5min, lag = l, mode = 'pacf')
+    result <- find_sig_corrs(ts_5min, lag = l, mode = 'acf')
     avg_all_data_5m[[l]] <- c(avg_all_data_5m[[l]], result$val)
   }
   
   ## Count max lags
-  avg_signif_count_lst$append_number('5m', find_sig_corrs(ts_5min, 1, mode = 'pacf', recursive = TRUE))
+  #avg_signif_count_lst$append_number('5m', find_sig_corrs(ts_5min, 1, mode = 'acf', recursive = TRUE))
   
   # 1:24h. lag in lag_pool for 1 and 2 h
   for (i in 1:length(frequency_lst)) {
@@ -245,7 +245,7 @@ for (file_name in bg_job_file_lst) {
     
     if (i == 1 | i == 2) {
       for (l in lag_pool) {
-        result <- find_sig_corrs(new_ts, lag = l, mode = 'pacf')
+        result <- find_sig_corrs(new_ts, lag = l, mode = 'acf')
         if (i == 1) {
           avg_all_data_1h$append_number(l, result$val)
         } else {
@@ -254,11 +254,11 @@ for (file_name in bg_job_file_lst) {
       }
     } 
     
-    result <- find_sig_corrs(new_ts, lag = 1, mode = 'pacf')
+    result <- find_sig_corrs(new_ts, lag = 1, mode = 'acf')
     avg_all_data_lst$append_number(i, result$val)
     
     ## Count max lags
-    avg_signif_count_lst$append_number(i, find_sig_corrs(new_ts, 1, mode = 'pacf', recursive = TRUE))
+    #avg_signif_count_lst$append_number(i, find_sig_corrs(new_ts, 1, mode = 'acf', recursive = TRUE))
   }
 }
 
@@ -269,8 +269,8 @@ for (l in lag_pool) {
   cutoff_lo <- c(-1.96 / sqrt(4000), -1.96 / sqrt(floor(4000 / 12)), -1.96 / sqrt(floor(4000 / 24)))
   cutoff_hi <- as.numeric(rep(cutoff_hi, c(length(max_all_data_5m[[l]]), length(max_all_data_1h[[l]]), length(max_all_data_2h[[l]]))))
   cutoff_lo <- as.numeric(rep(cutoff_lo, c(length(max_all_data_5m[[l]]), length(max_all_data_1h[[l]]), length(max_all_data_2h[[l]]))))
-  new_dat <- data.frame(pacf = c(avg_all_data_5m[[l]], avg_all_data_1h[[l]], avg_all_data_2h[[l]]), frequency = new_vector, cutoff_hi = cutoff_hi, cutoff_lo = cutoff_lo)
-  print(ggplot(subset(new_dat, !is.na(pacf)), aes(pacf, colour = frequency)) + 
+  new_dat <- data.frame(acf = c(avg_all_data_5m[[l]], avg_all_data_1h[[l]], avg_all_data_2h[[l]]), frequency = new_vector, cutoff_hi = cutoff_hi, cutoff_lo = cutoff_lo)
+  print(ggplot(subset(new_dat, !is.na(acf)), aes(acf, colour = frequency)) + 
           stat_ecdf() + 
           geom_vline(aes(xintercept=cutoff_hi, colour=frequency), linetype='dashed') + 
           geom_vline(aes(xintercept=cutoff_lo, colour=frequency), linetype='dashed') + 
@@ -280,19 +280,19 @@ for (l in lag_pool) {
 
 
 ## Plot all freq at lag 1
-new_dat <- generate_dataframe_for_plotting(avg_all_data_5m[[1]], avg_all_data_lst, mode = 'pacf', nobs = 4000, lag = 1)
-colnames(new_dat)[1] <- "pacf"
-ggplot(subset(new_dat, !is.na(pacf)), aes(pacf, colour = frequency)) + 
+new_dat <- generate_dataframe_for_plotting(avg_all_data_5m[[1]], avg_all_data_lst, mode = 'acf', nobs = 4000, lag = 1)
+colnames(new_dat)[1] <- "acf"
+ggplot(subset(new_dat, !is.na(acf)), aes(acf, colour = frequency)) + 
   stat_ecdf() + 
   geom_vline(aes(xintercept=cutoff_hi, colour=frequency), linetype='dashed') + 
   geom_vline(aes(xintercept=cutoff_lo, colour=frequency), linetype='dashed') + 
   ylab("Fraction of Data") + 
   ggtitle("ECDF of Partial Autocorrelation of Avgs at lag 1")
 
-## Plot maximum number of significant pacfs
-new_dat <- generate_dataframe_for_plotting(avg_signif_count_lst[['5m']], avg_signif_count_lst, mode = 'NULL')
-colnames(new_dat)[1] <- 'count'
-ggplot(subset(new_dat, !is.na(count)), aes(count, colour = frequency)) + 
-  stat_ecdf() + 
-  ylab("Fraction of Data") + 
-  ggtitle("ECDF of maximum counts of significant PACF of Avgs")
+## Plot maximum number of significant acfs
+#new_dat <- generate_dataframe_for_plotting(avg_signif_count_lst[['5m']], avg_signif_count_lst, mode = 'NULL')
+#colnames(new_dat)[1] <- 'count'
+#ggplot(subset(new_dat, !is.na(count)), aes(count, colour = frequency)) + 
+  #stat_ecdf() + 
+  #ylab("Fraction of Data") + 
+  #ggtitle("ECDF of maximum counts of significant ACF of Avgs")
