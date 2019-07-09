@@ -95,14 +95,17 @@ for (file_name in bg_job_file_lst) {
 entropy_new_dat <- generate_dataframe_for_plotting(max_entropy_data_5m, max_entropy_data_lst)
 colnames(entropy_new_dat)[1] <- "entropy"
 ggplot(entropy_new_dat, aes(entropy, color = frequency)) + stat_ecdf() + ylab("Fraction of Data") + ggtitle("ECDF of Entropy Max Value")
+ggsave("ECDF of Entropy Max Value.png")
 
 cv_new_dat <- generate_dataframe_for_plotting(max_cv_data_5m, max_cv_data_lst)
 colnames(cv_new_dat)[1] <- "cv"
 ggplot(cv_new_dat, aes(cv, color = frequency)) + stat_ecdf() + ylab("Fraction of Data") + ggtitle("ECDF of CV Max Value")
+ggsave("ECDF of CV Max Value.png")
 
 variance_new_dat <- generate_dataframe_for_plotting(max_variance_data_5m, max_variance_data_lst)
 colnames(variance_new_dat)[1] <- "variance"
 ggplot(variance_new_dat, aes(variance, color = frequency)) + stat_ecdf() + ylab("Fraction of Data") + ggtitle("ECDF of Variance Max Value")
+ggsave("ECDF of Variance Max Value.png")
 
 ###############################################################################################################################################################
 
@@ -139,11 +142,14 @@ for (file_name in bg_job_file_lst) {
 entropy_new_dat <- generate_dataframe_for_plotting(max_entropy_data_5m, max_entropy_data_lst)
 colnames(entropy_new_dat)[1] <- "entropy"
 ggplot(entropy_new_dat, aes(entropy, color = frequency)) + stat_ecdf() + ylab("Fraction of Data") + ggtitle("ECDF of Entropy Avg Value")
+ggsave("ECDF of Entropy Avg Value.png")
 
 cv_new_dat <- generate_dataframe_for_plotting(max_cv_data_5m, max_cv_data_lst)
 colnames(cv_new_dat)[1] <- "cv"
 ggplot(cv_new_dat, aes(cv, color = frequency)) + stat_ecdf() + ylab("Fraction of Data") + ggtitle("ECDF of CV Avg Value")
+ggsave("ECDF of CV Avg Value.png")
 
 variance_new_dat <- generate_dataframe_for_plotting(max_variance_data_5m, max_variance_data_lst)
 colnames(variance_new_dat)[1] <- "variance"
 ggplot(variance_new_dat, aes(variance, color = frequency)) + stat_ecdf() + ylab("Fraction of Data") + ggtitle("ECDF of Variance Avg Value")
+ggsave("ECDF of Variance Avg Value.png")

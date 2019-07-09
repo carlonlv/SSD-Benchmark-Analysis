@@ -79,7 +79,8 @@ colnames(new_dat)[1] <- 'corr'
 ggplot(subset(new_dat, !is.na(corr)), aes(corr, colour = frequency)) + 
   stat_ecdf() + 
   ylab("Fraction of Data") + 
-  ggtitle("ECDF of correlation between Max at 5min and Max at previous window")
+  ggtitle("ECDF of Pearson correlation between Max at 5min and Max at previous window")
+ggsave("ECDF of Pearson correlation between Max at 5min and Max at previous window.png")
 
 #########################################################Previous Avgs#########################################################################################
 
@@ -106,4 +107,5 @@ colnames(new_dat)[1] <- 'corr'
 ggplot(subset(new_dat, !is.na(corr)), aes(corr, colour = frequency)) + 
   stat_ecdf() + 
   ylab("Fraction of Data") + 
-  ggtitle("ECDF of correlation between Max at 5min and Avg at previous window")
+  ggtitle("ECDF of Pearson correlation between Max at 5min and Avg at previous window")
+ggsave("ECDF of Pearson correlation between Max at 5min and Avg at previous window.png")
