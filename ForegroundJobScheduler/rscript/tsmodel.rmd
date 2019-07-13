@@ -31,28 +31,12 @@ hist(vmtable$lifetime, plot = FALSE)
 ## Impletemt Growing Predictive Model
 
 ```{r}
-cov_cal <- function(variance, l, k, phi) {
-  #### input variance: A vector of length min(l,k), var(an+min(l,k)) to var(an+1)
-  #### input l: row number of var-cov matrix, minimal value 1
-  #### input k: column number of var-cov matrix, minimal value 1
-  #### input phi: coeff of AR1 model
-  
-  phi_mul <- phi^(seq((l+k-2*min(l,k)), l+k-2, by=2))
-  result <- sum(phi_mul*variance)
-  return(result)
-}
-
 calculate_var_cov_matrix_ar1 <-function(var, l, phi) {
   #### input var: A vector from var(an+l) to var(an+1) of length l
   #### input l: number of prediction
   #### input phi: coeff of AR1 model
-  var_cov <- matrix(nrow = l, ncol = l)
-  for (i in 1:l) {
-    for (j in 1:l) {
-      variance <- var[seq(l-min(i,j)+1, l, by=1)]
-      var_cov[i, j] <- cov_cal(variance, i, j, phi)
-    }
-  }
+  dm=abs(outer(1:l,1:l,"-"))
+  var_cov <- matrix(V[outer(1:l,1:l,"pmin")],l,l)*phi^dm
   return(var_cov)
 }
 
@@ -62,7 +46,7 @@ do_prediction <- function(model_selection="AR1", last_obs, phi, mean, variance, 
     mu <- rep(last_obs, predict_size)
     mu <- mu * phi^(1:predict_size) + (1 - phi^(1:predict_size)) * mean
     # Construct Var-cov matrix
-    var <- rep(variance, predict_size)
+    var <- cumsum((phi^2)^(0:(predict_size-1)))*variance
     var_cov <- calculate_var_cov_matrix_ar1(var, predict_size, phi)
     # caclulate probability
     up_bound <- rep(level, predict_size)

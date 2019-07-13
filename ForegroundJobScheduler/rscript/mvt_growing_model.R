@@ -6,28 +6,12 @@ library("mvtnorm")
 library("dict")
 
 
-cov_cal <- function(variance, l, k, phi) {
-  #### input variance: A vector of length min(l,k), var(an+min(l,k)) to var(an+1)
-  #### input l: row number of var-cov matrix, minimal value 1
-  #### input k: column number of var-cov matrix, minimal value 1
-  #### input phi: coeff of AR1 model
-  
-  phi_mul <- phi^(seq((l+k-2*min(l,k)), l+k-2, by=2))
-  result <- sum(phi_mul*variance)
-  return(result)
-}
-
 calculate_var_cov_matrix_ar1 <-function(var, l, phi) {
   #### input var: A vector from var(an+l) to var(an+1) of length l
   #### input l: number of prediction
   #### input phi: coeff of AR1 model
-  var_cov <- matrix(nrow = l, ncol = l)
-  for (i in 1:l) {
-    for (j in 1:l) {
-      variance <- var[seq(l-min(i,j)+1, l, by=1)]
-      var_cov[i, j] <- cov_cal(variance, i, j, phi)
-    }
-  }
+  dm=abs(outer(1:l,1:l,"-"))
+  var_cov <- matrix(var[outer(1:l,1:l,"pmin")],l,l)*phi^dm
   return(var_cov)
 }
 
@@ -37,7 +21,7 @@ do_prediction <- function(model_selection="AR1", last_obs, phi, mean, variance, 
     mu <- rep(last_obs, predict_size)
     mu <- mu * phi^(1:predict_size) + (1 - phi^(1:predict_size)) * mean
     # Construct Var-cov matrix
-    var <- rep(variance, predict_size)
+    var <- cumsum((phi^2)^(0:(predict_size-1)))*variance
     var_cov <- calculate_var_cov_matrix_ar1(var, predict_size, phi)
     # caclulate probability
     up_bound <- rep(level, predict_size)
@@ -110,7 +94,7 @@ mvt_stationary_model <- function(dataset, initial_train_size = round(length(data
   }
   current_end <- initial_train_size
   current_percent <- 0.00
-  while (current_end < nrow(dataset)) {
+  while (current_end <= nrow(dataset)) {
     
     ## Initialize Model 
     prob_vector <- c()
@@ -122,18 +106,20 @@ mvt_stationary_model <- function(dataset, initial_train_size = round(length(data
     for (ts_num in 1:ncol(dataset)) {
       
       ## Schedule the job
-      last_obs <- dataset[current_end, ts_num]
-      prob_vector[ts_num] <- do_prediction(last_obs = last_obs, phi = coeffs[ts_num], mean = means[ts_num], variance = vars[ts_num],predict_size = job_length, level = (100 - cpu_required[ts_num]))
-      upper_bound <- find_pi_upperbound(last_obs = last_obs, phi = coeffs[ts_num], mean = means[ts_num], variance = vars[ts_num], predict_size = job_length, prob_cutoff = prob_cut_off)
-      pi_upper[ts_num] <- upper_bound
-      current_dataset <- dataset[,ts_num]
-      ep_up[ts_num] <- round(length(current_dataset[current_dataset <= upper_bound]) / length(current_dataset), 3)
-      if (prob_vector[ts_num] < prob_cut_off) {
-        prediction[ts_num] <- 1
-        scheduled_num[ts_num] <- scheduled_num[ts_num] + 1
-      } else {
-        prediction[ts_num] <- 0
-        unscheduled_num[ts_num] <- unscheduled_num[ts_num] + 1
+      if (current_end < nrow(dataset)) {
+        last_obs <- dataset[current_end, ts_num]
+        prob_vector[ts_num] <- do_prediction(last_obs = last_obs, phi = coeffs[ts_num], mean = means[ts_num], variance = vars[ts_num],predict_size = job_length, level = (100 - cpu_required[ts_num]))
+        upper_bound <- find_pi_upperbound(last_obs = last_obs, phi = coeffs[ts_num], mean = means[ts_num], variance = vars[ts_num], predict_size = job_length, prob_cutoff = prob_cut_off)
+        pi_upper[ts_num] <- upper_bound
+        current_dataset <- dataset[,ts_num]
+        ep_up[ts_num] <- round(length(current_dataset[current_dataset <= upper_bound]) / length(current_dataset), 3)
+        if (prob_vector[ts_num] < prob_cut_off) {
+          prediction[ts_num] <- 1
+          scheduled_num[ts_num] <- scheduled_num[ts_num] + 1
+        } else {
+          prediction[ts_num] <- 0
+          unscheduled_num[ts_num] <- unscheduled_num[ts_num] + 1
+        }
       }
       
       ## Check correctness of previous schedulings
@@ -277,3 +263,24 @@ for (job_length in c(1)) {
   write.csv(output3$epup, file = paste(job_length, 3, "empiricalprob.csv", sep = ""))
   write.csv(output3$piup, file = paste(job_length, 3, "piupperbound.csv", sep = ""))
 }
+
+correctly_scheduled_num <- rep(0, 3)
+total_scheduled_num <- rep(0, 3)
+correctly_unscheduled_num <- rep(0, 3)
+total_unscheduled_num <- rep(0, 3)
+for (k in c(11,12,13)) {
+  scheduling_summary <- result[[k]]$scheduling_summary
+  correctly_scheduled_num[k - 10] <- correctly_scheduled_num[k - 10] + sum(scheduling_summary[1,]) - sum(scheduling_summary[3,])
+  total_scheduled_num[k - 10] <- total_scheduled_num[k - 10] + sum(scheduling_summary[1,])
+  correctly_unscheduled_num[k - 10] <- correctly_unscheduled_num[k - 10] + sum(scheduling_summary[2,]) - sum(scheduling_summary[4,])
+  total_unscheduled_num[k - 10] <- total_unscheduled_num[k - 10] + sum(scheduling_summary[2,])
+}
+print(correctly_scheduled_num)
+print(total_scheduled_num)
+print(correctly_unscheduled_num)
+print(total_unscheduled_num)
+
+median_scheduled_job_size <- NULL
+median_scheduled_job_size[1] <- median(1 - result[[11]]$piup)
+median_scheduled_job_size[2] <- median(1 - result[[12]]$piup)
+median_scheduled_job_size[3] <- median(1 - result[[13]]$piup)
