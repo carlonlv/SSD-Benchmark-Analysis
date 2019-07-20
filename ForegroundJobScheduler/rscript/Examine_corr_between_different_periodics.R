@@ -156,6 +156,8 @@ for (file_name in bg_job_file_lst) {
     previous_obs <- construct_previous_obs_lst(vmjob$max_cpu, NULL, frequency = frequency_lst[i], mode = 'aom')
     correlation_max_aom_lst$append_number(i, cor(vmjob$max_cpu[(frequency_lst[i]+1):length(vmjob$max_cpu)], previous_obs, method = "spearman"))
   }
+  previous_obs <- construct_previous_obs_lst(vmjob$max_cpu, NULL, frequency = 2, mode = 'aom')
+  correlation_max_aom_lst$append_number('10m', cor(vmjob$max_cpu[3:length(vmjob$max_cpu)], previous_obs, method = "spearman"))
   previous_obs <- construct_previous_obs_lst(vmjob$max_cpu, NULL, frequency = 3, mode = 'aom')
   correlation_max_aom_lst$append_number('15m', cor(vmjob$max_cpu[4:length(vmjob$max_cpu)], previous_obs, method = "spearman"))
   previous_obs <- construct_previous_obs_lst(vmjob$max_cpu, NULL, frequency = 6, mode = 'aom')
@@ -164,9 +166,9 @@ for (file_name in bg_job_file_lst) {
   correlation_max_aom_lst$append_number('45m', cor(vmjob$max_cpu[10:length(vmjob$max_cpu)], previous_obs, method = "spearman"))
 }
 
-length_vec <- c(length(correlation_max_aom_lst[['5m']]), length(correlation_max_aom_lst[['15m']]), length(correlation_max_aom_lst[['30m']]), length(correlation_max_aom_lst[['45m']]))
-data_vec <- c(correlation_max_aom_lst[['5m']], correlation_max_aom_lst[['15m']], correlation_max_aom_lst[['30m']], correlation_max_aom_lst[['45m']])
-freq_factor <- factor(rep(c('5m', '15m', '30m', '45m'), length_vec), levels = c('5m', '15m', '30m', '45m'))
+length_vec <- c(length(correlation_max_aom_lst[['5m']]), length(correlation_max_aom_lst[['10m']]),length(correlation_max_aom_lst[['15m']]), length(correlation_max_aom_lst[['30m']]), length(correlation_max_aom_lst[['45m']]))
+data_vec <- c(correlation_max_aom_lst[['5m']], correlation_max_aom_lst[['10m']],correlation_max_aom_lst[['15m']], correlation_max_aom_lst[['30m']], correlation_max_aom_lst[['45m']])
+freq_factor <- factor(rep(c('5m', '10m', '15m', '30m', '45m'), length_vec), levels = c('5m', '15m', '30m', '45m'))
 df_minutes <- data.frame(corr = data_vec, frequency = freq_factor)
 new_dat <- generate_dataframe_for_plotting(NULL, correlation_max_aom_lst, mode = 'NULL')
 colnames(new_dat)[1] <- 'corr'

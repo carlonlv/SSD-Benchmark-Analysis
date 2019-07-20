@@ -78,26 +78,6 @@ find_pi_upperbound <- function(model_selection='AR1', last_obs, phi, mean, varia
 }
 ```
 
-Suppose we use AR(1) model for the entire model, and $\{Z_t\}$ is the process with zero mean, i.e., the original time series subtracted by its mean.
-
-Then $Z_t = \phi Z_{t-1} + a_t$ where $a_t$ is theoretically white noise process with mean 0 and variance 1.
-
-Using MA representation, $Z_t = \sum_{j=0}^\infty \theta_jB^ja_t = \frac{1}{1-\phi B}a_t$, then
-\[(\theta_0+\theta_1B + \theta_2B^2 + \theta_3B^3 +...)(1-\phi B) = 1\]
-\[(\theta_0 + (\theta_1 - \phi\theta_0)B + (\theta_2 - \phi\theta_1)B^2 +...) = 1\]
-
-This implies that $\theta_j = \phi^j, \enspace \forall j \geq 0$, that is, $Z_t = a_t + \phi a_{t-1} + \phi^2 a_{t-2} + ...$, let $t = n+l$, then $Z_{n+l} = a_{n+l} + \phi a_{n+l-1} + \phi^2a_{n+l-2} + ... + \phi^l a_{n} + \phi^{l+1}a_{n-1}+...$.
-
-Using least squares estimates, the $l$th estimate after $n$ is, $\hat{Z}_n(l) = \theta_la_n + \theta_{l+1}a_{n-1} + ...$. Since $E[a_{n+j}|Z_n, Z_{n-1},...] = 0$ 
-
-if $j>0$, $E[a_{n+j}|Z_n, Z_{n-1},...] = a_{n+j}$ if $j \leq 0$, then
-$E[Z_{n+l}|Z_n, Z_{n-1}] = \theta_l a_n + \theta_{l+1}a_{n-1} +...= \hat{Z}_n(l)$.
-
-The forecast error, $e_n(l) = Z_{n+l} - \hat{Z}_n(l) = \sum_{j=0}^{l-1}\theta_ja_{n+l-j}$. 
-
-$E[e_n(l)] = 0$, $Var[e_n(l)] = \sum_{j=0}^{l-1}\theta_j^2 Var(a_{n+l-j})$.
-
-$Cov[e_n(l), e_n(k)] = \sum_{p=0}^{min(l,k)-1}\theta_{l-1-p}\theta_{k-1-p}Var(a_{n+1+p})$.
 
 ```{r}
 mvt_growing_model <- function(dataset, initial_train_size = round(length(dataset) / 4, 1),job_length=5, cpu_required=10, prob_cut_off=0.01, update_freq=1) {
