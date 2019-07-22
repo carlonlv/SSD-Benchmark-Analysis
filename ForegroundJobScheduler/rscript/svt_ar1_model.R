@@ -99,7 +99,12 @@ svt_stationary_model <- function(dataset, initial_train_size,job_length=5, cpu_r
   coeffs <- rep(NA, ncol(dataset))
   means <- rep(NA, ncol(dataset))
   vars <- rep(NA, ncol(dataset))
+  train_percent <- 0.00
   for (ts_num in 1:ncol(dataset)) {
+    if (round(ts_num / ncol(dataset), 2) != train_percent) {
+      print(paste("Training", train_percent))
+      train_percent <- round(ts_num / ncol(dataset), 2)
+    }
     ts_model <- arima(dataset[1:initial_train_size, ts_num], order = c(1,0,0), include.mean = TRUE)
     coeffs[ts_num] <- as.numeric(ts_model$coef[1])
     means[ts_num] <- as.numeric(ts_model$coef[2])
@@ -183,7 +188,7 @@ svt_stationary_model <- function(dataset, initial_train_size,job_length=5, cpu_r
     ## Update current_end
     current_end <- current_end + update_freq
     if (current_percent != round((current_end - initial_train_size) / (nrow(dataset) - initial_train_size), digits = 2)) {
-      print(current_percent)
+      print(paste("Testing", current_percent))
       current_percent <- round((current_end - initial_train_size) / (nrow(dataset) - initial_train_size), digits = 2)
     }
   }
@@ -211,7 +216,7 @@ svt_stationary_model <- function(dataset, initial_train_size,job_length=5, cpu_r
   scheduling_summary[4,] <- falsely_unscheduled_num
   rownames(scheduling_summary) <- c('Scheduled_Num', 'Unscheduled_Num', 'Falsly_scheduled_Num', 'Falsely_unscheduled_Num')
   
-  result <- list('prob' = probability, 'predict' = predict_result, 'piup'=pi_upper_bound, 'actual' = actual_result, 'scheduling_summary' = scheduling_summary)
+  result <- list('prob' = probability, 'predict' = predict_result, 'avg_usage'=avg_usage, "job_survival"=job_survival, 'actual' = actual_result, 'scheduling_summary' = scheduling_summary)
   
   return(result)
 }
@@ -219,8 +224,7 @@ svt_stationary_model <- function(dataset, initial_train_size,job_length=5, cpu_r
 
 ## Read back ground job pool
 
-bg_job_pool_names <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled background jobs.csv")[,1]
-bg_job_pool <- sub(".pd", "", bg_job_pool_names)
+bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 bg jobs.csv")[,2]
 bg_jobs_path = "C://Users//carlo//Documents//datasets//csvalldata//background_jobs//"
 
 data_matrix <- matrix(nrow = 4000, ncol = 0)
@@ -236,15 +240,15 @@ for (j in 1:ncol(data_matrix)) {
   cpu_required[j] <- as.numeric(quantile(data_matrix[,j], c(0.15, 0.5, 0.85), type = 4)[3])
 }
 
-for (job_length in c(1)) {
+for (job_length in c(1, 12)) {
   print(paste("Job_length", job_length))
   
-  output <- svt_stationary_model(dataset=data_matrix, job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=0.01, initial_train_size = 2000, update_freq=1)
-  write.csv(output$avg_usage, file = paste(job_length, "100","avg_usage.csv"))
+  output <- svt_stationary_model(dataset=data_matrix, job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=0.1, initial_train_size = 2000, update_freq=1)
+  write.csv(output$avg_usage, file = paste("AR1", job_length, "100", 0.1, "avg_usage.csv"))
   print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
-  write.csv(output$job_survival, file = paste(job_length, "100","job_survival.csv"))
+  write.csv(output$job_survival, file = paste("AR1", job_length, "100", 0.1,"job_survival.csv"))
   print(paste("Job survival rate:", "job length", job_length, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival)))))
-  write.csv(output$scheduling_summary, file = paste(job_length, "100", "scheduling_sum.csv"))
+  write.csv(output$scheduling_summary, file = paste("AR1", job_length, "100", 0.1, "scheduling_sum.csv"))
   scheduled_num <- sum(output$scheduling_summary[1,])
   unscheduled_num <- sum(output$scheduling_summary[2,])
   correct_scheduled_num <- scheduled_num - sum(output$scheduling_summary[3,])

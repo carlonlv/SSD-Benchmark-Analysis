@@ -281,17 +281,17 @@ for (j in 1:ncol(data_matrix)) {
 }
 
 result <- dict()
-for (job_length in c(1)) {
+for (job_length in c(1, 12)) {
   print(paste("Job_length", job_length))
   
   output <- svt_stationary_model(dataset=data_matrix, job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=0.01, initial_train_size = 2000, update_freq=1)
-  write.csv(output$avg_usage, file = paste(job_length, "100","avg_usage.csv"))
+  write.csv(output$avg_usage, file = paste("ARMA", job_length, "100", 0.01, "avg_usage.csv"))
   print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
-  write.csv(output$job_survival, file = paste(job_length, "100","job_survival.csv"))
+  write.csv(output$job_survival, file = paste("ARMA", job_length, "100", 0.01, "job_survival.csv"))
   print(paste("Job survival rate:", "job length", job_length, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival)))))
-  write.csv(output$scheduling_summary, file = paste(job_length, "100", "scheduling_sum.csv"))
-  scheduled_num <- sum(output$scheduling_summary[1,]) - sum(output$scheduling_summary[3,])
-  unscheduled_num <- sum(output$scheduling_summary[2,]) - sum(output$scheduling_summary[4,])
+  write.csv(output$scheduling_summary, file = paste("ARMA",job_length, "100", 0.01,"scheduling_sum.csv"))
+  scheduled_num <- sum(output$scheduling_summary[1,])
+  unscheduled_num <- sum(output$scheduling_summary[2,])
   correct_scheduled_num <- scheduled_num - sum(output$scheduling_summary[3,])
   correct_unscheduled_num <- unscheduled_num - sum(output$scheduling_summary[4,])
   print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_num / scheduled_num, "Correct unscheduled rate:", correct_unscheduled_num / unscheduled_num))

@@ -7,68 +7,132 @@ library("dict")
 library("MTS")
 
 
-calculate_var_cov_matrix <-function(var, predict_size, ar_coef, ma_coef) {
+initialize_coefficient_matrix <- function(ma_coef, q, predict_size, current_err) {
+  initial <- matrix(0, nrow = 2, ncol = 2*(predict_size + q))
+  pre_ma <- predict_size - current_err
+  initial[1:2, (1+2*pre_ma):(2*(pre_ma+1))] <- diag(nrow = 2, ncol = 2)
+  initial[1:2, (1+2*(pre_ma+1)):(2*q+2*(pre_ma+1))] <- ma_coef
+  return(initial)
+}
+
+update_dict_matrices <- function(prev, ar_coef) {
+  num_small_matrices <- ncol(prev) / 2
+  result <- matrix(0, nrow = 2, ncol = ncol(prev))
+  for (i in 1:num_small_matrices) {
+    multi <- prev[,(1+2*(i-1)):(2*i)]
+    result[,(1+2*(i-1)):(2*i)] <- ar_coef %*% multi
+  }
+  return(result)
+}
+
+
+calculate_var_cov_matrix <-function(p, q, var, predict_size, ar_coef, ma_coef) {
   forecast_var <- dict()
+  forecast_var_max <- numvecdict()
+  forecast_var_avg <- numvecdict()
   for (i in 1:predict_size) {
-    initial <- c(rep(0, predict_size-i), c(1, ma_coef), rep(0, i-1))
-    if (length(ar_coef) != 0) {
-      for (k in 1:length(ar_coef)) {
+    initial <- initialize_coefficient_matrix(ma_coef, q, predict_size, i)
+    if (p != 0) {
+      for (k in 1:p) {
         if (i > k) {
-          initial <- initial + ar_coef[k] * forecast_var[[i-k]]  
+          ar_multiplier <- ar_coef[,(1+2*(k-1)):(2*k)]
+          initial <- initial + update_dict_matrices(forecast_var[[i-k]], ar_multiplier)
         }
       }
     }
     forecast_var[[i]] <- initial
+    for (m in 1:(ncol(initial)/2)) {
+      forecast_var_max$append_number(i, initial[1,(1+2*(m-1))])
+      forecast_var_avg$append_number(i, initial[1,(2*m)])
+    }
   }
+
   var_cov <- matrix(nrow = predict_size, ncol = predict_size)
+  var_max <- var[1,1]
+  var_avg <- var[2,2]
+  cov_max_avg <- var[1,2]
   for (row in 1:predict_size) {
     for (col in 1:predict_size) {
       if (row > col){
         var_cov[row, col] <- var_cov[col, row]
       } else {
-        vec1 <- forecast_var[[row]]
-        vec2 <- forecast_var[[col]]
-        var_cov[row, col] <- sum(vec1 * vec2) * var
+        max_coef_row <- forecast_var_max[[row]]
+        avg_coef_row <- forecast_var_avg[[row]]
+        
+        max_coef_col <- forecast_var_max[[col]]
+        avg_coef_col <- forecast_var_avg[[col]]
+        
+        var_cov[row, col] <- sum(max_coef_row * max_coef_col) * var_max + sum(avg_coef_row * avg_coef_col) * var_max + 
+          sum(max_coef_row * avg_coef_col) * cov_max_avg + sum(avg_coef_row * max_coef_col) * cov_max_avg
       }
     }
   }
   return(var_cov)
 }
 
-calculate_estimates <- function(ar_coef, last_obs, predict_size, intercept) {
-  p <- length(ar_coef)
+calculate_estimates <- function(p, ar_coef, last_obs, predict_size, intercept) {
+  estimate <- matrix(nrow = 2, ncol = predict_size)
   if (p == 0) {
-    return(rep(intercept, predict_size))
+    estimate[1,] <- rep(intercept[1,1], predict_size)
+    estimate[2,] <- rep(intercept[2,1], predict_size)
+    return(estimate)
   } else {
-    last_obs <- as.numeric(last_obs)
-    last_obs <- last_obs - rep(intercept, p)
-    for (i in 1:predict_size) {
-      last_ob <- sum(last_obs[1:p] * ar_coef) 
-      last_obs <- c(last_ob, last_obs)
+    last_obs <- last_obs
+    intercept_extended <- NULL
+    for (l in 1:ncol(last_obs)) {
+      intercept_extended <- cbind(intercept_extended, intercept)
     }
-    last_obs <- last_obs + rep(intercept, length(last_obs))
-    return(last_obs[1:predict_size])
+    last_obs <- last_obs - intercept_extended
+    for (i in 1:predict_size) {
+      last_ob <- matrix(c(0,0), nrow = 2, ncol = 1)
+      for (j in 1:p) {
+        ar_coef_matrix <- matrix(nrow = 2, ncol = 2)
+        ar_coef_matrix[1,1] <- ar_coef[1,(1+2*(j-1))]
+        ar_coef_matrix[1,2] <- ar_coef[1,(2*j)]
+        ar_coef_matrix[2,1] <- ar_coef[2,(1+2*(j-1))]
+        ar_coef_matrix[2,2] <- ar_coef[2,(2*j)]
+        last_ob <- last_ob + ar_coef_matrix %*% last_obs[,j]
+      }
+      last_obs <- cbind(last_ob, last_obs)
+    }
+    intercept_extended <- NULL
+    for (l in 1:ncol(last_obs)) {
+      intercept_extended <- cbind(intercept_extended, intercept)
+    }
+    last_obs <- last_obs + intercept_extended
+    return(last_obs[1,1:predict_size])
   }
 }
 
 do_prediction <- function(last_obs, ts_model, predict_size=1, level) {
-  p <- as.numeric(arimaorder(ts_model)[1])
-  q <- as.numeric(arimaorder(ts_model)[3])
-  ar_coef <- NULL
-  ma_coef <- NULL
+  p <- ts_model$ARorder
+  q <- ts_model$MAorder
+  intercept <- matrix(nrow = 2, ncol = 1)
+  intercept[1,1] <- as.numeric(ts_model$coef[1,1])
+  intercept[2,1] <- as.numeric(ts_model$coef[2,1])
+  ar_coef <- matrix(nrow = 2, ncol = 2 * p)
+  ma_coef <- matrix(nrow = 2, ncol = 2 * q)
   if (p != 0) {
-    ar_coef <- as.numeric(ts_model$coef[1:p])
+    for (i in 1:p) {
+      ar_coef[1,(1+2*(i-1))] <- as.numeric(ts_model$coef[(i*2),1])
+      ar_coef[1,(2*i)] <- as.numeric(ts_model$coef[(i*2+1),1])
+      ar_coef[2,(1+2*(i-1))] <- as.numeric(ts_model$coef[(i*2),2])
+      ar_coef[2, (2*i)] <- as.numeric(ts_model$coef[(i*2+1),2])
+    }
   }
-  if (q != 0 & p != 0) {
-    ma_coef <- as.numeric(ts_model$coef[(p+1):(p+q)])
-  } else if (q != 0 & p == 0) {
-    ma_coef <- as.numeric(ts_model$coef[1:q])
+  if (q != 0) {
+    for (j in 1:q) {
+      ma_coef[1,(1+2*(j-1))] <- as.numeric(ts_model$coef[((j+p)*2),1])
+      ma_coef[1,(2*j)] <- as.numeric(ts_model$coef[((j+p)*2+1),1])
+      ma_coef[2,(1+2*(j-1))] <- as.numeric(ts_model$coef[((j+p)*2),2])
+      ma_coef[2, (2*j)] <- as.numeric(ts_model$coef[((j+p)*2+1),2])
+    }
   }
-  intercept <- as.numeric(ts_model$coef['intercept'])
-  sample_var <- as.numeric(ts_model$sigma2)
-  mu <- calculate_estimates(ar_coef, last_obs, predict_size, intercept)
-  varcov <- calculate_var_cov_matrix(sample_var, predict_size, ar_coef, ma_coef)
+  sample_var <- ts_model$Sigma
+  mu <- calculate_estimates(p, ar_coef, last_obs, predict_size, intercept)
+  varcov <- calculate_var_cov_matrix(p, q, sample_var, predict_size, ar_coef, ma_coef)
   prob <- 1 - pmvnorm(lower = rep(0, predict_size), upper = rep(level, predict_size), mean = mu, sigma = varcov)
+  
   result <- list('prob' = as.numeric(prob), 'mu' = mu, 'varcov'=varcov)
   return(result)
 }
@@ -93,10 +157,12 @@ find_evaluation <- function(pi_up, actual_obs, predict_size) {
   return(result)
 }
 
-svt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, job_length=5, cpu_required, prob_cut_off=0.01, update_freq=1, ts_models_import = NULL) {
+mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p, q, job_length=5, cpu_required, prob_cut_off=0.01, update_freq=1, ts_models_import = NULL) {
   #### input dataset_avg: N by M matrix, N being number of observations, M being number of time series
   #### input dataset_max: N by M matrix, N being number of observations, M being number of time series
-  #### input initial_train_size: The number of first observations used to train the model
+  #### input initial_train_size: The number of first observations used to train the model'
+  #### input p: max order of p
+  #### input q: max order of q
   #### input job_length: The time that the foreground job will be runing
   #### input cpu_required: A vector, the cpu that the foreground job requires in percentage
   #### input prob_cut_off: If the probability of background job exceeding 100-cpu_required is smaller than prob_cut_off, then schedule it. Otherwise, don't.
@@ -126,8 +192,6 @@ svt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, j
   falsely_unscheduled_num <- rep(0, ncol(dataset_avg))
   
   ## Train Model
-  max_p <- 0
-  max_q <- 0
   train_percent <- 0.00
   for (ts_num in 1:ncol(dataset_avg)) {
     if (is.null(ts_models_import)) {
@@ -137,21 +201,14 @@ svt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, j
       }
       uni_data_avg <- dataset_avg[1:initial_train_size, ts_num]
       uni_data_max <- dataset_max[1:initial_train_size, ts_num]
-      
-      ts_model <- auto.arima(dataset_avg[1:initial_train_size, ts_num], stationary = TRUE, seasonal = FALSE, allowdrift = FALSE, allowmean = TRUE)
-      if (as.numeric(arimaorder(ts_model)[1]) > max_p) {
-        max_p <- as.numeric(arimaorder(ts_model)[1])
-      }
-      if (as.numeric(arimaorder(ts_model)[3]) > max_q) {
-        max_q <- as.numeric(arimaorder(ts_model)[3])
-      }
+      uni_data_matrix <- matrix(nrow = nrow(dataset_avg), ncol = 2)
+      uni_data_matrix[,1] <- uni_data_max
+      uni_data_matrix[,2] <- uni_data_avg
+      ts_model <- VARMACpp(uni_data_matrix, p, q, include.mean = TRUE, details = FALSE)
       ts_models[[ts_num]] <- ts_model
     } else {
       ts_models[[ts_num]] <- ts_models_import[[ts_num]]
     }
-  }
-  if (is.null(ts_models_import)) {
-    print(paste("Max order of p", max_p, "Max order of q", max_q))
   }
   
   current_end <- initial_train_size
@@ -170,8 +227,11 @@ svt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, j
       ## Schedule the job
       if (current_end <= nrow(dataset_avg) - job_length) {
         ts_model <- ts_models[[ts_num]]
-        p <- as.numeric(arimaorder(ts_model)[1])
-        last_obs <- dataset_avg[(current_end-p+1):current_end, ts_num]
+        last_obs_max <- dataset_max[(current_end-p+1):current_end, ts_num]
+        last_obs_avg <- dataset_avg[(current_end-p+1):current_end, ts_num]
+        last_obs <- matrix(nrow = 2, ncol = length(last_obs_max))
+        last_obs[1,] <- last_obs_max
+        last_obs[2,] <- last_obs_avg
         prediction_result <- do_prediction(last_obs = last_obs, ts_model = ts_model, predict_size = job_length, level = (100 - cpu_required[ts_num]))
         prob_vector[ts_num] <- prediction_result$prob
         if (prob_vector[ts_num] < prob_cut_off) {
@@ -267,36 +327,38 @@ svt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, j
 
 ## Read back ground job pool
 
-bg_job_pool_names <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled background jobs.csv")[,1]
-bg_job_pool <- sub(".pd", "", bg_job_pool_names)
-bg_job_pool <- sample(bg_job_pool, 100, replace = FALSE)
+bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 bg jobs.csv")[,2]
 bg_jobs_path = "C://Users//carlo//Documents//datasets//csvalldata//background_jobs//"
 
-data_matrix <- matrix(nrow = 4000, ncol = 0)
+data_matrix_avg <- matrix(nrow = 4000, ncol = 0)
+data_matrix_max <- matrix(nrow = 4000, ncol = 0)
 for (job_num in bg_job_pool) {
   bg_job <- read.csv(paste(bg_jobs_path, job_num, ".csv", sep = ""))
-  data_matrix <- cbind(data_matrix, bg_job$max_cpu[4033:8032])
+  data_matrix_avg <- cbind(data_matrix_avg, bg_job$avg_cpu[4033:8032])
+  data_matrix_max <- cbind(data_matrix_max, bg_job$max_cpu[4033:8032])
 }
-rownames(data_matrix) <- seq(0, 5 * (nrow(data_matrix) - 1),5)
-colnames(data_matrix) <- bg_job_pool
+rownames(data_matrix_avg) <- seq(0, 5 * (nrow(data_matrix_avg) - 1),5)
+rownames(data_matrix_max) <- seq(0, 5 * (nrow(data_matrix_max) - 1),5)
+colnames(data_matrix_avg) <- bg_job_pool
+colnames(data_matrix_max) <- bg_job_pool
 
-cpu_required <- rep(0, ncol(data_matrix))
-for (j in 1:ncol(data_matrix)) {
-  cpu_required[j] <- as.numeric(quantile(data_matrix[,j], c(0.15, 0.5, 0.85), type = 4)[3])
+cpu_required <- rep(0, ncol(data_matrix_max))
+for (j in 1:ncol(data_matrix_max)) {
+  cpu_required[j] <- as.numeric(quantile(data_matrix_max[,j], c(0.15, 0.5, 0.85), type = 4)[3])
 }
 
 result <- dict()
-for (job_length in c(1, 12)) {
+for (job_length in c(1,12)) {
   print(paste("Job_length", job_length))
   
-  output <- svt_stationary_model(dataset_avg=data_matrix, job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=0.01, initial_train_size = 2000, update_freq=1)
-  write.csv(output$avg_usage, file = paste(job_length, "100","avg_usage.csv"))
+  output <- mvt_stationary_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, p=1, q=3,job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=0.01, initial_train_size = 2000, update_freq=1)
+  write.csv(output$avg_usage, file = paste("VARMA",job_length, "100", 0.01, "avg_usage.csv"))
   print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
-  write.csv(output$job_survival, file = paste(job_length, "100","job_survival.csv"))
+  write.csv(output$job_survival, file = paste("VARMA",job_length, "100", 0.01,"job_survival.csv"))
   print(paste("Job survival rate:", "job length", job_length, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival)))))
-  write.csv(output$scheduling_summary, file = paste(job_length, "100", "scheduling_sum.csv"))
-  scheduled_num <- sum(output$scheduling_summary[1,]) - sum(output$scheduling_summary[3,])
-  unscheduled_num <- sum(output$scheduling_summary[2,]) - sum(output$scheduling_summary[4,])
+  write.csv(output$scheduling_summary, file = paste("VARMA", job_length, "100", 0.01, "scheduling_sum.csv"))
+  scheduled_num <- sum(output$scheduling_summary[1,])
+  unscheduled_num <- sum(output$scheduling_summary[2,])
   correct_scheduled_num <- scheduled_num - sum(output$scheduling_summary[3,])
   correct_unscheduled_num <- unscheduled_num - sum(output$scheduling_summary[4,])
   print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_num / scheduled_num, "Correct unscheduled rate:", correct_unscheduled_num / unscheduled_num))
