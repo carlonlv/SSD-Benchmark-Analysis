@@ -11,7 +11,9 @@ initialize_coefficient_matrix <- function(ma_coef, q, predict_size, current_err)
   initial <- matrix(0, nrow = 2, ncol = 2*(predict_size + q))
   pre_ma <- predict_size - current_err
   initial[1:2, (1+2*pre_ma):(2*(pre_ma+1))] <- diag(nrow = 2, ncol = 2)
-  initial[1:2, (1+2*(pre_ma+1)):(2*q+2*(pre_ma+1))] <- ma_coef
+  if (q != 0) {
+    initial[1:2, (1+2*(pre_ma+1)):(2*q+2*(pre_ma+1))] <- ma_coef
+  }
   return(initial)
 }
 
@@ -117,8 +119,10 @@ do_prediction <- function(last_obs, ts_model, predict_size=1, level) {
       ar_coef[1,(1+2*(i-1))] <- as.numeric(ts_model$coef[(i*2),1])
       ar_coef[1,(2*i)] <- as.numeric(ts_model$coef[(i*2+1),1])
       ar_coef[2,(1+2*(i-1))] <- as.numeric(ts_model$coef[(i*2),2])
-      ar_coef[2, (2*i)] <- as.numeric(ts_model$coef[(i*2+1),2])
+      ar_coef[2,(2*i)] <- as.numeric(ts_model$coef[(i*2+1),2])
     }
+  } else {
+    ar_coef = NULL
   }
   if (q != 0) {
     for (j in 1:q) {
@@ -127,6 +131,8 @@ do_prediction <- function(last_obs, ts_model, predict_size=1, level) {
       ma_coef[2,(1+2*(j-1))] <- as.numeric(ts_model$coef[((j+p)*2),2])
       ma_coef[2, (2*j)] <- as.numeric(ts_model$coef[((j+p)*2+1),2])
     }
+  } else {
+    ma_coef = NULL
   }
   sample_var <- ts_model$Sigma
   mu <- calculate_estimates(p, ar_coef, last_obs, predict_size, intercept)
@@ -351,7 +357,7 @@ result <- dict()
 for (job_length in c(1,12)) {
   print(paste("Job_length", job_length))
   
-  output <- mvt_stationary_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, p=1, q=3,job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=0.01, initial_train_size = 2000, update_freq=1)
+  output <- mvt_stationary_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, p=2, q=0,job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=0.01, initial_train_size = 2000, update_freq=1)
   write.csv(output$avg_usage, file = paste("VARMA",job_length, "100", 0.01, "avg_usage.csv"))
   print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
   write.csv(output$job_survival, file = paste("VARMA",job_length, "100", 0.01,"job_survival.csv"))
