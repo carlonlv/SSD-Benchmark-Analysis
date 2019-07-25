@@ -258,7 +258,8 @@ lm_stationary_model <- function(dataset_max, window_size, job_length, cpu_requir
 
 ## Read back ground job pool
 
-bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 bg jobs.csv")[,2]
+bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled background jobs.csv")[,1]
+bg_job_pool <- sub(".pd", "", bg_job_pool)
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
 
 data_matrix_avg <- matrix(nrow = 4000, ncol = 0)
@@ -280,12 +281,12 @@ for (j in 1:ncol(data_matrix_max)) {
 
 for (job_length in c(1,12)) {
   print(paste("Job_length", job_length))
-  output <- lm_stationary_model(dataset_max = data_matrix_max, window_size = 2,job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=0.1, initial_train_size = 2000, update_freq=1)
-  write.csv(output$avg_usage, file = paste("LMAOM", job_length, "100", 0.1, "avg_usage.csv"))
+  output <- lm_stationary_model(dataset_max = data_matrix_max, window_size = 2,job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=0.01, initial_train_size = 2000, update_freq=1)
+  write.csv(output$avg_usage, file = paste("LMAOM", job_length, "1000", 0.01, "avg_usage.csv"))
   print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
-  write.csv(output$job_survival, file = paste("LMAOM", job_length, "100", 0.1, "job_survival.csv"))
+  write.csv(output$job_survival, file = paste("LMAOM", job_length, "1000", 0.01, "job_survival.csv"))
   print(paste("Job survival rate:", "job length", job_length, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival)))))
-  write.csv(output$scheduling_summary, file = paste("LMAOM",job_length, "100", 0.1,"scheduling_sum.csv"))
+  write.csv(output$scheduling_summary, file = paste("LMAOM",job_length, "1000", 0.01,"scheduling_sum.csv"))
   scheduled_num <- sum(output$scheduling_summary[1,])
   unscheduled_num <- sum(output$scheduling_summary[2,])
   correct_scheduled_num <- scheduled_num - sum(output$scheduling_summary[3,])
