@@ -280,7 +280,6 @@ for (j in 1:ncol(data_matrix)) {
   cpu_required[j] <- as.numeric(quantile(data_matrix[,j], c(0.15, 0.5, 0.85), type = 4)[3])
 }
 
-result <- dict()
 for (job_length in c(1, 12)) {
   print(paste("Job_length", job_length))
   
