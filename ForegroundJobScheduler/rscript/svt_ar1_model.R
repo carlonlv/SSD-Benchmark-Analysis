@@ -5,6 +5,23 @@ library("forecast")
 library("mvtnorm")
 library("dict")
 
+convert_frequency_dataset <- function(dataset, new_freq, mode) {
+  new_max_cpu <- c()
+  window_num <- NULL
+  window_num <- floor(length(dataset) / new_freq)
+  for (i in 1:window_num) {
+    from <- (i - 1) * new_freq + 1
+    to <- i * new_freq
+    new_val <- NULL
+    if (mode == 'max') {
+      new_val <- max(dataset[from:to], na.rm = TRUE)
+    } else {
+      new_val <- mean(dataset[from:to], na.rm = TRUE)
+    }
+    new_max_cpu <- c(new_max_cpu, new_val)
+  }
+  return(new_max_cpu)
+}
 
 calculate_var_cov_matrix_ar1 <-function(var, l, phi) {
   #### input var: A vector from var(an+l) to var(an+1) of length l
@@ -64,7 +81,7 @@ find_evaluation <- function(pi_up, actual_obs, predict_size) {
   return(result)
 }
 
-svt_stationary_model <- function(dataset, initial_train_size,job_length=5, cpu_required, prob_cut_off=0.01, update_freq=1) {
+svt_stationary_model <- function(dataset, initial_train_size, window_size, job_length=5, cpu_required, prob_cut_off=0.01, update_freq=1) {
   #### input dataset: N by M matrix, N being number of observations, M being number of time series
   #### input initial_train_size: The number of first observations used to train the model
   #### input job_length: The time that the foreground job will be runing
@@ -94,22 +111,32 @@ svt_stationary_model <- function(dataset, initial_train_size,job_length=5, cpu_r
   falsely_scheduled_num <- rep(0, ncol(dataset))
   falsely_unscheduled_num <- rep(0, ncol(dataset))
   
+  ## Convert Frequency
+  new_dat <- matrix(nrow = floor(initial_train_size / window_size), ncol = 0)
+  for (ts_num in 1:ncol(dataset)) {
+    converted_data <- convert_frequency_dataset(dataset[1:initial_train_size, ts_num], window_size, 'max')
+    new_dat <- cbind(new_dat, converted_data)
+  }
+  rownames(new_dat) <- seq(1, 1 + (window_size * 5) * (nrow(new_dat) - 1), (window_size * 5))
+  colnames(new_dat) <- colnames(dataset)
   
   ## Train Model
-  coeffs <- rep(NA, ncol(dataset))
-  means <- rep(NA, ncol(dataset))
-  vars <- rep(NA, ncol(dataset))
+  coeffs <- rep(NA, ncol(new_dat))
+  means <- rep(NA, ncol(new_dat))
+  vars <- rep(NA, ncol(new_dat))
   train_percent <- 0.00
-  for (ts_num in 1:ncol(dataset)) {
-    if (round(ts_num / ncol(dataset), 2) != train_percent) {
+  for (ts_num in 1:ncol(new_dat)) {
+    if (round(ts_num / ncol(new_dat), 2) != train_percent) {
       print(paste("Training", train_percent))
-      train_percent <- round(ts_num / ncol(dataset), 2)
+      train_percent <- round(ts_num / ncol(new_dat), 2)
     }
-    ts_model <- arima(dataset[1:initial_train_size, ts_num], order = c(1,0,0), include.mean = TRUE)
+    ts_model <- arima(new_dat[1:floor(initial_train_size / window_size), ts_num], order = c(1,0,0), include.mean = TRUE)
     coeffs[ts_num] <- as.numeric(ts_model$coef[1])
     means[ts_num] <- as.numeric(ts_model$coef[2])
     vars[ts_num] <- ts_model$sigma2
   }
+  
+  ## Test Model
   current_end <- initial_train_size
   current_percent <- 0.00
   while (current_end <= nrow(dataset)) {
@@ -224,8 +251,7 @@ svt_stationary_model <- function(dataset, initial_train_size,job_length=5, cpu_r
 
 ## Read back ground job pool
 
-bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled background jobs.csv")[,1]
-bg_job_pool <- sub(".pd", "", bg_job_pool)
+bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 bg jobs.csv")[,2]
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
 
 data_matrix <- matrix(nrow = 4000, ncol = 0)
@@ -233,7 +259,7 @@ for (job_num in bg_job_pool) {
   bg_job <- read.csv(paste(bg_jobs_path, job_num, ".csv", sep = ""))
   data_matrix <- cbind(data_matrix, bg_job$max_cpu[4033:8032])
 }
-rownames(data_matrix) <- seq(0, 5 * (nrow(data_matrix) - 1),5)
+rownames(data_matrix) <- seq(1, 1 + 5 * (nrow(data_matrix) - 1),5)
 colnames(data_matrix) <- bg_job_pool
 
 cpu_required <- rep(0, ncol(data_matrix))
@@ -241,15 +267,15 @@ for (j in 1:ncol(data_matrix)) {
   cpu_required[j] <- as.numeric(quantile(data_matrix[,j], c(0.15, 0.5, 0.85), type = 4)[3])
 }
 
-for (job_length in c(1, 12)) {
+for (job_length in c(1)) {
   print(paste("Job_length", job_length))
   
-  output <- svt_stationary_model(dataset=data_matrix, job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=0.01, initial_train_size = 2000, update_freq=1)
-  write.csv(output$avg_usage, file = paste("AR1", job_length, "1000", 0.01, "avg_usage.csv"))
+  output <- svt_stationary_model(dataset=data_matrix, job_length=job_length, window_size = 12, cpu_required=(100-cpu_required), prob_cut_off=0.01, initial_train_size = 2000, update_freq=1)
+  write.csv(output$avg_usage, file = paste("AR1(12)", job_length, "1000", 0.01, "avg_usage.csv"))
   print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
-  write.csv(output$job_survival, file = paste("AR1", job_length, "1000", 0.01,"job_survival.csv"))
+  write.csv(output$job_survival, file = paste("AR1(12)", job_length, "1000", 0.01,"job_survival.csv"))
   print(paste("Job survival rate:", "job length", job_length, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival)))))
-  write.csv(output$scheduling_summary, file = paste("AR1", job_length, "1000", 0.01, "scheduling_sum.csv"))
+  write.csv(output$scheduling_summary, file = paste("AR1(12)", job_length, "1000", 0.01, "scheduling_sum.csv"))
   scheduled_num <- sum(output$scheduling_summary[1,])
   unscheduled_num <- sum(output$scheduling_summary[2,])
   correct_scheduled_num <- scheduled_num - sum(output$scheduling_summary[3,])
