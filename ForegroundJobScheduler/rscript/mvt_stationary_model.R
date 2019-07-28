@@ -333,7 +333,8 @@ mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p
 
 ## Read back ground job pool
 
-bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 bg jobs.csv")[,2]
+bg_job_pool_names <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled background jobs.csv")[,1]
+bg_job_pool <- sub(".pd", "", bg_job_pool_names)
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
 
 data_matrix_avg <- matrix(nrow = 4000, ncol = 0)
