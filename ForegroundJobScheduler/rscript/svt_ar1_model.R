@@ -6,7 +6,7 @@ library("mvtnorm")
 library("dict")
 
 convert_frequency_dataset <- function(dataset, new_freq, mode) {
-  new_max_cpu <- c()
+  new_avg_cpu <- c()
   window_num <- NULL
   window_num <- floor(length(dataset) / new_freq)
   for (i in 1:window_num) {
@@ -18,9 +18,9 @@ convert_frequency_dataset <- function(dataset, new_freq, mode) {
     } else {
       new_val <- mean(dataset[from:to], na.rm = TRUE)
     }
-    new_max_cpu <- c(new_max_cpu, new_val)
+    new_avg_cpu <- c(new_avg_cpu, new_val)
   }
-  return(new_max_cpu)
+  return(new_avg_cpu)
 }
 
 calculate_var_cov_matrix_ar1 <-function(var, l, phi) {
@@ -251,14 +251,13 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
 
 ## Read back ground job pool
 
-bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled background jobs.csv")[,1]
-bg_job_pool <- sub(".pd", "", bg_job_pool)
+bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 bg jobs.csv")[,2]
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
 
 data_matrix <- matrix(nrow = 4000, ncol = 0)
 for (job_num in bg_job_pool) {
   bg_job <- read.csv(paste(bg_jobs_path, job_num, ".csv", sep = ""))
-  data_matrix <- cbind(data_matrix, bg_job$max_cpu[4033:8032])
+  data_matrix <- cbind(data_matrix, bg_job$avg_cpu[4033:8032])
 }
 rownames(data_matrix) <- seq(1, 1 + 5 * (nrow(data_matrix) - 1),5)
 colnames(data_matrix) <- bg_job_pool
@@ -272,11 +271,11 @@ for (job_length in c(2)) {
   print(paste("Job_length", job_length))
   
   output <- svt_stationary_model(dataset=data_matrix, job_length=job_length, window_size = 6, cpu_required=(100-cpu_required), prob_cut_off=0.01, initial_train_size = 2000, update_freq=1)
-  write.csv(output$avg_usage, file = paste("avg AR1(1)", job_length, "1000", 0.01, "avg_usage.csv"))
+  write.csv(output$avg_usage, file = paste("avgs AR1(6)", job_length, "100", 0.01, "avg_usage.csv"))
   print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
-  write.csv(output$job_survival, file = paste("avg AR1(1)", job_length, "1000", 0.01,"job_survival.csv"))
+  write.csv(output$job_survival, file = paste("avgs AR1(6)", job_length, "100", 0.01,"job_survival.csv"))
   print(paste("Job survival rate:", "job length", job_length, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival)))))
-  write.csv(output$scheduling_summary, file = paste("avg AR1(1)", job_length, "1000", 0.01, "scheduling_sum.csv"))
+  write.csv(output$scheduling_summary, file = paste("avgs AR1(6)", job_length, "100", 0.01, "scheduling_sum.csv"))
   scheduled_num <- sum(output$scheduling_summary[1,])
   unscheduled_num <- sum(output$scheduling_summary[2,])
   correct_scheduled_num <- scheduled_num - sum(output$scheduling_summary[3,])
