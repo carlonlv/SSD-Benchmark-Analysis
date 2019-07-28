@@ -354,10 +354,10 @@ for (j in 1:ncol(data_matrix_max)) {
   cpu_required[j] <- as.numeric(quantile(data_matrix_max[,j], c(0.15, 0.5, 0.85), type = 4)[3])
 }
 
-for (job_length in c(12)) {
+for (job_length in c(1)) {
   print(paste("Job_length", job_length))
   
-  output <- mvt_stationary_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, p=1, q=0,job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=0.01, initial_train_size = 2000, update_freq=1)
+  output <- mvt_stationary_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, p=2, q=0,job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=0.01, initial_train_size = 2000, update_freq=1)
   write.csv(output$avg_usage, file = paste("VARMA",job_length, "100", 0.01, "avg_usage.csv"))
   print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
   write.csv(output$job_survival, file = paste("VARMA",job_length, "100", 0.01,"job_survival.csv"))

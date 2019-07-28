@@ -267,15 +267,15 @@ for (j in 1:ncol(data_matrix)) {
   cpu_required[j] <- as.numeric(quantile(data_matrix[,j], c(0.15, 0.5, 0.85), type = 4)[3])
 }
 
-for (job_length in c(1)) {
+for (job_length in c(2)) {
   print(paste("Job_length", job_length))
   
-  output <- svt_stationary_model(dataset=data_matrix, job_length=job_length, window_size = 12, cpu_required=(100-cpu_required), prob_cut_off=0.01, initial_train_size = 2000, update_freq=1)
-  write.csv(output$avg_usage, file = paste("AR1(12)", job_length, "1000", 0.01, "avg_usage.csv"))
+  output <- svt_stationary_model(dataset=data_matrix, job_length=job_length, window_size = 6, cpu_required=(100-cpu_required), prob_cut_off=0.01, initial_train_size = 2000, update_freq=1)
+  write.csv(output$avg_usage, file = paste("AR1(6)", job_length, "1000", 0.01, "avg_usage.csv"))
   print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
-  write.csv(output$job_survival, file = paste("AR1(12)", job_length, "1000", 0.01,"job_survival.csv"))
+  write.csv(output$job_survival, file = paste("AR1(6)", job_length, "1000", 0.01,"job_survival.csv"))
   print(paste("Job survival rate:", "job length", job_length, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival)))))
-  write.csv(output$scheduling_summary, file = paste("AR1(12)", job_length, "1000", 0.01, "scheduling_sum.csv"))
+  write.csv(output$scheduling_summary, file = paste("AR1(6)", job_length, "1000", 0.01, "scheduling_sum.csv"))
   scheduled_num <- sum(output$scheduling_summary[1,])
   unscheduled_num <- sum(output$scheduling_summary[2,])
   correct_scheduled_num <- scheduled_num - sum(output$scheduling_summary[3,])
