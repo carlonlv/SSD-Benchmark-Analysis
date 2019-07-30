@@ -81,7 +81,7 @@ convert_frequency_dataset <- function(dataset, new_freq, mode) {
   return(new_max_cpu)
 }
 
-data_path <- "C://Users//carlo//Documents//sample background jobs"
+data_path <- "C://Users//carlo//Documents//datasets//csvalldata//sample background jobs"
 bg_job_file_lst <- list.files(path = data_path, full.names = FALSE, recursive = FALSE)
 frequency_lst <- seq(1, 3, by=1) * 12
 
@@ -168,7 +168,7 @@ for (file_name in bg_job_file_lst) {
 
 length_vec <- c(length(correlation_max_aom_lst[['5m']]), length(correlation_max_aom_lst[['10m']]),length(correlation_max_aom_lst[['15m']]), length(correlation_max_aom_lst[['30m']]), length(correlation_max_aom_lst[['45m']]))
 data_vec <- c(correlation_max_aom_lst[['5m']], correlation_max_aom_lst[['10m']],correlation_max_aom_lst[['15m']], correlation_max_aom_lst[['30m']], correlation_max_aom_lst[['45m']])
-freq_factor <- factor(rep(c('5m', '10m', '15m', '30m', '45m'), length_vec), levels = c('5m', '10m','15m', '30m', '45m'))
+freq_factor <- factor(rep(c('5m', '10m', '15m', '30m', '45m'), length_vec), levels = c('5m', '15m', '30m', '45m'))
 df_minutes <- data.frame(corr = data_vec, frequency = freq_factor)
 new_dat <- generate_dataframe_for_plotting(NULL, correlation_max_aom_lst, mode = 'NULL')
 colnames(new_dat)[1] <- 'corr'
