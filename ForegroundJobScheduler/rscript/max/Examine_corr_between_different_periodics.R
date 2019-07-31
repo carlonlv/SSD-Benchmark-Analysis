@@ -1,5 +1,4 @@
 library("ggplot2")
-library("ggfortify")
 library("dict")
 library("forecast")
 
