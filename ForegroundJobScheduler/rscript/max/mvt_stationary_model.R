@@ -1,6 +1,4 @@
 library("ggplot2")
-library("ggfortify")
-library("dplyr")
 library("forecast")
 library("mvtnorm")
 library("dict")
