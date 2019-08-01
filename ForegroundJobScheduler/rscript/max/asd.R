@@ -1,8 +1,9 @@
 library("ggplot2")
 library("dict")
-library("forecast")
 
 generate_dataframe_for_plotting <- function(lst_entries, dict_lst) {
+  length_vec <- NULL
+  data_vec <- NULL
   for (freq in lst_entries) {
     length_vec <- c(length_vec, length(dict_lst[[freq]]))
     data_vec <- c(data_vec, dict_lst[[freq]])
@@ -14,24 +15,28 @@ generate_dataframe_for_plotting <- function(lst_entries, dict_lst) {
 
 construct_previous_obs_lst <- function(dataset_5m, converted_frequency, frequency, mode, overlap){
   previous_obs <- c()
+  from <- ceiling(frequency / converted_frequency) * converted_frequency + 1
+  result <- NULL
   if (overlap == TRUE) {
-    for (i in frequency:(length(dataset_5m) - converted_frequency)) {
+    for (i in from:(length(dataset_5m) - converted_frequency + 1)) {
       if (mode == 'max') {
-        previous_obs <- c(previous_obs, max(dataset_5m[(i-frequency+1):(i)]))
+        previous_obs <- c(previous_obs, max(dataset_5m[(i-frequency):(i-1)]))
       } else {
-        previous_obs <- c(previous_obs, mean(dataset_5m[(i-frequency+1):(i)]))
+        previous_obs <- c(previous_obs, mean(dataset_5m[(i-frequency):(i-1)]))
       }
     }
+    result <- list('data' = previous_obs, 'from' = from)
   } else {
-    from <- ceiling(frequency / converted_frequency) * converted_frequency + 1
     for (i in seq(from, length(dataset_5m), converted_frequency)) {
       if (mode == 'max') {
         previous_obs <- c(previous_obs, max(dataset_5m[(i-frequency):(i-1)]))
       } else {
         previous_obs <- c(previous_obs, max(dataset_5m[(i-frequency):(i-1)]))
-      }    }
+      }
+    }
+    result <- list('data' = previous_obs, 'from' = ceiling(frequency / converted_frequency) + 1)
   }
-  return(previous_obs)
+  return(result)
 }
 
 convert_frequency_dataset <- function(dataset, new_freq, mode, overlap) {
@@ -50,9 +55,9 @@ convert_frequency_dataset <- function(dataset, new_freq, mode, overlap) {
     }
   } else {
     window_num <- floor(length(dataset) / new_freq)
-    for (i in 1:window_num) {
-      from <- (i - 1) * new_freq + 1
-      to <- i * new_freq
+    for (i in seq(1, length(dataset), new_freq)[-length(seq(1, length(dataset), new_freq))]) {
+      from <- i
+      to <- i + new_freq - 1
       new_val <- NULL
       if (mode == 'max') {
         new_val <- max(dataset[from:to], na.rm = TRUE)
@@ -65,12 +70,16 @@ convert_frequency_dataset <- function(dataset, new_freq, mode, overlap) {
   return(new_dataset)
 }
 
+###############################################################################################################################################################
+
 data_path <- "C://Users//carlo//Documents//datasets//csvalldata//sample background jobs"
 bg_job_file_lst <- list.files(path = data_path, full.names = FALSE, recursive = FALSE)
-frequency_lst <- seq(1, 3, by=1) * 12
+frequency_lst <- c(1, 2, 3, 4, 6, 12)
 
 #########################################################Previous Maxes########################################################################################
 correlation_max_max_lst <- numvecdict()
+correlation_avg_max_lst <- numvecdict()
+name_lst <- c()
 
 current_percent <- -1
 counter <- 0
@@ -81,20 +90,48 @@ for (file_name in bg_job_file_lst) {
     print(current_percent)
   }
   vmjob <- read.csv(paste(data_path, "//",file_name, sep = ""))[4033:8032,]
-  correlation_max_max_lst$append_number('5m', cor(vmjob$max_cpu[-1], vmjob$max_cpu[-length(vmjob$max_cpu)], method = "spearman"))
-  for (i in 1:length(frequency_lst)) {
-    previous_obs <- construct_previous_obs_lst(vmjob$max_cpu, frequency = frequency_lst[i], mode = 'max')
-    correlation_max_max_lst$append_number(i, cor(vmjob$max_cpu[(frequency_lst[i]+1):length(vmjob$max_cpu)], previous_obs, method = "spearman"))
-  }
-}
 
-new_dat <- generate_dataframe_for_plotting(correlation_max_max_lst[['5m']], correlation_max_max_lst, mode = 'NULL')
-colnames(new_dat)[1] <- 'corr'
-ggplot(subset(new_dat, !is.na(corr)), aes(corr, colour = frequency)) + 
-  stat_ecdf() + 
-  ylab("Fraction of Data") + 
-  ggtitle("ECDF of Spearman correlation between Max at 5min and Max at previous window")
-ggsave("ECDF of Spearman correlation between Max at 5min and Max at previous window.png")
+  for (i in 1:length(frequency_lst)) {
+    window_size <- frequency_lst[i]
+    converted_max <- convert_frequency_dataset(dataset = vmjob$max_cpu, new_freq = window_size, mode = 'max', overlap = TRUE)
+    converted_avg <- convert_frequency_dataset(dataset = vmjob$avg_cpu, new_freq = window_size, mode = 'avg', overlap = TRUE)
+    
+    ## Larger window previous obs
+    for (j in 1:3) {
+      result <- construct_previous_obs_lst(dataset_5m = vmjob$max_cpu, converted_frequency = window_size, frequency = window_size * j, mode = 'max', overlap = TRUE)
+      hashed_name <- paste(window_size, ",", "*" , j, sep = "")
+      name_lst <- c(name_lst, hashed_name)
+      correlation_max_max_lst$append_number(hashed_name, cor(converted_max[result$from:length(converted_max)], result$data, method = "pearson"))
+      correlation_avg_max_lst$append_number(hashed_name, cor(converted_avg[result$from:length(converted_avg)], result$data, method = "pearson"))
+    }
+    for (k in 2:4) {
+      if (window_size %% k == 0) {
+        result <- construct_previous_obs_lst(dataset_5m = vmjob$max_cpu, converted_frequency = window_size, frequency = window_size %/% k, mode = 'max', overlap = TRUE)
+        hashed_name <- paste(window_size, ",", "/", j, sep = "")
+        name_lst <- hashed_name
+        correlation_max_max_lst$append_number(hashed_name, cor(converted_max[result$from:length(converted_max)], result$data, method = "pearson"))
+        correlation_avg_max_lst$append_number(hashed_name, cor(converted_avg[result$from:length(converted_avg)], result$data, method = "pearson"))
+      }
+    }
+  }
+  max_max_cor <- generate_dataframe_for_plotting(name_lst, correlation_max_max_lst)
+  colnames(max_max_cor)[1] <- 'corr'
+  title <- paste("ECDF of Pearson correlation between Max of window size ", window_size * 5, "min and Max at previous window", sep = "")
+  ggplot(subset(max_max_cor, !is.na(corr)), aes(corr, colour = frequency)) + 
+    stat_ecdf() + 
+    ylab("Fraction of Data") + 
+    ggtitle(title)
+  ggsave(title)
+  
+  avg_max_cor <- generate_dataframe_for_plotting(name_lst, correlation_avg_max_lst)
+  colnames(avg_max_cor)[1] <- 'corr'
+  title <- paste("ECDF of Pearson correlation between Avg of window size ", window_size * 5, "min and Max at previous window", sep = "")
+  ggplot(subset(avg_max_cor, !is.na(corr)), aes(corr, colour = frequency)) + 
+    stat_ecdf() + 
+    ylab("Fraction of Data") + 
+    ggtitle(title)
+  ggsave(title)
+}
 
 #########################################################Previous Avgs#########################################################################################
 correlation_max_avg_lst <- numvecdict()
@@ -163,33 +200,3 @@ ggplot(subset(new_dat, !is.na(corr)), aes(corr, colour = frequency)) +
   ylab("Fraction of Data") + 
   ggtitle("ECDF of Spearman correlation between Max at 5min and Avg of Max at previous window")
 ggsave("ECDF of Spearman correlation between Max at 5min and Avg of Max at previous window.png")
-
-
-frequency_lst <- seq(1, 24, by=1) * 12
-#########################################################Current Avgs###########################################################################################
-correlation_max_current_avg_lst <- numvecdict()
-
-current_percent <- -1
-counter <- 0
-for (file_name in bg_job_file_lst) {
-  counter <- counter + 1
-  if (round(counter / length(bg_job_file_lst), digits = 2) != current_percent) {
-    current_percent <- round(counter / length(bg_job_file_lst), digits = 2)
-    print(current_percent)
-  }
-  vmjob <- read.csv(paste(data_path, "//",file_name, sep = ""))[4033:8032,]
-  correlation_max_current_avg_lst$append_number('5m', cor(vmjob$max_cpu, vmjob$avg_cpu, method = "spearman"))
-  for (i in 1:length(frequency_lst)) {
-    new_max <- convert_frequency_dataset(vmjob$max_cpu, frequency_lst[i], 'max')
-    new_avg <- convert_frequency_dataset(vmjob$avg_cpu, frequency_lst[i], 'avg')
-    correlation_max_current_avg_lst$append_number(i, cor(new_max, new_avg, method = "spearman"))
-  }
-}
-
-new_dat <- generate_dataframe_for_plotting(correlation_max_current_avg_lst[['5m']], correlation_max_current_avg_lst, mode = 'NULL', max_hour = 24)
-colnames(new_dat)[1] <- 'corr'
-ggplot(subset(new_dat, !is.na(corr)), aes(corr, colour = frequency)) + 
-  stat_ecdf() + 
-  ylab("Fraction of Data") + 
-  ggtitle("ECDF of Spearman correlation between Max and Avg at same window")
-ggsave("ECDF of Spearman correlation between Max and Avg at same window.png")
