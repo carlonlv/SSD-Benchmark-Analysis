@@ -79,13 +79,13 @@ frequency_lst <- c(1, 2, 3, 4, 6, 12)
 #########################################################Previous Maxes########################################################################################
 correlation_max_max_lst <- numvecdict()
 correlation_avg_max_lst <- numvecdict()
-name_lst <- c()
 
 current_percent <- -1
 counter <- 0
 for (i in 1:length(frequency_lst)) {
   
   window_size <- frequency_lst[i]
+  name_lst <- c()
   for (file_name in bg_job_file_lst) {
     counter <- counter + 1
     if (round(counter / (length(bg_job_file_lst) * length(frequency_lst)), digits = 2) != current_percent) {
@@ -108,7 +108,7 @@ for (i in 1:length(frequency_lst)) {
     for (k in 2:4) {
       if (window_size %% k == 0) {
         result <- construct_previous_obs_lst(dataset_5m = vmjob$max_cpu, converted_frequency = window_size, frequency = window_size %/% k, mode = 'max', overlap = TRUE)
-        hashed_name <- paste(window_size, " ", "/", j, sep = "")
+        hashed_name <- paste(window_size, " ", "/", k, sep = "")
         name_lst <- c(name_lst, hashed_name)
         correlation_max_max_lst$append_number(hashed_name, cor(converted_max[result$from:length(converted_max)], result$data, method = "pearson"))
         correlation_avg_max_lst$append_number(hashed_name, cor(converted_avg[result$from:length(converted_avg)], result$data, method = "pearson"))
@@ -121,7 +121,8 @@ for (i in 1:length(frequency_lst)) {
   max_max_plt <- ggplot(subset(max_max_cor, !is.na(corr)), aes(corr, colour = frequency)) + 
     stat_ecdf() + 
     ylab("Fraction of Data") + 
-    ggtitle(title)
+    ggtitle(title) + 
+    theme(plot.title = element_text(size=10))
   ggsave(filename = paste(title, ".png", sep = ""), plot = max_max_plt)
   
   avg_max_cor <- generate_dataframe_for_plotting(unique(name_lst), correlation_avg_max_lst)
@@ -130,20 +131,21 @@ for (i in 1:length(frequency_lst)) {
   avg_max_plt <- ggplot(subset(avg_max_cor, !is.na(corr)), aes(corr, colour = frequency)) + 
     stat_ecdf() + 
     ylab("Fraction of Data") + 
-    ggtitle(title)
+    ggtitle(title) + 
+    theme(plot.title = element_text(size=10))
   ggsave(filename = paste(title, ".png", sep = ""), plot = max_max_plt)
 }
 
 #########################################################Previous Avgs#########################################################################################
 correlation_max_avg_lst <- numvecdict()
 correlation_avg_avg_lst <- numvecdict()
-name_lst <- c()
 
 current_percent <- -1
 counter <- 0
 for (i in 1:length(frequency_lst)) {
   
   window_size <- frequency_lst[i]
+  name_lst <- c()
   for (file_name in bg_job_file_lst) {
     counter <- counter + 1
     if (round(counter / (length(bg_job_file_lst) * length(frequency_lst)), digits = 2) != current_percent) {
@@ -166,7 +168,7 @@ for (i in 1:length(frequency_lst)) {
     for (k in 2:4) {
       if (window_size %% k == 0) {
         result <- construct_previous_obs_lst(dataset_5m = vmjob$avg_cpu, converted_frequency = window_size, frequency = window_size %/% k, mode = 'avg', overlap = TRUE)
-        hashed_name <- paste(window_size, " ", "/", j, sep = "")
+        hashed_name <- paste(window_size, " ", "/", k, sep = "")
         name_lst <- c(name_lst, hashed_name)
         correlation_max_avg_lst$append_number(hashed_name, cor(converted_max[result$from:length(converted_max)], result$data, method = "pearson"))
         correlation_avg_avg_lst$append_number(hashed_name, cor(converted_avg[result$from:length(converted_avg)], result$data, method = "pearson"))
@@ -179,7 +181,8 @@ for (i in 1:length(frequency_lst)) {
   max_max_plt <- ggplot(subset(max_avg_cor, !is.na(corr)), aes(corr, colour = frequency)) + 
     stat_ecdf() + 
     ylab("Fraction of Data") + 
-    ggtitle(title)
+    ggtitle(title) + 
+    theme(plot.title = element_text(size=10))
   ggsave(filename = paste(title, ".png", sep = ""), plot = max_max_plt)
   
   avg_avg_cor <- generate_dataframe_for_plotting(unique(name_lst), correlation_avg_avg_lst)
@@ -188,47 +191,67 @@ for (i in 1:length(frequency_lst)) {
   avg_max_plt <- ggplot(subset(avg_avg_cor, !is.na(corr)), aes(corr, colour = frequency)) + 
     stat_ecdf() + 
     ylab("Fraction of Data") + 
-    ggtitle(title)
+    ggtitle(title) + 
+    theme(plot.title = element_text(size=10))
   ggsave(filename = paste(title, ".png", sep = ""), plot = max_max_plt)
 }
 
 #########################################################Previous Avgs of Maxes#################################################################################
 correlation_max_aom_lst <- numvecdict()
+correlation_avg_aom_lst <- numvecdict()
 
 current_percent <- -1
 counter <- 0
-for (file_name in bg_job_file_lst) {
-  counter <- counter + 1
-  if (round(counter / length(bg_job_file_lst), digits = 2) != current_percent) {
-    current_percent <- round(counter / length(bg_job_file_lst), digits = 2)
-    print(current_percent)
+for (i in 1:length(frequency_lst)){
+  
+  window_size <- frequency_lst[i]
+  name_lst <- c()
+  for (file_name in bg_job_file_lst) {
+    counter <- counter + 1
+    if (round(counter / (length(bg_job_file_lst) * length(frequency_lst)), digits = 2) != current_percent) {
+      current_percent <- round(counter / (length(bg_job_file_lst) * length(frequency_lst)), digits = 2)
+      print(current_percent)
+    }
+    vmjob <- read.csv(paste(data_path, "//",file_name, sep = ""))[4033:8032,]
+    
+    converted_max <- convert_frequency_dataset(dataset = vmjob$max_cpu, new_freq = window_size, mode = 'max', overlap = TRUE)
+    converted_avg <- convert_frequency_dataset(dataset = vmjob$avg_cpu, new_freq = window_size, mode = 'avg', overlap = TRUE)
+    
+    ## Larger window previous obs
+    for (j in 1:3) {
+      result <- construct_previous_obs_lst(dataset_5m = vmjob$max_cpu, converted_frequency = window_size, frequency = window_size * j, mode = 'avg', overlap = TRUE)
+      hashed_name <- paste(window_size, " ", "*" , j, sep = "")
+      name_lst <- c(name_lst, hashed_name)
+      correlation_max_aom_lst$append_number(hashed_name, cor(converted_max[result$from:length(converted_max)], result$data, method = "pearson"))
+      correlation_avg_aom_lst$append_number(hashed_name, cor(converted_avg[result$from:length(converted_avg)], result$data, method = "pearson"))
+    }
+    for (k in 2:4) {
+      if (window_size %% k == 0) {
+        result <- construct_previous_obs_lst(dataset_5m = vmjob$max_cpu, converted_frequency = window_size, frequency = window_size %/% k, mode = 'avg', overlap = TRUE)
+        hashed_name <- paste(window_size, " ", "/", k, sep = "")
+        name_lst <- c(name_lst, hashed_name)
+        correlation_max_aom_lst$append_number(hashed_name, cor(converted_max[result$from:length(converted_max)], result$data, method = "pearson"))
+        correlation_avg_aom_lst$append_number(hashed_name, cor(converted_avg[result$from:length(converted_avg)], result$data, method = "pearson"))
+      }
+    }
   }
-  vmjob <- read.csv(paste(data_path, "//",file_name, sep = ""))[4033:8032,]
-  correlation_max_aom_lst$append_number('5m', cor(vmjob$max_cpu[-1], vmjob$max_cpu[-length(vmjob$max_cpu)], method = "spearman"))
-  for (i in 1:length(frequency_lst)) {
-    previous_obs <- construct_previous_obs_lst(vmjob$max_cpu, NULL, frequency = frequency_lst[i], mode = 'aom')
-    correlation_max_aom_lst$append_number(i, cor(vmjob$max_cpu[(frequency_lst[i]+1):length(vmjob$max_cpu)], previous_obs, method = "spearman"))
-  }
-  previous_obs <- construct_previous_obs_lst(vmjob$max_cpu, NULL, frequency = 2, mode = 'aom')
-  correlation_max_aom_lst$append_number('10m', cor(vmjob$max_cpu[3:length(vmjob$max_cpu)], previous_obs, method = "spearman"))
-  previous_obs <- construct_previous_obs_lst(vmjob$max_cpu, NULL, frequency = 3, mode = 'aom')
-  correlation_max_aom_lst$append_number('15m', cor(vmjob$max_cpu[4:length(vmjob$max_cpu)], previous_obs, method = "spearman"))
-  previous_obs <- construct_previous_obs_lst(vmjob$max_cpu, NULL, frequency = 6, mode = 'aom')
-  correlation_max_aom_lst$append_number('30m', cor(vmjob$max_cpu[7:length(vmjob$max_cpu)], previous_obs, method = "spearman")) 
-  previous_obs <- construct_previous_obs_lst(vmjob$max_cpu, NULL, frequency = 9, mode = 'aom')
-  correlation_max_aom_lst$append_number('45m', cor(vmjob$max_cpu[10:length(vmjob$max_cpu)], previous_obs, method = "spearman"))
+  max_aom_cor <- generate_dataframe_for_plotting(unique(name_lst), correlation_max_aom_lst)
+  colnames(max_aom_cor)[1] <- 'corr'
+  title <- paste("ECDF of Pearson correlation between Max of window size ", window_size * 5, "min and Aom of previous window", sep = "")
+  max_max_plt <- ggplot(subset(max_aom_cor, !is.na(corr)), aes(corr, colour = frequency)) + 
+    stat_ecdf() + 
+    ylab("Fraction of Data") + 
+    ggtitle(title) + 
+    theme(plot.title = element_text(size=10))
+  ggsave(filename = paste(title, ".png", sep = ""), plot = max_max_plt)
+  
+  avg_aom_cor <- generate_dataframe_for_plotting(unique(name_lst), correlation_avg_aom_lst)
+  colnames(avg_aom_cor)[1] <- 'corr'
+  title <- paste("ECDF of Pearson correlation between Avg of window size ", window_size * 5, "min and Aom of previous window", sep = "")
+  avg_max_plt <- ggplot(subset(avg_aom_cor, !is.na(corr)), aes(corr, colour = frequency)) + 
+    stat_ecdf() + 
+    ylab("Fraction of Data") + 
+    ggtitle(title) + 
+    theme(plot.title = element_text(size=10))
+  ggsave(filename = paste(title, ".png", sep = ""), plot = max_max_plt)
 }
-
-length_vec <- c(length(correlation_max_aom_lst[['5m']]), length(correlation_max_aom_lst[['10m']]),length(correlation_max_aom_lst[['15m']]), length(correlation_max_aom_lst[['30m']]), length(correlation_max_aom_lst[['45m']]))
-data_vec <- c(correlation_max_aom_lst[['5m']], correlation_max_aom_lst[['10m']],correlation_max_aom_lst[['15m']], correlation_max_aom_lst[['30m']], correlation_max_aom_lst[['45m']])
-freq_factor <- factor(rep(c('5m', '10m', '15m', '30m', '45m'), length_vec), levels = c('5m', '15m', '30m', '45m'))
-df_minutes <- data.frame(corr = data_vec, frequency = freq_factor)
-new_dat <- generate_dataframe_for_plotting(NULL, correlation_max_aom_lst, mode = 'NULL')
-colnames(new_dat)[1] <- 'corr'
-new_dat <- rbind(df_minutes, new_dat)
-
-ggplot(subset(new_dat, !is.na(corr)), aes(corr, colour = frequency)) + 
-  stat_ecdf() + 
-  ylab("Fraction of Data") + 
-  ggtitle("ECDF of Spearman correlation between Max at 5min and Avg of Max at previous window")
-ggsave("ECDF of Spearman correlation between Max at 5min and Avg of Max at previous window.png")
