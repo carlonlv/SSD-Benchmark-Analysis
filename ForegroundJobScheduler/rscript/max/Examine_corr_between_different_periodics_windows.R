@@ -74,7 +74,7 @@ convert_frequency_dataset <- function(dataset, new_freq, mode, overlap) {
 
 data_path <- "C://Users//carlo//Documents//sample background jobs"
 bg_job_file_lst <- list.files(path = data_path, full.names = FALSE, recursive = FALSE)
-frequency_lst <- c(1, 2, 3, 4, 6, 12)
+frequency_lst <- c(1, 2, 3, 4, 6, 12, 72, 144, 288)
 
 #########################################################Previous Maxes########################################################################################
 correlation_max_max_lst <- numvecdict()
@@ -105,7 +105,7 @@ for (i in 1:length(frequency_lst)) {
       correlation_max_max_lst$append_number(hashed_name, cor(converted_max[result$from:length(converted_max)], result$data, method = "pearson"))
       correlation_avg_max_lst$append_number(hashed_name, cor(converted_avg[result$from:length(converted_avg)], result$data, method = "pearson"))
     }
-    for (k in 2:4) {
+    for (k in 2:288) {
       if (window_size %% k == 0) {
         result <- construct_previous_obs_lst(dataset_5m = vmjob$max_cpu, converted_frequency = window_size, frequency = window_size %/% k, mode = 'max', overlap = TRUE)
         hashed_name <- paste(window_size, " ", "/", k, sep = "")
@@ -133,7 +133,7 @@ for (i in 1:length(frequency_lst)) {
     ylab("Fraction of Data") + 
     ggtitle(title) + 
     theme(plot.title = element_text(size=10))
-  ggsave(filename = paste(title, ".png", sep = ""), plot = max_max_plt)
+  ggsave(filename = paste(title, ".png", sep = ""), plot = avg_max_plt)
 }
 
 #########################################################Previous Avgs#########################################################################################
@@ -165,7 +165,7 @@ for (i in 1:length(frequency_lst)) {
       correlation_max_avg_lst$append_number(hashed_name, cor(converted_max[result$from:length(converted_max)], result$data, method = "pearson"))
       correlation_avg_avg_lst$append_number(hashed_name, cor(converted_avg[result$from:length(converted_avg)], result$data, method = "pearson"))
     }
-    for (k in 2:4) {
+    for (k in 2:288) {
       if (window_size %% k == 0) {
         result <- construct_previous_obs_lst(dataset_5m = vmjob$avg_cpu, converted_frequency = window_size, frequency = window_size %/% k, mode = 'avg', overlap = TRUE)
         hashed_name <- paste(window_size, " ", "/", k, sep = "")
@@ -193,7 +193,7 @@ for (i in 1:length(frequency_lst)) {
     ylab("Fraction of Data") + 
     ggtitle(title) + 
     theme(plot.title = element_text(size=10))
-  ggsave(filename = paste(title, ".png", sep = ""), plot = max_max_plt)
+  ggsave(filename = paste(title, ".png", sep = ""), plot = avg_max_plt)
 }
 
 #########################################################Previous Avgs of Maxes#################################################################################
@@ -225,7 +225,7 @@ for (i in 1:length(frequency_lst)){
       correlation_max_aom_lst$append_number(hashed_name, cor(converted_max[result$from:length(converted_max)], result$data, method = "pearson"))
       correlation_avg_aom_lst$append_number(hashed_name, cor(converted_avg[result$from:length(converted_avg)], result$data, method = "pearson"))
     }
-    for (k in 2:4) {
+    for (k in 2:288) {
       if (window_size %% k == 0) {
         result <- construct_previous_obs_lst(dataset_5m = vmjob$max_cpu, converted_frequency = window_size, frequency = window_size %/% k, mode = 'avg', overlap = TRUE)
         hashed_name <- paste(window_size, " ", "/", k, sep = "")
@@ -253,5 +253,5 @@ for (i in 1:length(frequency_lst)){
     ylab("Fraction of Data") + 
     ggtitle(title) + 
     theme(plot.title = element_text(size=10))
-  ggsave(filename = paste(title, ".png", sep = ""), plot = max_max_plt)
+  ggsave(filename = paste(title, ".png", sep = ""), plot = avg_max_plt)
 }
