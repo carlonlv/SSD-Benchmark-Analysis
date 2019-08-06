@@ -1,6 +1,3 @@
-library("ggplot2")
-library("ggfortify")
-library("dplyr")
 library("forecast")
 library("mvtnorm")
 library("dict")
@@ -47,20 +44,6 @@ do_prediction <- function(last_obs, phi, mean, variance, predict_size, level) {
   return(result)
 }
 
-find_pi_upperbound <- function(model_selection='AR1', last_obs, phi, mean, variance, predict_size, prob_cutoff) {
-  # Construct mean
-  mu <- rep(last_obs, predict_size)
-  mu <- mu * phi^(1:predict_size) + (1 - phi^(1:predict_size)) * mean
-  var <- rep(variance, predict_size)
-  var_cov <- calculate_var_cov_matrix_ar1(var, predict_size, phi)
-  upper_bounds <- rep(NA, predict_size)
-  for (i in 1:length(upper_bounds)) {
-    upper_bounds[i] <- min(mu[i] + qnorm((1-prob_cutoff), 0, 1) * sqrt(var_cov[i,i]), 100)
-  }
-  return(max(upper_bounds))
-}
-
-
 compute_pi_up <- function(mu, varcov, predict_size, prob_cutoff) {
   upper_bounds <- rep(NA, predict_size)
   for (i in 1:predict_size) {
@@ -84,6 +67,7 @@ find_evaluation <- function(pi_up, actual_obs, predict_size) {
 svt_stationary_model <- function(dataset, initial_train_size, window_size, job_length=5, cpu_required, prob_cut_off=0.01, update_freq=1) {
   #### input dataset: N by M matrix, N being number of observations, M being number of time series
   #### input initial_train_size: The number of first observations used to train the model
+  #### input window_size: The number of observations used to train and predict
   #### input job_length: The time that the foreground job will be runing
   #### input cpu_required: A vector, the cpu that the foreground job requires in percentage
   #### input prob_cut_off: If the probability of background job exceeding 100-cpu_required is smaller than prob_cut_off, then schedule it. Otherwise, don't.
@@ -147,13 +131,11 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
     survival <- c()
     prediction <- c()
     actual <- c()
-    avg_cycle_used <- c()
-    survival <- c()
     
     for (ts_num in 1:ncol(dataset)) {
       
       ## Schedule the job
-      if (current_end < nrow(dataset)) {
+      if (current_end <= nrow(dataset) - window_size) {
         last_obs <- dataset[current_end, ts_num]
         prediction_result <- do_prediction(last_obs = last_obs, phi = coeffs[ts_num], mean = means[ts_num], variance = vars[ts_num],predict_size = job_length, level = (100 - cpu_required[ts_num]))
         prob_vector[ts_num] <- prediction_result$prob
