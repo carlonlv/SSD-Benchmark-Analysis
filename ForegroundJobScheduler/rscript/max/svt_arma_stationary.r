@@ -80,7 +80,7 @@ compute_pi_up <- function(mu, varcov, predict_size, prob_cutoff) {
   return(upper_bounds)
 }
 
-find_evaluation <- function(pi_up, actual_obs, predict_size) {
+find_evaluation <- function(pi_up, actual_obs) {
   usage <- (100 - pi_up) / (100 - actual_obs)
   if (all(actual_obs <= pi_up)) {
     survival = 1
@@ -201,7 +201,7 @@ svt_stationary_model <- function(dataset, initial_train_size, job_length=5, cpu_
             }
           }
           pi_up <- pi_up_bounds[[paste(ts_num, ",", start_time, sep = "")]]
-          evalulation <- find_evaluation(pi_up=pi_up, actual_obs=position_vec, predict_size=job_length)
+          evalulation <- find_evaluation(pi_up=pi_up, actual_obs=position_vec)
           avg_cycle_used[ts_num] <- evalulation$avg_usage
           survival[ts_num] <- evalulation$survival
         }

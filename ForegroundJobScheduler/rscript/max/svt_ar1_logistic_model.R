@@ -40,7 +40,7 @@ do_prediction <- function(last_obs, phi, mean, variance) {
   return(result)
 }
 
-find_evaluation <- function(pi_up, actual_obs, predict_size) {
+find_evaluation <- function(pi_up, actual_obs) {
   usage <- (100 - pi_up) / (100 - actual_obs)
   if (all(actual_obs <= pi_up)) {
     survival = 1
@@ -74,7 +74,7 @@ ar1_model <- function(train_set, test_set, update_freq=1) {
   }
   
   ## Test Model
-  current_end <- initial_train_size
+  current_end <- 1
   current_percent <- 0.00
   while (current_end <= nrow(test_set)) {
     
@@ -92,9 +92,9 @@ ar1_model <- function(train_set, test_set, update_freq=1) {
     
     ## Update current_end
     current_end <- current_end + update_freq
-    if (current_percent != round((current_end - initial_train_size) / (nrow(test_set) - initial_train_size), digits = 2)) {
+    if (current_percent != round(current_end / nrow(test_set), digits = 2)) {
       print(paste("Testing", current_percent))
-      current_percent <- round((current_end - initial_train_size) / (nrow(test_set) - initial_train_size), digits = 2)
+      current_percent <- round(current_end / nrow(test_set), digits = 2)
     }
   }
   
@@ -171,8 +171,13 @@ generate_expected_conditional_var <- function(expected_avgs, mode, variance_mode
 }
 
 
-compute_pi_up <- function(prob_cross_threshold, expected_var) {
-  expected_max
+find_expected_max <- function(probability, variance, cpu_required) {
+  return((100 - cpu_required) - qnorm(p=probability) * sqrt(variance))
+}
+
+
+compute_pi_up <- function(expected_max, expected_var, prob_cut_off) {
+  return(expected_max + qnorm(p=(1-prob_cut_off)) * sqrt(expected_var))
 }
 
 logistic_model <- function(train_set_avg, train_set_max, predicted_avgs, update_freq=1) {
@@ -242,7 +247,7 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, wind
   }
   rownames(train_set_avg) <- seq(1, 1 + window_size * (nrow(train_set_avg) - 1), window_size)
   colnames(train_set_avg) <- colnames(dataset_avg)
-  rownames(train_set_max) <- seq(1, 1 + window_size * (nrow(train_set_avg) - 1), window_size)
+  rownames(train_set_max) <- seq(1, 1 + window_size * (nrow(train_set_max) - 1), window_size)
   colnames(train_set_max) <- colnames(dataset_max)
   
   test_set_avg <- matrix(nrow = floor((nrow(dataset_avg) - initial_train_size) / window_size), ncol = 0)
@@ -274,15 +279,39 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, wind
   ## N by M dataframe
   actual_result <- data.frame(row.names = 1)
   ## 4 by M dataframe
-  scheduling_summary <- data.frame(matrix(nrow = 4, ncol = ncol(dataset)))
+  scheduling_summary <- data.frame(matrix(nrow = 4, ncol = ncol(dataset_max)))
+  
+  scheduled_num <- rep(0, ncol(dataset_max))
+  unscheduled_num <- rep(0, ncol(dataset_max))
+  falsely_scheduled_num <- rep(0, ncol(dataset_max))
+  falsely_unscheduled_num <- rep(0, ncol(dataset_max))
   
   prob_info <- logistic_output$prob
   var_info <- logistic_output$expected_var
   for(ts_num in 1:ncol(dataset_max)) {
-    ## Scheduling
     
+    ## Estimate expected of max
+    expected_max <- mapply(find_expected_max, prob_info[[ts_num]], var_info[[ts_num]], MoreArgs = list(cpu_required = cpu_required))
+
+    ## Store Probability
+    probability <- cbind(probability, prob_info[[ts_num]])
+    
+    ## Scheduling
+    predicted <- ifelse(prob_info[[ts_num]] <= prob_cut_off, 1, 0)
+    predict_result <- cbind(predict_result, predicted)
+    
+    ## Actual
+    actual <- ifelse(test_set_max[1:nrow(test_set_max), ts_num] <= (100 - cpu_required), 1, 0)
+    actual_result <- cbind(actual_result, actual)
+    
+    ## Summary
+    scheduled_num[ts_num] <- sum(predicted)
+    unscheduled_num[ts_num] <- length(predicted) - sum(predicted)
+    falsely_scheduled_num[ts_num] <- sum(ifelse(predicted != actual & predicted == 1, 1, 0))
+    falsely_unscheduled_num[ts_num] <- sum(ifelse(predicted != actual & predicted == 0, 1, 0))
     
     ## Scoring
-    pi_up <- compute_pi_up(prob_info[[ts_num]], var_info[[ts_num]])
+    pi_up <- mapply(compute_pi_up, expected_max, var_info[[ts_num]], MoreArgs = list(prob_cut_off=prob_cut_off))
+    evaluation <- find_evaluation(pi_up, test_set_max)
   }
 }

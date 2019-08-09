@@ -52,7 +52,7 @@ compute_pi_up <- function(mu, varcov, predict_size, prob_cutoff) {
   return(upper_bounds)
 }
 
-find_evaluation <- function(pi_up, actual_obs, predict_size) {
+find_evaluation <- function(pi_up, actual_obs) {
   usage <- (100 - pi_up) / (100 - actual_obs)
   if (all(actual_obs <= pi_up)) {
     survival = 1
@@ -64,7 +64,7 @@ find_evaluation <- function(pi_up, actual_obs, predict_size) {
   return(result)
 }
 
-svt_stationary_model <- function(dataset, initial_train_size, window_size, job_length=5, cpu_required, prob_cut_off=0.01, update_freq=1) {
+svt_stationary_model <- function(dataset, initial_train_size, window_size=1, job_length=5, cpu_required, prob_cut_off=0.01, update_freq=1, mode) {
   #### input dataset: N by M matrix, N being number of observations, M being number of time series
   #### input initial_train_size: The number of first observations used to train the model
   #### input window_size: The number of observations used to train and predict
@@ -95,35 +95,44 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
   falsely_scheduled_num <- rep(0, ncol(dataset))
   falsely_unscheduled_num <- rep(0, ncol(dataset))
   
+  ## Split in Training and Testing Set
+  train_dataset <- dataset[1:initial_train_size, 1:ncol(dataset)]
+  test_dataset <- dataset[(initial_train_size+1):nrow(dataset), 1:ncol(dataset)]
+  
   ## Convert Frequency
-  new_dat <- matrix(nrow = floor(initial_train_size / window_size), ncol = 0)
+  new_trainset <- matrix(nrow = floor(nrow(train_dataset) / window_size), ncol = 0)
+  new_testset <- matrix(nrow = floor(nrow(test_dataset) / window_size), ncol = 0)
   for (ts_num in 1:ncol(dataset)) {
-    converted_data <- convert_frequency_dataset(dataset[1:initial_train_size, ts_num], window_size, 'max')
-    new_dat <- cbind(new_dat, converted_data)
+    converted_data <- convert_frequency_dataset(train_dataset[1:nrow(train_dataset), ts_num], window_size, mode)
+    new_trainset <- cbind(new_trainset, converted_data)
+    converted_data <- convert_frequency_dataset(test_dataset[1:nrow(test_dataset), ts_num], window_size, mode)
+    new_testset <- cbind(new_testset, converted_data)
   }
-  rownames(new_dat) <- seq(1, 1 + (window_size * 5) * (nrow(new_dat) - 1), (window_size * 5))
-  colnames(new_dat) <- colnames(dataset)
+  rownames(new_trainset) <- seq(1, 1 + window_size * (nrow(new_trainset) - 1), window_size)
+  colnames(new_trainset) <- colnames(train_dataset)
+  rownames(new_testset) <- seq(1, 1+ window_size * (nrow(new_testset) - 1), window_size)
+  colnames(new_testset) <- colnames(test_dataset)
   
   ## Train Model
-  coeffs <- rep(NA, ncol(new_dat))
-  means <- rep(NA, ncol(new_dat))
-  vars <- rep(NA, ncol(new_dat))
+  coeffs <- rep(NA, ncol(new_trainset))
+  means <- rep(NA, ncol(new_trainset))
+  vars <- rep(NA, ncol(new_trainset))
   train_percent <- 0.00
-  for (ts_num in 1:ncol(new_dat)) {
-    if (round(ts_num / ncol(new_dat), 2) != train_percent) {
+  for (ts_num in 1:ncol(new_trainset)) {
+    if (round(ts_num / ncol(new_trainset), 2) != train_percent) {
       print(paste("Training", train_percent))
-      train_percent <- round(ts_num / ncol(new_dat), 2)
+      train_percent <- round(ts_num / ncol(new_trainset), 2)
     }
-    ts_model <- arima(new_dat[1:floor(initial_train_size / window_size), ts_num], order = c(1,0,0), include.mean = TRUE)
+    ts_model <- arima(new_trainset[1:nrow(new_trainset), ts_num], order = c(1,0,0), include.mean = TRUE)
     coeffs[ts_num] <- as.numeric(ts_model$coef[1])
     means[ts_num] <- as.numeric(ts_model$coef[2])
     vars[ts_num] <- ts_model$sigma2
   }
   
   ## Test Model
-  current_end <- initial_train_size
+  current_end <- 1
   current_percent <- 0.00
-  while (current_end <= nrow(dataset)) {
+  while (current_end <= nrow(test_dataset)) {
     
     ## Initialize Model 
     prob_vector <- c()
@@ -132,11 +141,11 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
     prediction <- c()
     actual <- c()
     
-    for (ts_num in 1:ncol(dataset)) {
+    for (ts_num in 1:ncol(test_dataset)) {
       
       ## Schedule the job
-      if (current_end <= nrow(dataset) - window_size) {
-        last_obs <- dataset[current_end, ts_num]
+      if (current_end <= nrow(test_dataset) - 1) {
+        last_obs <- test_dataset[current_end, ts_num]
         prediction_result <- do_prediction(last_obs = last_obs, phi = coeffs[ts_num], mean = means[ts_num], variance = vars[ts_num],predict_size = job_length, level = (100 - cpu_required[ts_num]))
         prob_vector[ts_num] <- prediction_result$prob
         if (prob_vector[ts_num] < prob_cut_off) {
@@ -158,7 +167,7 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
           end_time <- info_lst[i+1]
           row_num <- info_lst[i+2]
           
-          position_vec <- dataset[start_time:end_time, ts_num]
+          position_vec <- test_dataset[start_time:end_time, ts_num]
           if (all(position_vec < (100 - cpu_required[ts_num]))) {
             actual[ts_num] <- 1
             if (predict_result[row_num, ts_num] == 0) {
@@ -172,7 +181,7 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
           } 
         }
         pi_up <- pi_up_bounds[[paste(ts_num, ",", start_time, sep = "")]]
-        evalulation <- find_evaluation(pi_up=pi_up, actual_obs=position_vec, predict_size=job_length)
+        evalulation <- find_evaluation(pi_up=pi_up, actual_obs=position_vec)
         avg_cycle_used[ts_num] <- evalulation$avg_usage
         survival[ts_num] <- evalulation$survival
       }
@@ -196,9 +205,9 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
     
     ## Update current_end
     current_end <- current_end + update_freq
-    if (current_percent != round((current_end - initial_train_size) / (nrow(dataset) - initial_train_size), digits = 2)) {
+    if (current_percent != round(current_end / nrow(test_dataset), digits = 2)) {
       print(paste("Testing", current_percent))
-      current_percent <- round((current_end - initial_train_size) / (nrow(dataset) - initial_train_size), digits = 2)
+      current_percent <- round(current_end / nrow(test_dataset), digits = 2)
     }
   }
   
@@ -241,7 +250,7 @@ for (job_num in bg_job_pool) {
   bg_job <- read.csv(paste(bg_jobs_path, job_num, ".csv", sep = ""))
   data_matrix <- cbind(data_matrix, bg_job$avg_cpu[4033:8032])
 }
-rownames(data_matrix) <- seq(1, 1 + 5 * (nrow(data_matrix) - 1),5)
+rownames(data_matrix) <- seq(1, 1 + (nrow(data_matrix) - 1), 1)
 colnames(data_matrix) <- bg_job_pool
 
 cpu_required <- rep(0, ncol(data_matrix))
@@ -252,7 +261,7 @@ for (j in 1:ncol(data_matrix)) {
 for (job_length in c(1, 12)) {
   print(paste("Job_length", job_length))
   
-  output <- svt_stationary_model(dataset=data_matrix, job_length=job_length, window_size = 6, cpu_required=(100-cpu_required), prob_cut_off=0.1, initial_train_size = 2000, update_freq=1)
+  output <- svt_stationary_model(dataset=data_matrix, job_length=job_length, window_size = 6, cpu_required=(100-cpu_required), prob_cut_off=0.1, initial_train_size = 2000, update_freq=1, mode = 'max')
   write.csv(output$avg_usage, file = paste("avgs AR1", job_length, "100", 0.1, "avg_usage.csv"))
   print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
   write.csv(output$job_survival, file = paste("avgs AR1", job_length, "100", 0.1,"job_survival.csv"))
