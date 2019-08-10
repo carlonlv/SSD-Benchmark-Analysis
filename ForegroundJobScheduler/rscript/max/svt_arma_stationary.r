@@ -253,7 +253,7 @@ svt_stationary_model <- function(dataset, initial_train_size, job_length=5, cpu_
   scheduling_summary[2,] <- unscheduled_num
   scheduling_summary[3,] <- falsely_scheduled_num
   scheduling_summary[4,] <- falsely_unscheduled_num
-  rownames(scheduling_summary) <- c('Scheduled_Num', 'Unscheduled_Num', 'Falsly_scheduled_Num', 'Falsely_unscheduled_Num')
+  rownames(scheduling_summary) <- c('Scheduled_Num', 'Unscheduled_Num', 'Falsely_scheduled_Num', 'Falsely_unscheduled_Num')
   
   result <- list('prob' = probability, 'predict' = predict_result, 'avg_usage'=avg_usage, 'job_survival'=job_survival, 'actual' = actual_result, 'scheduling_summary' = scheduling_summary, 'ts_models' = ts_models)
   
