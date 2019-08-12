@@ -242,7 +242,8 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size=1, job
 
 ## Read back ground job pool
 
-bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 bg jobs.csv")[,2]
+bg_job_pool_names <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled background jobs.csv")[,1]
+bg_job_pool <- sub(".pd", "", bg_job_pool_names)
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
 
 data_matrix <- matrix(nrow = 4000, ncol = 0)
@@ -258,15 +259,15 @@ for (j in 1:ncol(data_matrix)) {
   cpu_required[j] <- as.numeric(quantile(data_matrix[,j], c(0.15, 0.5, 0.85), type = 4)[3])
 }
 
-for (job_length in c(1)) {
+for (job_length in c(12)) {
   print(paste("Job_length", job_length))
   
-  output <- svt_stationary_model(dataset=data_matrix, job_length=job_length, window_size = 36, cpu_required=(100-cpu_required), prob_cut_off=0.01, initial_train_size = 2000, update_freq=1, mode = 'max')
-  write.csv(output$avg_usage, file = paste("AR1", job_length, "100", 0.1, "avg_usage.csv"))
+  output <- svt_stationary_model(dataset=data_matrix, job_length=job_length, window_size = 1, cpu_required=(100-cpu_required), prob_cut_off=0.01, initial_train_size = 2000, update_freq=1, mode = 'max')
+  write.csv(output$avg_usage, file = paste("AR1", job_length, "1000", 0.01, "avg_usage.csv"))
   print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
-  write.csv(output$job_survival, file = paste("AR1", job_length, "100", 0.1,"job_survival.csv"))
+  write.csv(output$job_survival, file = paste("AR1", job_length, "1000", 0.01,"job_survival.csv"))
   print(paste("Job survival rate:", "job length", job_length, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival)))))
-  write.csv(output$scheduling_summary, file = paste("AR1", job_length, "100", 0.1, "scheduling_sum.csv"))
+  write.csv(output$scheduling_summary, file = paste("AR1", job_length, "1000", 0.01, "scheduling_sum.csv"))
   scheduled_num <- sum(output$scheduling_summary[1,])
   unscheduled_num <- sum(output$scheduling_summary[2,])
   correct_scheduled_num <- scheduled_num - sum(output$scheduling_summary[3,])

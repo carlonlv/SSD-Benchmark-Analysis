@@ -344,7 +344,7 @@ for (j in 1:ncol((data_matrix_max))) {
 }
 
 for (job_length in c(12, 36)) {
-  output <- ar_logistic_model(dataset_max = data_matrix_max, dataset_avg = data_matrix_avg, initial_train_size = 2000, update_freq = 1, prob_cut_off = 0.01, job_length = job_length, cpu_required = cpu_required, num_of_states = 10)
+  output <- ar_logistic_model(dataset_max = data_matrix_max, dataset_avg = data_matrix_avg, initial_train_size = 2000, update_freq = 1, prob_cut_off = 0.01, job_length = job_length, cpu_required = (100 - cpu_required), num_of_states = 10)
   write.csv(output$avg_usage, file = paste("AR_state_logistic", job_length, "100", 0.1, "avg_usage.csv"))
   print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
   write.csv(output$job_survival, file = paste("AR_state_logistic", job_length, "100", 0.1, "job_survival.csv"))
