@@ -48,14 +48,15 @@ find_evaluation <- function(pi_up, actual_obs) {
 }
 
 ar1_model <- function(train_set, test_set, update_freq=1) {
-
+  
   ## N by M dataframe
   predicted_result <- data.frame(row.names = 1)
-
+  
   ## Train Model
   coeffs <- rep(NA, ncol(train_set))
   means <- rep(NA, ncol(train_set))
   vars <- rep(NA, ncol(train_set))
+  
   train_percent <- 0.00
   for (ts_num in 1:ncol(train_set)) {
     if (round(ts_num / ncol(train_set), 2) != train_percent) {
@@ -70,7 +71,7 @@ ar1_model <- function(train_set, test_set, update_freq=1) {
   
   ## Test Model
   current_end <- 1
-  current_percent <- 0.00
+  test_percent <- 0.00
   while (current_end <= nrow(test_set)) {
     
     ## Initialize Model 
@@ -88,9 +89,9 @@ ar1_model <- function(train_set, test_set, update_freq=1) {
     
     ## Update current_end
     current_end <- current_end + update_freq
-    if (current_percent != round(current_end / nrow(test_set), digits = 2)) {
-      print(paste("Testing", current_percent))
-      current_percent <- round(current_end / nrow(test_set), digits = 2)
+    if (test_percent != round(current_end / nrow(test_set), digits = 2)) {
+      print(paste("Testing", test_percent))
+      test_percent <- round(current_end / nrow(test_set), digits = 2)
     }
   }
   
@@ -101,120 +102,92 @@ ar1_model <- function(train_set, test_set, update_freq=1) {
   return(predicted_result)
 }
 
-parser_for_logistic_model <- function(train_set_avg, train_set_max, cpu_required) {
+parser_for_logistic_model_states <- function(train_set_avg, train_set_max, breaks) {
   ts_logistic_input <- list()
   for (ts_num in 1:ncol(train_set_avg)) {
-    train_avg <- train_set_avg[,ts_num]
-    train_max <- train_set_max[,ts_num]
-    df <- data.frame("avg"=train_avg, "max"=train_max)
-    df$survived <- ifelse(df$max <= (100 - cpu_required[ts_num]), 1, 0)
-    ts_logistic_input[[ts_num]] <- df
+    
+    for (state in 1:(length(breaks) - 1)) {
+      train_avg <- train_set_avg[,ts_num]
+      train_max <- train_set_max[,ts_num]
+      df <- data.frame("avg"=train_avg, "max"=train_max)
+      df$survived <- factor(ifelse(train_max <= breaks[state+1], 1, 0), levels = c(0, 1))
+      ts_logistic_input[[paste(ts_num, ",", state, sep = "")]] <- df
+    }
   }
   return(ts_logistic_input)
 }
 
-build_conditional_variation <- function(train_set_avg, train_set_max, precision=1, method) {
-  if (method == "lm") {
-    new_parsed_dat <- data.frame(row.names = 1)
-    for (obs in 1:length(train_set_avg)) {
-      new_parsed_dat <- rbind(new_parsed_dat, c(train_set_max[obs], round(train_set_avg[obs], precision)))
+compute_pi_up <- function(job_based_prob, prob_cut_off) {
+  
+  num_of_states <- ncol(job_based_prob)
+  num_of_obs <- nrow(job_based_prob)
+  
+  pi_up <- rep(NA, num_of_obs)
+  for (obs in 1:num_of_obs) {
+    current_state <- 1
+    current_prob <- job_based_prob[,current_state]
+    while (current_prob < (1 - prob_cut_off) & current_state < num_of_states) {
+      current_state <- current_state + 1
+      current_prob <- job_based_prob[,current_state]
     }
-    colnames(new_parsed_dat) <- c('max', 'avg')
-    new_parsed_dat <- new_parsed_dat %>% 
-      group_by(avg) %>% 
-      summarise(sd=sqrt(var(max))) %>%
-      filter(!is.na(sd))
-    sd.lm <- lm(sd~avg+I(avg^2), data = new_parsed_dat)
-    return(sd.lm)
-  } else {
-    clustering_result <- list()
-    avg_silhouette <- c()
-    avg_silhouette[1] <- -Inf
-    for (cluster_num in 2:10) {
-      clustering_result[[cluster_num]] <- kmeans(train_set_avg, centers = cluster_num, iter.max = 20, nstart = 25)
-      avg_silhouette[cluster_num] <- mean(silhouette(clustering_result[[cluster_num]]$cluster, dist = dist(train_set_avg))[,3])
-    }
-    best_cluster_num <- which(avg_silhouette == max(avg_silhouette))
-    best_cluster_result <- clustering_result[[best_cluster_num]]
-    new_parsed_dat <- data.frame("cluster"=best_cluster_result$cluster, "max"=train_set_max)
-    new_parsed_dat <- new_parsed_dat %>% 
-      group_by(cluster) %>% 
-      summarise(vars=var(max)) %>%
-      filter(!is.na(vars))
-    new_parsed_dat$cluster_mean <- best_cluster_result$centers[new_parsed_dat$cluster]
-    return(new_parsed_dat)
+    pi_up[obs] <- current_state * (100 / num_of_states)
   }
+  return(pi_up)
 }
 
-kmeans_find_var <- function(expected_avg, kmeans_model_df) {
-  kmeans_model_df <- kmeans_model_df %>%
-    arrange(cluster)
-  closest_cluster <- kmeans_model_df$cluster[which(abs(expected_avg - kmeans_model_df$cluster_mean) == min(abs(expected_avg - kmeans_model_df$cluster_mean)))]
-  cluster_var <- kmeans_model_df$vars[kmeans_model_df$cluster == closest_cluster]
-  return(cluster_var)
+upper_state_num <- function(cpu_required ,num_of_states) {
+  return(floor((100 - cpu_required) / (100 / num_of_states)))
 }
 
-generate_expected_conditional_var <- function(expected_avgs, mode, variance_model) {
-  expected_var <- c()
-  if (mode == "lm") {
-    expected_var <- predict(variance_model, newdata=data.frame("avg"=expected_avgs), type = "response")^2
-  } else {
-    expected_var <- sapply(expected_avgs, kmeans_find_var, kmeans_model_df = variance_model)
-  }
-  return(expected_var)
-}
-
-
-find_expected_max <- function(probability, variance, cpu_required) {
-  return(max((100 - cpu_required) - qnorm(p=(1-probability)) * sqrt(variance), 0))
-}
-
-
-compute_pi_up <- function(expected_max, expected_var, prob_cut_off) {
-  return(min(expected_max + qnorm(p=(1-prob_cut_off)) * sqrt(expected_var), 100))
-}
-
-logistic_model <- function(train_set_avg, train_set_max, predicted_avgs, update_freq=1, cpu_required) {
+multi_state_logistic_model <- function(train_set_avg, train_set_max, predicted_avgs, num_of_states) {
+  
+  parsed_states_input <- parser_for_logistic_model_states(train_set_avg, train_set_max, discretize(0:100, method = "interval", breaks = num_of_states, onlycuts = TRUE))
   
   ## Training Step
-  fitted_logistic_models <- list()
-  fitted_conditional_var_models <- list()
-  conditional_var_model_choice <- c()
-  parsed_inputs <- parser_for_logistic_model(train_set_avg, train_set_max, cpu_required)
+  state_based_logistic <- list()
   
+  train_percent <- 0.00
   for (ts_num in 1:ncol(train_set_avg)) {
-    df <- parsed_inputs[[ts_num]]
-    log.lm <- glm(survived~avg, data = df, family = "binomial", control=glm.control(maxit=50))
-    fitted_logistic_models[[ts_num]] <- log.lm
-    conditional_var_model <- build_conditional_variation(train_set_avg[, ts_num], train_set_max[, ts_num], precision = 1, method = "lm")
-    ss <- summary(conditional_var_model)
-    lm_good_enough <- pf(ss$fstatistic[1], ss$fstatistic[2], ss$fstatistic[3], lower.tail=FALSE) <= 0.05
-    if (!lm_good_enough | is.na(lm_good_enough)) {
-      conditional_var_model_choice[ts_num] <- "kmeans"
-      conditional_var_model <- build_conditional_variation(train_set_avg[, ts_num], train_set_max[, ts_num], precision = 1, method = "kmeans")
-    } else {
-      conditional_var_model_choice[ts_num] <- "lm"
+    
+    if (round(ts_num / ncol(train_set_avg), 2) != train_percent) {
+      print(paste("Training", train_percent))
+      train_percent <- round(ts_num / ncol(train_set_avg), 2)
     }
-    fitted_conditional_var_models[[ts_num]] <- conditional_var_model
+    
+    for (state in 1:num_of_states) {
+      df <- parsed_states_input[[paste(ts_num, ",", state, sep = "")]]
+      log.lm <- glm(survived~avg, data = df, family = "binomial", control=glm.control(maxit=50))
+      state_based_logistic[[paste(ts_num, ",", state, sep = "")]] <- log.lm
+    }
   }
   
   ## Testing Step
-  expected_ts_variance <- list()
-  prob_ts_cross_threshold <- list()
+  job_based_probability <- list()
   
+  test_percent <- 0.00
   for (ts_num in 1:ncol(train_set_avg)) {
-    expected_avgs <- predicted_avgs[seq(1, nrow(predicted_avgs), update_freq), ts_num]
-    conditional_var_model <- fitted_conditional_var_models[[ts_num]]
-    expected_vars <- generate_expected_conditional_var(expected_avgs, mode = conditional_var_model_choice[ts_num], variance_model = conditional_var_model)
-    expected_ts_variance[[ts_num]] <- expected_vars
-    prob <- predict(fitted_logistic_models[[ts_num]], newdata = data.frame("avg"=expected_avgs), type = "response")
-    prob_ts_cross_threshold[[ts_num]] <- 1 - prob
+    
+    if (round(ts_num / ncol(train_set_avg), 2) != test_percent) {
+      print(paste("Testing", test_percent))
+      test_percent <- round(ts_num / ncol(train_set_avg), 2)
+    }
+    
+    probability <- data.frame(matrix(nrow = nrow(predicted_avgs), ncol = num_of_states))
+    for (state in 1:num_of_states) {
+      expected_avgs <- predicted_avgs[, ts_num]
+      prob <- predict(state_based_logistic[[paste(ts_num, ",", state, sep = "")]], newdata = data.frame("avg"=expected_avgs), type = "response")
+      if (state != 1) {
+        prob[which(prob < probability[,(state - 1)])] <- 1
+      } 
+      probability[,state] <- prob
+    }
+    job_based_probability[[ts_num]] <- probability
   }
-  result <- list("prob"=prob_ts_cross_threshold, "expected_var"=expected_ts_variance)
-  return(result)
+  
+  return(job_based_probability)
 }
 
-ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob_cut_off, update_freq, job_length, cpu_required) {
+ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob_cut_off, update_freq, job_length, cpu_required, num_of_states) {
   #### input dataset_avg, dataset_max: N by M matrix, N being number of observations, M being number of time series
   #### input initial_train_size: The number of first observations used to train the model
   #### input window_size: The number of observations used to train and predict as one sample
@@ -255,7 +228,7 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   test_avgs <- ar1_model(train_set_avg, test_set_avg, update_freq=1)
   
   print("Second layer: Logistic Regression.")
-  logistic_output <- logistic_model(train_set_avg, train_set_max, test_avgs, update_freq=1, cpu_required)
+  logistic_output <- multi_state_logistic_model(train_set_avg, train_set_max, test_avgs, num_of_states)
   
   ## N by M dataframe
   probability <- data.frame(matrix(nrow = nrow(test_set_max), ncol = ncol(test_set_max)))
@@ -274,18 +247,28 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   falsely_scheduled_num <- rep(0, ncol(dataset_max))
   falsely_unscheduled_num <- rep(0, ncol(dataset_max))
   
-  prob_info <- logistic_output$prob
-  var_info <- logistic_output$expected_var
+  job_based_prob <- logistic_output
+  
+  evaluation_percent <- 0.00
   for(ts_num in 1:ncol(dataset_max)) {
     
-    ## Estimate expected of max
-    expected_max <- mapply(find_expected_max, prob_info[[ts_num]], var_info[[ts_num]], MoreArgs = list(cpu_required = cpu_required[ts_num]))
-
+    state_num <- upper_state_num(cpu_required[ts_num], num_of_states)
+    
     ## Store Probability
-    probability[,ts_num] <- prob_info[[ts_num]]
+    if (state_num == 0) {
+      probability[,ts_num] <- rep(1, nrow(probability))
+      warning("State number might not be large enough to calclulate probability for some traces.")
+    } else {
+      probability[,ts_num] <- (1 - job_based_prob[[ts_num]][,state_num])
+    }
     
     ## Scoring
-    pi_up <- mapply(compute_pi_up, expected_max, var_info[[ts_num]], MoreArgs = list(prob_cut_off=prob_cut_off))
+    pi_up <- NULL
+    if (state_num == 0) {
+      pi_up <- rep(0, nrow(probability))
+    } else {
+      pi_up <- compute_pi_up(job_based_prob[[ts_num]], prob_cut_off)
+    }
     
     ##Evaluation
     evaluation <- find_evaluation(pi_up, test_set_max[, ts_num])
@@ -293,11 +276,11 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
     job_survival[,ts_num] <- evaluation$survival
     
     ## Scheduling
-    predicted <- ifelse(prob_info[[ts_num]] <= prob_cut_off, 1, 0)
+    predicted <- ifelse(probability[,ts_num] <= prob_cut_off, 1, 0)
     predict_result[,ts_num] <- predicted
     
     ## Actual
-    actual <- ifelse(test_set_max[, ts_num] <= (100 - cpu_required[ts_num]), 1, 0)
+    actual <- ifelse(test_set_max[,ts_num] <= (100 - cpu_required[ts_num]), 1, 0)
     actual_result[,ts_num] <- actual
     
     ## Summary
@@ -305,6 +288,11 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
     unscheduled_num[ts_num] <- length(predicted) - sum(predicted)
     falsely_scheduled_num[ts_num] <- sum(ifelse(predicted != actual & predicted == 1, 1, 0))
     falsely_unscheduled_num[ts_num] <- sum(ifelse(predicted != actual & predicted == 0, 1, 0))
+    
+    if (evaluation_percent != round(ts_num / ncol(dataset_max), digits = 2)) {
+      print(paste("Evaluating", evaluation_percent))
+      evaluation_percent <- round(ts_num / ncol(dataset_max), digits = 2)
+    }
   }
   
   colnames(probability) <- colnames(dataset_max)
@@ -356,17 +344,15 @@ for (j in 1:ncol((data_matrix_max))) {
 }
 
 for (job_length in c(12, 36)) {
-  output <- ar_logistic_model(dataset_max = data_matrix_max, dataset_avg = data_matrix_avg, initial_train_size = 2000, update_freq = 1, prob_cut_off = 0.01, job_length = job_length, cpu_required = cpu_required)
-  write.csv(output$avg_usage, file = paste("AR_logistic", job_length, "100", 0.1, "avg_usage.csv"))
+  output <- ar_logistic_model(dataset_max = data_matrix_max, dataset_avg = data_matrix_avg, initial_train_size = 2000, update_freq = 1, prob_cut_off = 0.01, job_length = job_length, cpu_required = cpu_required, num_of_states = 10)
+  write.csv(output$avg_usage, file = paste("AR_state_logistic", job_length, "100", 0.1, "avg_usage.csv"))
   print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
-  write.csv(output$job_survival, file = paste("AR_logistic", job_length, "100", 0.1, "job_survival.csv"))
+  write.csv(output$job_survival, file = paste("AR_state_logistic", job_length, "100", 0.1, "job_survival.csv"))
   print(paste("Job survival rate:", "job length", job_length, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival)))))
-  write.csv(output$scheduling_summary, file = paste("AR_logistic",job_length, "100", 0.1,"scheduling_sum.csv"))
+  write.csv(output$scheduling_summary, file = paste("AR_state_logistic",job_length, "100", 0.1,"scheduling_sum.csv"))
   scheduled_num <- sum(output$scheduling_summary[1,])
   unscheduled_num <- sum(output$scheduling_summary[2,])
   correct_scheduled_num <- scheduled_num - sum(output$scheduling_summary[3,])
   correct_unscheduled_num <- unscheduled_num - sum(output$scheduling_summary[4,])
   print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_num / scheduled_num, "Correct unscheduled rate:", correct_unscheduled_num / unscheduled_num))
-  
 }
-write.csv(bg_job_pool, "filenames.csv")
