@@ -268,24 +268,21 @@ mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p
     }
   }
   
-  current_end <- 1
+  current_end <- p + 1
   current_percent <- 0.00
   while (current_end <= nrow(new_testset_max)) {
     
     ## Initialize Model 
     prob_vector <- c()
     prediction <- c()
-    actual <- c()
-    avg_cycle_used <- c()
-    survival <- c()
     
     for (ts_num in 1:ncol(new_testset_max)) {
       
       ## Schedule the job
-      if (current_end <= nrow(new_testset_max) - job_length + 1) {
+      if (current_end <= (nrow(new_testset_max) - job_length + 1)) {
         ts_model <- ts_models[[ts_num]]
-        last_obs_max <- new_testset_max[(current_end-p+1):current_end, ts_num]
-        last_obs_avg <- new_testset_avg[(current_end-p+1):current_end, ts_num]
+        last_obs_max <- new_testset_max[(current_end-p):(current_end-1), ts_num]
+        last_obs_avg <- new_testset_avg[(current_end-p):(current_end-1), ts_num]
         last_obs <- matrix(nrow = 2, ncol = length(last_obs_max))
         
         if (mode == "max") {
@@ -305,10 +302,28 @@ mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p
           prediction[ts_num] <- 0
           unscheduled_num[ts_num] <- unscheduled_num[ts_num] + 1
         }
-        pi_up_bounds[[paste(ts_num, ",", (current_end + 1), sep = "")]] <- compute_pi_up(mu=prediction_result$mu, varcov=prediction_result$varcov, predict_size=job_length, prob_cutoff=prob_cut_off)
+        pi_up_bounds[[paste(ts_num, ",", current_end, sep = "")]] <- compute_pi_up(mu=prediction_result$mu, varcov=prediction_result$varcov, predict_size=job_length, prob_cutoff=prob_cut_off)
       }
+    }
+    
+    ## Store probability
+    probability <- rbind(probability, prob_vector)
+    ## Store Prediction
+    predict_result <- rbind(predict_result, prediction)
+    
+    ## Queue the jobs to check their correctness later
+    closest_update <- current_end + ceiling(job_length / update_freq) * update_freq
+    end_time_testing_queue$append_number(closest_update, current_end)
+    end_time_testing_queue$append_number(closest_update, current_end + job_length - 1)
+    end_time_testing_queue$append_number(closest_update, nrow(predict_result))
+    
+    actual <- c()
+    avg_cycle_used <- c()
+    survival <- c()
+    
+    ## Check correctness of previous schedulings
+    for (ts_num in 1:ncol(new_testset_max)) {
       
-      ## Check correctness of previous schedulings
       if (length(end_time_testing_queue[[current_end]]) != 0) {
         info_lst <- end_time_testing_queue[[current_end]]
         lst_len <- length(info_lst)
@@ -343,45 +358,37 @@ mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p
       }
     }
     
-    ## Store probability
-    probability <- rbind(probability, prob_vector)
-    ## Store Evaluations
-    avg_usage <- rbind(avg_usage, avg_cycle_used)
-    job_survival <- rbind(job_survival, survival)
-    ## Store Prediction
-    predict_result <- rbind(predict_result, prediction)
     ## Store Actual
     actual_result <- rbind(actual_result, actual)
     
-    ## Queue the jobs to check their correctness later
-    closest_update <- current_end + ceiling(job_length / update_freq) * update_freq
-    end_time_testing_queue$append_number(closest_update, current_end + 1)
-    end_time_testing_queue$append_number(closest_update, current_end + job_length)
-    end_time_testing_queue$append_number(closest_update, nrow(predict_result))
+    ## Store Evaluations
+    avg_usage <- rbind(avg_usage, avg_cycle_used)
+    job_survival <- rbind(job_survival, survival)
     
     ## Update current_end
     current_end <- current_end + update_freq
-    if (current_percent != round((current_end - 1) / (nrow(new_testset_max)), digits = 2)) {
+    if (current_percent != round((current_end - p - 1) / (nrow(new_testset_max) - job_length + 1 - p), digits = 2)) {
       print(paste("Testing", current_percent))
-      current_percent <- round((current_end - 1) / (nrow(new_testset_max)), digits = 2)
+      current_percent <- round((current_end - p - 1) / (nrow(new_testset_max) - job_length + 1 - p), digits = 2)
     }
+    
   }
   
   ## Change column and row names, N by M
   colnames(probability) <- colnames(new_testset_max)
-  rownames(probability) <- seq(initial_train_size + 1, initial_train_size + 1 + update_freq * (nrow(probability) - 1), update_freq)
+  rownames(probability) <- seq(initial_train_size + p *window_size + 1, initial_train_size + p *window_size + 1 + (update_freq * window_size) * (nrow(probability) - 1), update_freq * window_size)
   
   colnames(avg_usage) <- colnames(new_testset_max)
-  rownames(avg_usage) <- seq(initial_train_size + 1, initial_train_size + 1 + update_freq * (nrow(avg_usage) - 1), update_freq)
+  rownames(avg_usage) <- seq(initial_train_size + p *window_size + 1, initial_train_size + p *window_size + 1 + (update_freq * window_size) * (nrow(avg_usage) - 1), update_freq * window_size)
   
   colnames(job_survival) <- colnames(new_testset_max)
-  rownames(job_survival) <- seq(initial_train_size + 1, initial_train_size + 1 + update_freq * (nrow(job_survival) - 1), update_freq)
+  rownames(job_survival) <- seq(initial_train_size + p *window_size + 1, initial_train_size + p *window_size + 1 + (update_freq * window_size) * (nrow(job_survival) - 1), update_freq * window_size)
   
   colnames(predict_result) <- colnames(new_testset_max)
-  rownames(predict_result) <- seq(initial_train_size + 1, initial_train_size + 1 + update_freq * (nrow(predict_result) - 1), update_freq)
+  rownames(predict_result) <- seq(initial_train_size + p *window_size + 1, initial_train_size + p *window_size + 1 + (update_freq * window_size) * (nrow(predict_result) - 1), update_freq * window_size)
   
   colnames(actual_result) <- colnames(new_testset_max)
-  rownames(actual_result) <- seq(initial_train_size + 1, initial_train_size + 1 + update_freq * (nrow(actual_result) - 1), update_freq)
+  rownames(actual_result) <- seq(initial_train_size + p *window_size + 1, initial_train_size + p *window_size + 1 + (update_freq * window_size) * (nrow(actual_result) - 1), update_freq * window_size)
   
   colnames(scheduling_summary) <- colnames(new_testset_max)
   scheduling_summary[1,] <- scheduled_num
