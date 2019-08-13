@@ -64,7 +64,7 @@ find_evaluation <- function(pi_up, actual_obs) {
   return(result)
 }
 
-svt_stationary_model <- function(dataset, initial_train_size, window_size=1, job_length=5, cpu_required, prob_cut_off=0.01, update_freq=1, mode) {
+svt_stationary_model <- function(dataset, initial_train_size, window_size, job_length, cpu_required, prob_cut_off, update_freq, mode) {
   #### input dataset: N by M matrix, N being number of observations, M being number of time series
   #### input initial_train_size: The number of first observations used to train the model
   #### input window_size: The number of observations used to train and predict
@@ -130,22 +130,18 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size=1, job
   }
   
   ## Test Model
-  current_end <- 1
+  current_end <- 2
   current_percent <- 0.00
-  while (current_end <= nrow(test_dataset)) {
+  while (current_end <= nrow(new_testset)) {
     
     ## Initialize Model 
     prob_vector <- c()
-    avg_cycle_used <- c()
-    survival <- c()
     prediction <- c()
-    actual <- c()
     
-    for (ts_num in 1:ncol(test_dataset)) {
-      
+    for (ts_num in 1:ncol(new_testset)) {
       ## Schedule the job
-      if (current_end <= nrow(test_dataset) - job_length + 1) {
-        last_obs <- test_dataset[current_end, ts_num]
+      if (current_end <= (nrow(new_testset) - job_length + 1)) {
+        last_obs <- new_testset[(current_end-1), ts_num]
         prediction_result <- do_prediction(last_obs = last_obs, phi = coeffs[ts_num], mean = means[ts_num], variance = vars[ts_num],predict_size = job_length, level = (100 - cpu_required[ts_num]))
         prob_vector[ts_num] <- prediction_result$prob
         if (prob_vector[ts_num] < prob_cut_off) {
@@ -155,9 +151,31 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size=1, job
           prediction[ts_num] <- 0
           unscheduled_num[ts_num] <- unscheduled_num[ts_num] + 1
         }
-        pi_up_bounds[[paste(ts_num, ",", (current_end + 1), sep = "")]] <- compute_pi_up(mu=prediction_result$mu, varcov=prediction_result$varcov, predict_size=job_length, prob_cutoff=prob_cut_off)
+        pi_up_bounds[[paste(ts_num, ",", current_end, sep = "")]] <- compute_pi_up(mu=prediction_result$mu, varcov=prediction_result$varcov, predict_size=job_length, prob_cutoff=prob_cut_off)
       }
-      
+    }
+    
+    ## Store probability
+    probability <- rbind(probability, prob_vector)
+    ## Store Prediction
+    predict_result <- rbind(predict_result, prediction)
+    
+    ## Queue the jobs to check their correctness later
+    closest_update <- NA
+    if (job_length == 1) {
+      closest_update <- current_end
+    } else {
+      closest_update <- current_end + ceiling(job_length / update_freq) * update_freq
+    }
+    end_time_testing_queue$append_number(closest_update, current_end)
+    end_time_testing_queue$append_number(closest_update, current_end + job_length - 1)
+    end_time_testing_queue$append_number(closest_update, nrow(predict_result))
+    
+    actual <- c()
+    avg_cycle_used <- c()
+    survival <- c()
+    
+    for (ts_num in 1:ncol(new_testset)) {
       ## Check correctness of previous schedulings
       if (length(end_time_testing_queue[[current_end]]) != 0) {
         info_lst <- end_time_testing_queue[[current_end]]
@@ -167,7 +185,7 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size=1, job
           end_time <- info_lst[i+1]
           row_num <- info_lst[i+2]
           
-          position_vec <- test_dataset[start_time:end_time, ts_num]
+          position_vec <- new_testset[start_time:end_time, ts_num]
           if (all(position_vec < (100 - cpu_required[ts_num]))) {
             actual[ts_num] <- 1
             if (predict_result[row_num, ts_num] == 0) {
@@ -187,47 +205,38 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size=1, job
       }
     }
     
-    ## Store probability
-    probability <- rbind(probability, prob_vector)
-    ## Store Evaluations
-    avg_usage <- rbind(avg_usage, avg_cycle_used)
-    job_survival <- rbind(job_survival, survival)
-    ## Store Prediction
-    predict_result <- rbind(predict_result, prediction)
     ## Store Actual
     actual_result <- rbind(actual_result, actual)
     
-    ## Queue the jobs to check their correctness later
-    closest_update <- current_end + ceiling(job_length / update_freq) * update_freq
-    end_time_testing_queue$append_number(closest_update, current_end + 1)
-    end_time_testing_queue$append_number(closest_update, current_end + job_length)
-    end_time_testing_queue$append_number(closest_update, nrow(predict_result))
+    ## Store Evaluations
+    avg_usage <- rbind(avg_usage, avg_cycle_used)
+    job_survival <- rbind(job_survival, survival)
     
     ## Update current_end
     current_end <- current_end + update_freq
-    if (current_percent != round(current_end / nrow(test_dataset), digits = 2)) {
+    if (current_percent != round((current_end - 1) / (nrow(new_testset) - job_length), digits = 2)) {
       print(paste("Testing", current_percent))
-      current_percent <- round(current_end / nrow(test_dataset), digits = 2)
+      current_percent <- round((current_end - 1) / (nrow(new_testset) - job_length), digits = 2)
     }
   }
   
   ## Change column and row names, N by M
-  colnames(probability) <- colnames(dataset)
-  rownames(probability) <- seq(initial_train_size + 1, initial_train_size + 1 + update_freq * (nrow(probability) - 1), update_freq)
+  colnames(probability) <- colnames(new_testset)
+  rownames(probability) <- seq(initial_train_size + window_size + 1, initial_train_size + window_size + 1 + (update_freq * window_size) * (nrow(probability) - 1), update_freq * window_size)
   
-  colnames(avg_usage) <- colnames(dataset)
-  rownames(avg_usage) <- seq(initial_train_size + 1, initial_train_size + 1 + update_freq * (nrow(avg_usage) - 1), update_freq)
+  colnames(avg_usage) <- colnames(new_testset)
+  rownames(avg_usage) <- seq(initial_train_size + window_size + 1, initial_train_size + window_size + 1 + (update_freq * window_size) * (nrow(avg_usage) - 1), update_freq * window_size)
   
-  colnames(job_survival) <- colnames(dataset)
-  rownames(job_survival) <- seq(initial_train_size + 1, initial_train_size + 1 + update_freq * (nrow(job_survival) - 1), update_freq)
+  colnames(job_survival) <- colnames(new_testset)
+  rownames(job_survival) <- seq(initial_train_size + window_size + 1, initial_train_size + window_size + 1 + (update_freq * window_size) * (nrow(job_survival) - 1), update_freq * window_size)
   
-  colnames(predict_result) <- colnames(dataset)
-  rownames(predict_result) <- seq(initial_train_size + 1, initial_train_size + 1 + update_freq * (nrow(predict_result) - 1), update_freq)
+  colnames(predict_result) <- colnames(new_testset)
+  rownames(predict_result) <- seq(initial_train_size + window_size + 1, initial_train_size + window_size + 1 + (update_freq * window_size) * (nrow(predict_result) - 1), update_freq * window_size)
   
-  colnames(actual_result) <- colnames(dataset)
-  rownames(actual_result) <- seq(initial_train_size + 1, initial_train_size + 1 + update_freq * (nrow(actual_result) - 1), update_freq)
+  colnames(actual_result) <- colnames(new_testset)
+  rownames(actual_result) <- seq(initial_train_size + window_size + 1, initial_train_size + window_size + 1 + (update_freq * window_size) * (nrow(actual_result) - 1), update_freq * window_size)
   
-  colnames(scheduling_summary) <- colnames(dataset)
+  colnames(scheduling_summary) <- colnames(new_testset)
   scheduling_summary[1,] <- scheduled_num
   scheduling_summary[2,] <- unscheduled_num
   scheduling_summary[3,] <- falsely_scheduled_num
@@ -242,34 +251,50 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size=1, job
 
 ## Read back ground job pool
 
-bg_job_pool_names <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 bg jobs.csv")[,1]
-bg_job_pool <- sub(".pd", "", bg_job_pool_names)
+arg <- commandArgs(trailingOnly = TRUE)
+sample_size <- 100
+window_size <- 36
+job_length <- 1
+cpu_usage <- 3
+prob_cut_off <- 0.1
+mode <- 'max'
+
+cat(arg, sep = "\n")
+
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
+bg_job_pool <- NULL
+if (sample_size == 100 ) {
+  bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 bg jobs.csv")[,2]
+} else {
+  bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled background jobs.csv")[,1]
+  bg_job_pool <- sub(".pd", "", bg_job_pool)
+}
 
 data_matrix <- matrix(nrow = 4000, ncol = 0)
 for (job_num in bg_job_pool) {
   bg_job <- read.csv(paste(bg_jobs_path, job_num, ".csv", sep = ""))
-  data_matrix <- cbind(data_matrix, bg_job$max_cpu[4033:8032])
+  if (mode == "max") {
+    data_matrix <- cbind(data_matrix, bg_job$max_cpu[4033:8032])
+  } else {
+    data_matrix <- cbind(data_matrix, bg_job$avg_cpu[4033:8032])
+  }
 }
-rownames(data_matrix) <- seq(1, 1 + (nrow(data_matrix) - 1), 1)
+rownames(data_matrix) <- seq(1, 1 + 5 * (nrow(data_matrix) - 1), 5)
 colnames(data_matrix) <- bg_job_pool
 
 cpu_required <- rep(0, ncol(data_matrix))
 for (j in 1:ncol(data_matrix)) {
-  cpu_required[j] <- as.numeric(quantile(data_matrix[,j], c(0.15, 0.5, 0.85), type = 4)[3])
+  cpu_required[j] <- as.numeric(quantile(data_matrix[,j], c(0.15, 0.5, 0.85), type = 4)[cpu_usage])
 }
 
-for (window_size in c(12, 36)) {
-  
-  output <- svt_stationary_model(dataset=data_matrix, job_length=1, window_size = window_size, cpu_required=(100-cpu_required), prob_cut_off=0.01, initial_train_size = 2000, update_freq=1, mode = 'max')
-  write.csv(output$avg_usage, file = paste("AR1", job_length, "1000", 0.01, "avg_usage.csv"))
-  print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
-  write.csv(output$job_survival, file = paste("AR1", job_length, "1000", 0.01,"job_survival.csv"))
-  print(paste("Job survival rate:", "job length", job_length, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival)))))
-  write.csv(output$scheduling_summary, file = paste("AR1", job_length, "1000", 0.01, "scheduling_sum.csv"))
-  scheduled_num <- sum(output$scheduling_summary[1,])
-  unscheduled_num <- sum(output$scheduling_summary[2,])
-  correct_scheduled_num <- scheduled_num - sum(output$scheduling_summary[3,])
-  correct_unscheduled_num <- unscheduled_num - sum(output$scheduling_summary[4,])
-  print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_num / scheduled_num, "Correct unscheduled rate:", correct_unscheduled_num / unscheduled_num))
-}
+output <- svt_stationary_model(dataset = data_matrix, job_length=job_length, window_size = window_size, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size = 2000, update_freq=1, mode = mode)
+write.csv(output$avg_usage, file = paste("AR1",job_length, sample_size, prob_cut_off, "avg_usage.csv"))
+print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
+write.csv(output$job_survival, file = paste("AR1",job_length, sample_size, prob_cut_off,"job_survival.csv"))
+print(paste("Job survival rate:", "job length", job_length, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival)))))
+write.csv(output$scheduling_summary, file = paste("AR1", job_length, sample_size, prob_cut_off, "scheduling_sum.csv"))
+scheduled_num <- sum(output$scheduling_summary[1,])
+unscheduled_num <- sum(output$scheduling_summary[2,])
+correct_scheduled_num <- scheduled_num - sum(output$scheduling_summary[3,])
+correct_unscheduled_num <- unscheduled_num - sum(output$scheduling_summary[4,])
+print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_num / scheduled_num, "Correct unscheduled rate:", correct_unscheduled_num / unscheduled_num))
