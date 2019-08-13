@@ -144,7 +144,7 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size=1, job
     for (ts_num in 1:ncol(test_dataset)) {
       
       ## Schedule the job
-      if (current_end <= nrow(test_dataset) - 1) {
+      if (current_end <= nrow(test_dataset) - job_length + 1) {
         last_obs <- test_dataset[current_end, ts_num]
         prediction_result <- do_prediction(last_obs = last_obs, phi = coeffs[ts_num], mean = means[ts_num], variance = vars[ts_num],predict_size = job_length, level = (100 - cpu_required[ts_num]))
         prob_vector[ts_num] <- prediction_result$prob
@@ -242,7 +242,7 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size=1, job
 
 ## Read back ground job pool
 
-bg_job_pool_names <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled background jobs.csv")[,1]
+bg_job_pool_names <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 bg jobs.csv")[,1]
 bg_job_pool <- sub(".pd", "", bg_job_pool_names)
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
 
@@ -259,10 +259,9 @@ for (j in 1:ncol(data_matrix)) {
   cpu_required[j] <- as.numeric(quantile(data_matrix[,j], c(0.15, 0.5, 0.85), type = 4)[3])
 }
 
-for (job_length in c(12)) {
-  print(paste("Job_length", job_length))
+for (window_size in c(12, 36)) {
   
-  output <- svt_stationary_model(dataset=data_matrix, job_length=job_length, window_size = 1, cpu_required=(100-cpu_required), prob_cut_off=0.01, initial_train_size = 2000, update_freq=1, mode = 'max')
+  output <- svt_stationary_model(dataset=data_matrix, job_length=1, window_size = window_size, cpu_required=(100-cpu_required), prob_cut_off=0.01, initial_train_size = 2000, update_freq=1, mode = 'max')
   write.csv(output$avg_usage, file = paste("AR1", job_length, "1000", 0.01, "avg_usage.csv"))
   print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
   write.csv(output$job_survival, file = paste("AR1", job_length, "1000", 0.01,"job_survival.csv"))

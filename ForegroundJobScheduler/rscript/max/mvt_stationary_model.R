@@ -1,9 +1,25 @@
-library("ggplot2")
 library("forecast")
 library("mvtnorm")
 library("dict")
 library("MTS")
 
+convert_frequency_dataset <- function(dataset, new_freq, mode) {
+  new_avg_cpu <- c()
+  window_num <- NULL
+  window_num <- floor(length(dataset) / new_freq)
+  for (i in 1:window_num) {
+    from <- (i - 1) * new_freq + 1
+    to <- i * new_freq
+    new_val <- NULL
+    if (mode == 'max') {
+      new_val <- max(dataset[from:to], na.rm = TRUE)
+    } else {
+      new_val <- mean(dataset[from:to], na.rm = TRUE)
+    }
+    new_avg_cpu <- c(new_avg_cpu, new_val)
+  }
+  return(new_avg_cpu)
+}
 
 initialize_coefficient_matrix <- function(ma_coef, q, predict_size, current_err) {
   initial <- matrix(0, nrow = 2, ncol = 2*(predict_size + q))
@@ -161,7 +177,7 @@ find_evaluation <- function(pi_up, actual_obs) {
   return(result)
 }
 
-mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p, q, job_length=5, cpu_required, prob_cut_off=0.01, update_freq=1, ts_models_import = NULL) {
+mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p, q, job_length=5, cpu_required, prob_cut_off=0.01, update_freq=1, ts_models_import = NULL, mode = "max") {
   #### input dataset_avg: N by M matrix, N being number of observations, M being number of time series
   #### input dataset_max: N by M matrix, N being number of observations, M being number of time series
   #### input initial_train_size: The number of first observations used to train the model'
@@ -195,19 +211,56 @@ mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p
   falsely_scheduled_num <- rep(0, ncol(dataset_avg))
   falsely_unscheduled_num <- rep(0, ncol(dataset_avg))
   
+  ## Split in Training and Testing Set
+  train_dataset_max <- dataset_max[1:initial_train_size,]
+  test_dataset_max <- dataset_max[(initial_train_size+1):nrow(dataset_max),]
+  train_dataset_avg <- dataset_avg[1:initial_train_size,]
+  test_dataset_avg <- dataset_avg[(initial_train_size+1):nrow(dataset_avg),]
+  
+  ## Convert Frequency
+  new_trainset_max <- matrix(nrow = floor(nrow(train_dataset_max) / window_size), ncol = 0)
+  new_testset_max <- matrix(nrow = floor(nrow(test_dataset_max) / window_size), ncol = 0)
+  new_trainset_avg <- matrix(nrow = floor(nrow(train_dataset_avg) / window_size), ncol = 0)
+  new_testset_avg <- matrix(nrow = floor(nrow(train_dataset_avg) / window_size), ncol = 0)
+  for (ts_num in 1:ncol(train_dataset_max)) {
+    converted_data <- convert_frequency_dataset(train_dataset_max[, ts_num], window_size, "max")
+    new_trainset_max <- cbind(new_trainset_max, converted_data)
+    converted_data <- convert_frequency_dataset(test_dataset_max[, ts_num], window_size, "max")
+    new_testset_max <- cbind(new_testset_max, converted_data)
+    
+    converted_data <- convert_frequency_dataset(train_dataset_avg[, ts_num], window_size, "avg")
+    new_trainset_avg <- cbind(new_trainset_avg, converted_data)
+    converted_data <- convert_frequency_dataset(test_dataset_avg[, ts_num], window_size, "avg")
+    new_testset_avg <- cbind(new_testset_avg, converted_data)
+  }
+  rownames(new_trainset_max) <- seq(1, 1 + window_size * (nrow(new_trainset_max) - 1), window_size)
+  colnames(new_trainset_max) <- colnames(train_dataset_max)
+  rownames(new_testset_max) <- seq(initial_train_size + 1, initial_train_size + 1 + (nrow(new_testset_max) - 1), 1)
+  colnames(new_testset_max) <- colnames(test_dataset_max)
+  rownames(new_trainset_avg) <- seq(1, 1 + window_size * (nrow(new_trainset_avg) - 1), window_size)
+  colnames(new_trainset_avg) <- colnames(train_dataset_avg)
+  rownames(new_testset_avg) <- seq(initial_train_size + 1, initial_train_size + 1 + (nrow(new_testset_avg) - 1), 1)
+  colnames(new_testset_avg) <- colnames(test_dataset_avg)
+  
   ## Train Model
   train_percent <- 0.00
-  for (ts_num in 1:ncol(dataset_avg)) {
+  for (ts_num in 1:ncol(new_trainset_max)) {
     if (is.null(ts_models_import)) {
-      if (round(ts_num / ncol(dataset_avg), 2) != train_percent) {
+      if (round(ts_num / ncol(new_trainset_max), 2) != train_percent) {
         print(paste("Training", train_percent))
-        train_percent <- round(ts_num / ncol(dataset_avg), 2)
+        train_percent <- round(ts_num / ncol(new_trainset_max), 2)
       }
-      uni_data_avg <- dataset_avg[1:initial_train_size, ts_num]
-      uni_data_max <- dataset_max[1:initial_train_size, ts_num]
-      uni_data_matrix <- matrix(nrow = nrow(dataset_avg), ncol = 2)
-      uni_data_matrix[,1] <- uni_data_max
-      uni_data_matrix[,2] <- uni_data_avg
+      uni_data_max <- new_trainset_max[, ts_num]
+      uni_data_avg <- new_trainset_avg[, ts_num]
+      uni_data_matrix <- matrix(nrow = nrow(new_trainset_max), ncol = 2)
+      
+      if (mode == "max") {
+        uni_data_matrix[,1] <- uni_data_max
+        uni_data_matrix[,2] <- uni_data_avg
+      } else {
+        uni_data_matrix[,1] <- uni_data_avg
+        uni_data_matrix[,2] <- uni_data_max
+      }
       ts_model <- VARMACpp(uni_data_matrix, p, q, include.mean = TRUE, details = FALSE)
       ts_models[[ts_num]] <- ts_model
     } else {
@@ -215,9 +268,9 @@ mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p
     }
   }
   
-  current_end <- initial_train_size
+  current_end <- 1
   current_percent <- 0.00
-  while (current_end <= nrow(dataset_avg)) {
+  while (current_end <= nrow(new_testset_max)) {
     
     ## Initialize Model 
     prob_vector <- c()
@@ -226,16 +279,23 @@ mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p
     avg_cycle_used <- c()
     survival <- c()
     
-    for (ts_num in 1:ncol(dataset_avg)) {
+    for (ts_num in 1:ncol(new_testset_max)) {
       
       ## Schedule the job
-      if (current_end <= nrow(dataset_avg) - job_length) {
+      if (current_end <= nrow(new_testset_max) - job_length + 1) {
         ts_model <- ts_models[[ts_num]]
-        last_obs_max <- dataset_max[(current_end-p+1):current_end, ts_num]
-        last_obs_avg <- dataset_avg[(current_end-p+1):current_end, ts_num]
+        last_obs_max <- new_testset_max[(current_end-p+1):current_end, ts_num]
+        last_obs_avg <- new_testset_avg[(current_end-p+1):current_end, ts_num]
         last_obs <- matrix(nrow = 2, ncol = length(last_obs_max))
-        last_obs[1,] <- last_obs_max
-        last_obs[2,] <- last_obs_avg
+        
+        if (mode == "max") {
+          last_obs[1,] <- last_obs_max
+          last_obs[2,] <- last_obs_avg
+        } else {
+          last_obs[1,] <- last_obs_avg
+          last_obs[2,] <- last_obs_max
+        }
+        
         prediction_result <- do_prediction(last_obs = last_obs, ts_model = ts_model, predict_size = job_length, level = (100 - cpu_required[ts_num]))
         prob_vector[ts_num] <- prediction_result$prob
         if (prob_vector[ts_num] < prob_cut_off) {
@@ -257,7 +317,13 @@ mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p
           end_time <- info_lst[i+1]
           row_num <- info_lst[i+2]
           
-          position_vec <- dataset_avg[start_time:end_time, ts_num]
+          position_vec <- NULL
+          if (mode == "max") {
+            position_vec <- new_testset_max[start_time:end_time, ts_num]
+          } else {
+            position_vec <- new_testset_avg[start_time:end_time, ts_num]
+          }
+          
           if (all(position_vec < (100 - cpu_required[ts_num]))) {
             actual[ts_num] <- 1
             if (predict_result[row_num, ts_num] == 0) {
@@ -295,29 +361,29 @@ mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p
     
     ## Update current_end
     current_end <- current_end + update_freq
-    if (current_percent != round((current_end - initial_train_size) / (nrow(dataset_avg) - initial_train_size), digits = 2)) {
+    if (current_percent != round((current_end - 1) / (nrow(new_testset_max)), digits = 2)) {
       print(paste("Testing", current_percent))
-      current_percent <- round((current_end - initial_train_size) / (nrow(dataset_avg) - initial_train_size), digits = 2)
+      current_percent <- round((current_end - 1) / (nrow(new_testset_max)), digits = 2)
     }
   }
   
   ## Change column and row names, N by M
-  colnames(probability) <- colnames(dataset_avg)
+  colnames(probability) <- colnames(new_testset_max)
   rownames(probability) <- seq(initial_train_size + 1, initial_train_size + 1 + update_freq * (nrow(probability) - 1), update_freq)
   
-  colnames(avg_usage) <- colnames(dataset_avg)
+  colnames(avg_usage) <- colnames(new_testset_max)
   rownames(avg_usage) <- seq(initial_train_size + 1, initial_train_size + 1 + update_freq * (nrow(avg_usage) - 1), update_freq)
   
-  colnames(job_survival) <- colnames(dataset_avg)
+  colnames(job_survival) <- colnames(new_testset_max)
   rownames(job_survival) <- seq(initial_train_size + 1, initial_train_size + 1 + update_freq * (nrow(job_survival) - 1), update_freq)
   
-  colnames(predict_result) <- colnames(dataset_avg)
+  colnames(predict_result) <- colnames(new_testset_max)
   rownames(predict_result) <- seq(initial_train_size + 1, initial_train_size + 1 + update_freq * (nrow(predict_result) - 1), update_freq)
   
-  colnames(actual_result) <- colnames(dataset_avg)
+  colnames(actual_result) <- colnames(new_testset_max)
   rownames(actual_result) <- seq(initial_train_size + 1, initial_train_size + 1 + update_freq * (nrow(actual_result) - 1), update_freq)
   
-  colnames(scheduling_summary) <- colnames(dataset_avg)
+  colnames(scheduling_summary) <- colnames(new_testset_max)
   scheduling_summary[1,] <- scheduled_num
   scheduling_summary[2,] <- unscheduled_num
   scheduling_summary[3,] <- falsely_scheduled_num
@@ -331,9 +397,24 @@ mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p
 
 ## Read back ground job pool
 
-bg_job_pool_names <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled background jobs.csv")[,1]
-bg_job_pool <- sub(".pd", "", bg_job_pool_names)
+arg <- commandArgs(trailingOnly = TRUE)
+sample_size <- 100
+window_size <- 12
+job_length <- 1
+cpu_usage <- 3
+prob_cut_off <- 0.01
+mode <- 'max'
+
+cat(arg, sep = "\n")
+
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
+bg_job_pool <- NULL
+if (sample_size == 100 ) {
+  bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 bg jobs.csv")[,2]
+} else {
+  bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled background jobs.csv")[,1]
+  bg_job_pool <- sub(".pd", "", bg_job_pool)
+}
 
 data_matrix_avg <- matrix(nrow = 4000, ncol = 0)
 data_matrix_max <- matrix(nrow = 4000, ncol = 0)
@@ -349,21 +430,17 @@ colnames(data_matrix_max) <- bg_job_pool
 
 cpu_required <- rep(0, ncol(data_matrix_max))
 for (j in 1:ncol(data_matrix_max)) {
-  cpu_required[j] <- as.numeric(quantile(data_matrix_max[,j], c(0.15, 0.5, 0.85), type = 4)[3])
+  cpu_required[j] <- as.numeric(quantile(data_matrix_max[,j], c(0.15, 0.5, 0.85), type = 4)[cpu_usage])
 }
 
-for (job_length in c(1)) {
-  print(paste("Job_length", job_length))
-  
-  output <- mvt_stationary_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, p=2, q=0,job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=0.01, initial_train_size = 2000, update_freq=1)
-  write.csv(output$avg_usage, file = paste("VARMA",job_length, "100", 0.01, "avg_usage.csv"))
-  print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
-  write.csv(output$job_survival, file = paste("VARMA",job_length, "100", 0.01,"job_survival.csv"))
-  print(paste("Job survival rate:", "job length", job_length, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival)))))
-  write.csv(output$scheduling_summary, file = paste("VARMA", job_length, "100", 0.01, "scheduling_sum.csv"))
-  scheduled_num <- sum(output$scheduling_summary[1,])
-  unscheduled_num <- sum(output$scheduling_summary[2,])
-  correct_scheduled_num <- scheduled_num - sum(output$scheduling_summary[3,])
-  correct_unscheduled_num <- unscheduled_num - sum(output$scheduling_summary[4,])
-  print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_num / scheduled_num, "Correct unscheduled rate:", correct_unscheduled_num / unscheduled_num))
-}
+output <- mvt_stationary_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, p=1, q=0,job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size = 2000, update_freq=1)
+write.csv(output$avg_usage, file = paste("VARMA",job_length, sample_size, prob_cut_off, "avg_usage.csv"))
+print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
+write.csv(output$job_survival, file = paste("VARMA",job_length, sample_size, prob_cut_off,"job_survival.csv"))
+print(paste("Job survival rate:", "job length", job_length, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival)))))
+write.csv(output$scheduling_summary, file = paste("VARMA", job_length, sample_size, prob_cut_off, "scheduling_sum.csv"))
+scheduled_num <- sum(output$scheduling_summary[1,])
+unscheduled_num <- sum(output$scheduling_summary[2,])
+correct_scheduled_num <- scheduled_num - sum(output$scheduling_summary[3,])
+correct_unscheduled_num <- unscheduled_num - sum(output$scheduling_summary[4,])
+print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_num / scheduled_num, "Correct unscheduled rate:", correct_unscheduled_num / unscheduled_num))

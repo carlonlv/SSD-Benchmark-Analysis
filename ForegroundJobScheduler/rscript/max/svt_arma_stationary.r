@@ -92,7 +92,7 @@ find_evaluation <- function(pi_up, actual_obs) {
   return(result)
 }
 
-svt_stationary_model <- function(dataset, initial_train_size, job_length=5, cpu_required, prob_cut_off=0.01, update_freq=1, ts_models_import = NULL) {
+svt_stationary_model <- function(dataset, initial_train_size, job_length=5, cpu_required, prob_cut_off=0.01, update_freq=1, ts_models_import = NULL, mode = "max") {
   #### input dataset: N by M matrix, N being number of observations, M being number of time series
   #### input initial_train_size: The number of first observations used to train the model
   #### input job_length: The time that the foreground job will be runing
