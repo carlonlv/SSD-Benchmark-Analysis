@@ -56,14 +56,14 @@ ar1_model <- function(train_set, test_set, update_freq=1) {
       print(paste("Training", train_percent))
       train_percent <- round(ts_num / ncol(train_set), 2)
     }
-    ts_model <- arima(train_set[1:nrow(train_set), ts_num], order = c(1,0,0), include.mean = TRUE)
+    ts_model <- arima(train_set[1:nrow(train_set), ts_num], order = c(1,0,0), include.mean = TRUE, method = "ML", optim.control = list(maxit=2000))
     coeffs[ts_num] <- as.numeric(ts_model$coef[1])
     means[ts_num] <- as.numeric(ts_model$coef[2])
     vars[ts_num] <- ts_model$sigma2
   }
   
   ## Test Model
-  current_end <- 1
+  current_end <- 2
   current_percent <- 0.00
   while (current_end <= nrow(test_set)) {
     
@@ -74,7 +74,7 @@ ar1_model <- function(train_set, test_set, update_freq=1) {
       
       ## Schedule the job
       if (current_end <= nrow(test_set)) {
-        last_obs <- test_set[current_end, ts_num]
+        last_obs <- test_set[(current_end-1), ts_num]
         predicted_mean[ts_num] <- do_prediction(last_obs, coeffs[ts_num], means[ts_num], vars[ts_num])$mu
       }
     }
@@ -91,7 +91,7 @@ ar1_model <- function(train_set, test_set, update_freq=1) {
   
   ## Change column and row names, N by M
   colnames(predicted_result) <- colnames(test_set)
-  rownames(predicted_result) <- rownames(test_set)
+  rownames(predicted_result) <- rownames(test_set)[-1]
   
   return(predicted_result)
 }
