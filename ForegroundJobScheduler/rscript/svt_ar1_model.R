@@ -253,10 +253,10 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
 
 arg <- commandArgs(trailingOnly = TRUE)
 sample_size <- 100
-window_size <- 12
+window_size <- 36
 job_length <- 1
 cpu_usage <- 3
-prob_cut_off <- 0.01
+prob_cut_off <- 0.1
 mode <- 'max'
 
 cat(arg, sep = "\n")
@@ -288,11 +288,11 @@ for (j in 1:ncol(data_matrix)) {
 }
 
 output <- svt_stationary_model(dataset = data_matrix, job_length=job_length, window_size = window_size, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size = 2000, update_freq=1, mode = mode)
-write.csv(output$avg_usage, file = paste("AR1",job_length, sample_size, prob_cut_off, "avg_usage.csv"))
-print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
-write.csv(output$job_survival, file = paste("AR1",job_length, sample_size, prob_cut_off,"job_survival.csv"))
-print(paste("Job survival rate:", "job length", job_length, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival)))))
-write.csv(output$scheduling_summary, file = paste("AR1", job_length, sample_size, prob_cut_off, "scheduling_sum.csv"))
+write.csv(output$avg_usage, file = paste("AR1",window_size, sample_size, prob_cut_off, "avg_usage.csv"))
+print(paste("Avg cycle used:", "job length", window_size, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
+write.csv(output$job_survival, file = paste("AR1",window_size, sample_size, prob_cut_off,"job_survival.csv"))
+print(paste("Job survival rate:", "job length", window_size, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival)))))
+write.csv(output$scheduling_summary, file = paste("AR1", window_size, sample_size, prob_cut_off, "scheduling_sum.csv"))
 scheduled_num <- sum(output$scheduling_summary[1,])
 unscheduled_num <- sum(output$scheduling_summary[2,])
 correct_scheduled_num <- scheduled_num - sum(output$scheduling_summary[3,])
