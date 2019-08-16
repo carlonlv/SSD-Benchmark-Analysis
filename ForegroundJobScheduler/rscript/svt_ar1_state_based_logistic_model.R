@@ -327,7 +327,6 @@ job_length <- window_size
 cpu_usage <- 3
 prob_cut_off <- 0.1
 num_of_states <- 100
-mode <- 'max'
 
 cat(arg, sep = "\n")
 
