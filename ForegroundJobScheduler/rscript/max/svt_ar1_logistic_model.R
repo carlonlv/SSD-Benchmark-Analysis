@@ -123,7 +123,16 @@ build_conditional_variation <- function(train_set_avg, train_set_max, precision=
       group_by(avg) %>% 
       summarise(sd=sqrt(var(max))) %>%
       filter(!is.na(sd))
-    sd.lm <- lm(sd~avg+I(avg^2), data = new_parsed_dat)
+    
+    sd.lm <- NULL
+    if (nrow(new_parsed_dat) >= 3) {
+      sd.lm <- lm(sd~avg+I(avg^2), data = new_parsed_dat)
+    } else if (nrow(new_parsed_dat) == 2) {
+      sd.lm <- lm(sd~avg, data = new_parsed_dat)
+    } else {
+      sd.lm <- new_parsed_dat$sd^2
+    }
+    
     return(sd.lm)
   } else {
     clustering_result <- list()
@@ -156,7 +165,11 @@ kmeans_find_var <- function(expected_avg, kmeans_model_df) {
 generate_expected_conditional_var <- function(expected_avgs, mode, variance_model) {
   expected_var <- c()
   if (mode == "lm") {
-    expected_var <- predict(variance_model, newdata=data.frame("avg"=expected_avgs), type = "response")^2
+    if (is.numeric(variance_model)) {
+      expected_var <- rep(variance_model, length(expected_avgs))
+    } else {
+      expected_var <- predict(variance_model, newdata=data.frame("avg"=expected_avgs), type = "response")^2
+    }
   } else {
     expected_var <- sapply(expected_avgs, kmeans_find_var, kmeans_model_df = variance_model)
   }
@@ -173,26 +186,22 @@ compute_pi_up <- function(expected_max, expected_var, prob_cut_off) {
   return(min(expected_max + qnorm(p=(1-prob_cut_off)) * sqrt(expected_var), 100))
 }
 
-logistic_model <- function(train_set_avg, train_set_max, predicted_avgs, update_freq=1, cpu_required) {
+logistic_model <- function(train_set_avg, train_set_max, predicted_avgs, update_freq=1, cpu_required, cond.var) {
   
   ## Training Step
   fitted_logistic_models <- list()
   fitted_conditional_var_models <- list()
-  conditional_var_model_choice <- c()
   parsed_inputs <- parser_for_logistic_model(train_set_avg, train_set_max, cpu_required)
   
   for (ts_num in 1:ncol(train_set_avg)) {
     df <- parsed_inputs[[ts_num]]
     log.lm <- glm(survived~avg, data = df, family = "binomial", control=glm.control(maxit=50))
     fitted_logistic_models[[ts_num]] <- log.lm
-    conditional_var_model <- build_conditional_variation(train_set_avg[, ts_num], train_set_max[, ts_num], precision = 1, method = "lm")
-    ss <- summary(conditional_var_model)
-    lm_good_enough <- pf(ss$fstatistic[1], ss$fstatistic[2], ss$fstatistic[3], lower.tail=FALSE) <= 0.05
-    if (!lm_good_enough | is.na(lm_good_enough)) {
-      conditional_var_model_choice[ts_num] <- "kmeans"
-      conditional_var_model <- build_conditional_variation(train_set_avg[, ts_num], train_set_max[, ts_num], precision = 1, method = "kmeans")
+    conditional_var_model <- NULL
+    if (cond.var == "lm") {
+      conditional_var_model <- build_conditional_variation(train_set_avg[, ts_num], train_set_max[, ts_num], precision = 1, method = "lm")
     } else {
-      conditional_var_model_choice[ts_num] <- "lm"
+      conditional_var_model <- build_conditional_variation(train_set_avg[, ts_num], train_set_max[, ts_num], precision = 1, method = "kmeans")
     }
     fitted_conditional_var_models[[ts_num]] <- conditional_var_model
   }
@@ -204,7 +213,7 @@ logistic_model <- function(train_set_avg, train_set_max, predicted_avgs, update_
   for (ts_num in 1:ncol(train_set_avg)) {
     expected_avgs <- predicted_avgs[seq(1, nrow(predicted_avgs), update_freq), ts_num]
     conditional_var_model <- fitted_conditional_var_models[[ts_num]]
-    expected_vars <- generate_expected_conditional_var(expected_avgs, mode = conditional_var_model_choice[ts_num], variance_model = conditional_var_model)
+    expected_vars <- generate_expected_conditional_var(expected_avgs, mode = cond.var, variance_model = conditional_var_model)
     expected_ts_variance[[ts_num]] <- expected_vars
     prob <- predict(fitted_logistic_models[[ts_num]], newdata = data.frame("avg"=expected_avgs), type = "response")
     prob_ts_cross_threshold[[ts_num]] <- 1 - prob
@@ -213,7 +222,7 @@ logistic_model <- function(train_set_avg, train_set_max, predicted_avgs, update_
   return(result)
 }
 
-ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob_cut_off, update_freq, job_length, cpu_required) {
+ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob_cut_off, update_freq, job_length, cpu_required, cond.var) {
   #### input dataset_avg, dataset_max: N by M matrix, N being number of observations, M being number of time series
   #### input initial_train_size: The number of first observations used to train the model
   #### input window_size: The number of observations used to train and predict as one sample
@@ -254,7 +263,7 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   test_avgs <- ar1_model(train_set_avg, test_set_avg, update_freq=1)
   
   print("Second layer: Logistic Regression.")
-  logistic_output <- logistic_model(train_set_avg, train_set_max, test_avgs, update_freq=1, cpu_required)
+  logistic_output <- logistic_model(train_set_avg, train_set_max, test_avgs, update_freq=1, cpu_required, cond.var = cond.var)
   
   ## N by M dataframe
   probability <- data.frame(matrix(nrow = (nrow(test_set_max) - 1), ncol = ncol(test_set_max)))
@@ -340,7 +349,7 @@ window_size <- 36
 job_length <- window_size
 cpu_usage <- 3
 prob_cut_off <- 0.01
-mode <- 'max'
+cond.var <- "lm"
 
 cat(arg, sep = "\n")
 
@@ -370,7 +379,7 @@ for (j in 1:ncol(data_matrix_max)) {
   cpu_required[j] <- as.numeric(quantile(data_matrix_max[,j], c(0.15, 0.5, 0.95), type = 4)[cpu_usage])
 }
 
-output <- ar_logistic_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size = 2000, update_freq=1)
+output <- ar_logistic_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size = 2000, update_freq=1, cond.var = cond.var)
 write.csv(output$avg_usage, file = paste("AR1_logistic_state",job_length, sample_size, prob_cut_off, "avg_usage.csv"))
 print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
 write.csv(output$job_survival, file = paste("AR1_logistic_state",job_length, sample_size, prob_cut_off,"job_survival.csv"))
