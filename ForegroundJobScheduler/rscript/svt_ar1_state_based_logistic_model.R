@@ -64,7 +64,7 @@ ar1_model <- function(train_set, test_set, update_freq=1) {
       print(paste("Training", train_percent))
       train_percent <- round(ts_num / ncol(train_set), 2)
     }
-    ts_model <- arima(train_set[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "ML")
+    ts_model <- arima(train_set[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "ML", optim.control = list(maxit=2000))
     coeffs[ts_num] <- as.numeric(ts_model$coef[1])
     means[ts_num] <- as.numeric(ts_model$coef[2])
     vars[ts_num] <- ts_model$sigma2
@@ -326,6 +326,7 @@ window_size <- 36
 job_length <- window_size
 cpu_usage <- 3
 prob_cut_off <- 0.1
+num_of_states <- 100
 mode <- 'max'
 
 cat(arg, sep = "\n")
@@ -356,12 +357,12 @@ for (j in 1:ncol(data_matrix_max)) {
   cpu_required[j] <- as.numeric(quantile(data_matrix_max[,j], c(0.15, 0.5, 0.85), type = 4)[cpu_usage])
 }
 
-output <- ar_logistic_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size = 2000, update_freq=1, num_of_states = 20)
-write.csv(output$avg_usage, file = paste("AR1_logistic_state",job_length, sample_size, prob_cut_off, "avg_usage.csv"))
-print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
-write.csv(output$job_survival, file = paste("AR1_logistic_state",job_length, sample_size, prob_cut_off,"job_survival.csv"))
-print(paste("Job survival rate:", "job length", job_length, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival)))))
-write.csv(output$scheduling_summary, file = paste("AR1_logistic_state", job_length, sample_size, prob_cut_off, "scheduling_sum.csv"))
+output <- ar_logistic_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size = 2000, update_freq=1, num_of_states = num_of_states)
+write.csv(output$avg_usage, file = paste("AR1_logistic_state",job_length, num_of_states, sample_size, prob_cut_off, "avg_usage.csv"))
+print(paste("Avg cycle used:", "job length", job_length, num_of_states, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
+write.csv(output$job_survival, file = paste("AR1_logistic_state",job_length, num_of_states, sample_size, prob_cut_off,"job_survival.csv"))
+print(paste("Job survival rate:", "job length", job_length, num_of_states, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival)))))
+write.csv(output$scheduling_summary, file = paste("AR1_logistic_state", job_length, num_of_states, sample_size, prob_cut_off, "scheduling_sum.csv"))
 scheduled_num <- sum(output$scheduling_summary[1,])
 unscheduled_num <- sum(output$scheduling_summary[2,])
 correct_scheduled_num <- scheduled_num - sum(output$scheduling_summary[3,])
