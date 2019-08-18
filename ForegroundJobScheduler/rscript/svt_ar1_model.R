@@ -123,7 +123,7 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
       print(paste("Training", train_percent))
       train_percent <- round(ts_num / ncol(new_trainset), 2)
     }
-    ts_model <- arima(new_trainset[1:nrow(new_trainset), ts_num], order = c(1,0,0), include.mean = TRUE, method = "ML", optim.control = list(maxit=2000))
+    ts_model <- arima(new_trainset[1:nrow(new_trainset), ts_num], order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000))
     coeffs[ts_num] <- as.numeric(ts_model$coef[1])
     means[ts_num] <- as.numeric(ts_model$coef[2])
     vars[ts_num] <- ts_model$sigma2
@@ -252,14 +252,14 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
 ## Read back ground job pool
 
 arg <- commandArgs(trailingOnly = TRUE)
-sample_size <- 100
-window_size <- 36
+sample_size <- 3000
+window_size <- 12
 job_length <- 1
 cpu_usage <- 3
-prob_cut_off <- 0.1
+prob_cut_off <- 0.01
 total_trace_length <- 8000
 initial_train_size <- 6000
-mode <- 'avg'
+mode <- 'max'
 
 cat(arg, sep = "\n")
 
