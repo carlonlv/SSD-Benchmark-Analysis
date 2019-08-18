@@ -257,6 +257,8 @@ window_size <- 36
 job_length <- 1
 cpu_usage <- 3
 prob_cut_off <- 0.1
+total_trace_length <- 8000
+initial_train_size <- 6000
 mode <- 'avg'
 
 cat(arg, sep = "\n")
@@ -270,16 +272,16 @@ if (sample_size == 100 ) {
   bg_job_pool <- sub(".pd", "", bg_job_pool)
 }
 
-data_matrix <- matrix(nrow = 4000, ncol = 0)
+data_matrix <- matrix(nrow = total_trace_length, ncol = 0)
 for (job_num in bg_job_pool) {
   bg_job <- read.csv(paste(bg_jobs_path, job_num, ".csv", sep = ""))
   if (mode == "max") {
-    data_matrix <- cbind(data_matrix, bg_job$max_cpu[4033:8032])
+    data_matrix <- cbind(data_matrix, bg_job$max_cpu[1:total_trace_length])
   } else {
-    data_matrix <- cbind(data_matrix, bg_job$avg_cpu[4033:8032])
+    data_matrix <- cbind(data_matrix, bg_job$avg_cpu[1:total_trace_length])
   }
 }
-rownames(data_matrix) <- seq(1, 1 + 5 * (nrow(data_matrix) - 1), 5)
+rownames(data_matrix) <- seq(1, nrow(data_matrix), 1)
 colnames(data_matrix) <- bg_job_pool
 
 cpu_required <- rep(0, ncol(data_matrix))
@@ -287,7 +289,7 @@ for (j in 1:ncol(data_matrix)) {
   cpu_required[j] <- as.numeric(quantile(data_matrix[,j], c(0.15, 0.5, 0.85), type = 4)[cpu_usage])
 }
 
-output <- svt_stationary_model(dataset = data_matrix, job_length=job_length, window_size = window_size, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size = 2000, update_freq=1, mode = mode)
+output <- svt_stationary_model(dataset = data_matrix, job_length=job_length, window_size = window_size, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size = initial_train_size, update_freq=1, mode = mode)
 write.csv(output$avg_usage, file = paste("AR1",window_size, sample_size, prob_cut_off, "avg_usage.csv"))
 print(paste("Avg cycle used:", "job length", window_size, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
 write.csv(output$job_survival, file = paste("AR1",window_size, sample_size, prob_cut_off,"job_survival.csv"))
