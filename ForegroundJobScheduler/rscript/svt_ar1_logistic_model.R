@@ -348,30 +348,32 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
 ## Read back ground job pool
 
 arg <- commandArgs(trailingOnly = TRUE)
-sample_size <- 100
+sample_size <- 3000
 window_size <- 12
 job_length <- window_size
 cpu_usage <- 3
 prob_cut_off <- 0.1
 cond.var <- "kmeans"
+total_trace_length <- 8000
+initial_train_size <- 6000
 
 cat(arg, sep = "\n")
 
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
 bg_job_pool <- NULL
 if (sample_size == 100 ) {
-  bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 bg jobs.csv")[,2]
+  bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 background jobs.csv")[,2]
 } else {
   bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled background jobs.csv")[,1]
   bg_job_pool <- sub(".pd", "", bg_job_pool)
 }
 
-data_matrix_avg <- matrix(nrow = 4000, ncol = 0)
-data_matrix_max <- matrix(nrow = 4000, ncol = 0)
+data_matrix_avg <- matrix(nrow = total_trace_length, ncol = 0)
+data_matrix_max <- matrix(nrow = total_trace_length, ncol = 0)
 for (job_num in bg_job_pool) {
   bg_job <- read.csv(paste(bg_jobs_path, job_num, ".csv", sep = ""))
-  data_matrix_avg <- cbind(data_matrix_avg, bg_job$avg_cpu[4033:8032])
-  data_matrix_max <- cbind(data_matrix_max, bg_job$max_cpu[4033:8032])
+  data_matrix_avg <- cbind(data_matrix_avg, bg_job$avg_cpu[1:total_trace_length])
+  data_matrix_max <- cbind(data_matrix_max, bg_job$max_cpu[1:total_trace_length])
 }
 rownames(data_matrix_avg) <- seq(1, 1 + 5 * (nrow(data_matrix_avg) - 1),5)
 rownames(data_matrix_max) <- seq(1, 1 + 5 * (nrow(data_matrix_max) - 1),5)
@@ -383,7 +385,7 @@ for (j in 1:ncol(data_matrix_max)) {
   cpu_required[j] <- as.numeric(quantile(data_matrix_max[,j], c(0.15, 0.5, 0.95), type = 4)[cpu_usage])
 }
 
-output <- ar_logistic_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size = 2000, update_freq=1, cond.var = cond.var)
+output <- ar_logistic_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size = initial_train_size, update_freq=1, cond.var = cond.var)
 write.csv(output$avg_usage, file = paste("AR1_logistic_state",job_length, sample_size, prob_cut_off, "avg_usage.csv"))
 print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
 write.csv(output$job_survival, file = paste("AR1_logistic_state",job_length, sample_size, prob_cut_off,"job_survival.csv"))
