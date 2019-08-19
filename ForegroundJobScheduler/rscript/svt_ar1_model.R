@@ -123,7 +123,11 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
       print(paste("Training", train_percent))
       train_percent <- round(ts_num / ncol(new_trainset), 2)
     }
-    ts_model <- arima(new_trainset[1:nrow(new_trainset), ts_num], order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000))
+    ts_model <- tryCatch({
+      arima(x=new_trainset[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000))
+    }, error = function(cond) {
+      return(arima(x=new_trainset[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "ML", optim.control = list(maxit=2000)))
+    })
     coeffs[ts_num] <- as.numeric(ts_model$coef[1])
     means[ts_num] <- as.numeric(ts_model$coef[2])
     vars[ts_num] <- ts_model$sigma2
@@ -253,10 +257,10 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
 
 arg <- commandArgs(trailingOnly = TRUE)
 sample_size <- 3000
-window_size <- 12
+window_size <- 36
 job_length <- 1
 cpu_usage <- 3
-prob_cut_off <- 0.1
+prob_cut_off <- 0.01
 total_trace_length <- 8000
 initial_train_size <- 6000
 mode <- 'max'
@@ -266,7 +270,8 @@ cat(arg, sep = "\n")
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
 bg_job_pool <- NULL
 if (sample_size == 100 ) {
-  bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 bg jobs.csv")[,2]
+  bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 background jobs.csv")[,1]
+  bg_job_pool <- sub(".pd", "", bg_job_pool)
 } else {
   bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled background jobs.csv")[,1]
   bg_job_pool <- sub(".pd", "", bg_job_pool)

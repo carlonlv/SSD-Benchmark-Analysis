@@ -434,8 +434,8 @@ for (job_num in bg_job_pool) {
   data_matrix_avg <- cbind(data_matrix_avg, bg_job$avg_cpu[1:total_trace_length])
   data_matrix_max <- cbind(data_matrix_max, bg_job$max_cpu[1:total_trace_length])
 }
-rownames(data_matrix_avg) <- seq(1, 1 + 5 * (nrow(data_matrix_avg) - 1),5)
-rownames(data_matrix_max) <- seq(1, 1 + 5 * (nrow(data_matrix_max) - 1),5)
+rownames(data_matrix_avg) <- seq(1, nrow(data_matrix_avg) ,1)
+rownames(data_matrix_max) <- seq(1, nrow(data_matrix_max) ,1)
 colnames(data_matrix_avg) <- bg_job_pool
 colnames(data_matrix_max) <- bg_job_pool
 

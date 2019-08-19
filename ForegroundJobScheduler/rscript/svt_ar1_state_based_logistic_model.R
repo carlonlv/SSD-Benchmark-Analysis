@@ -64,7 +64,11 @@ ar1_model <- function(train_set, test_set, update_freq=1) {
       print(paste("Training", train_percent))
       train_percent <- round(ts_num / ncol(train_set), 2)
     }
-    ts_model <- arima(train_set[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "ML", optim.control = list(maxit=2000))
+    ts_model <- tryCatch({
+      arima(x=new_trainset[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000))
+    }, error = function(cond) {
+      return(arima(x=new_trainset[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "ML", optim.control = list(maxit=2000)))
+    })
     coeffs[ts_num] <- as.numeric(ts_model$coef[1])
     means[ts_num] <- as.numeric(ts_model$coef[2])
     vars[ts_num] <- ts_model$sigma2
