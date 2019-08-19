@@ -65,9 +65,9 @@ ar1_model <- function(train_set, test_set, update_freq=1) {
       train_percent <- round(ts_num / ncol(train_set), 2)
     }
     ts_model <- tryCatch({
-      arima(x=new_trainset[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000))
+      arima(x=train_set[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000))
     }, error = function(cond) {
-      return(arima(x=new_trainset[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "ML", optim.control = list(maxit=2000)))
+      return(arima(x=train_set[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "ML", optim.control = list(maxit=2000)))
     })
     coeffs[ts_num] <- as.numeric(ts_model$coef[1])
     means[ts_num] <- as.numeric(ts_model$coef[2])
@@ -326,11 +326,11 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
 
 arg <- commandArgs(trailingOnly = TRUE)
 sample_size <- 3000
-window_size <- 12
-job_length <- window_size
+#window_size <- 12
+#job_length <- window_size
 cpu_usage <- 3
-prob_cut_off <- 0.01
-num_of_states <- 100
+#prob_cut_off <- 0.01
+#num_of_states <- 100
 total_trace_length <- 8000
 initial_train_size <- 6000
 
@@ -339,7 +339,8 @@ cat(arg, sep = "\n")
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
 bg_job_pool <- NULL
 if (sample_size == 100 ) {
-  bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 background jobs.csv")[,2]
+  bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 background jobs.csv")[,1]
+  bg_job_pool <- sub(".pd", "", bg_job_pool)
 } else {
   bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled background jobs.csv")[,1]
   bg_job_pool <- sub(".pd", "", bg_job_pool)
@@ -362,14 +363,38 @@ for (j in 1:ncol(data_matrix_max)) {
   cpu_required[j] <- as.numeric(quantile(data_matrix_max[,j], c(0.15, 0.5, 0.85), type = 4)[cpu_usage])
 }
 
-output <- ar_logistic_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size = initial_train_size, update_freq=1, num_of_states = num_of_states)
-write.csv(output$avg_usage, file = paste("AR1_logistic_state",job_length, num_of_states, sample_size, prob_cut_off, "avg_usage.csv"))
-print(paste("Avg cycle used:", "job length", job_length, num_of_states, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
-write.csv(output$job_survival, file = paste("AR1_logistic_state",job_length, num_of_states, sample_size, prob_cut_off,"job_survival.csv"))
-print(paste("Job survival rate:", "job length", job_length, num_of_states, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival)))))
-write.csv(output$scheduling_summary, file = paste("AR1_logistic_state", job_length, num_of_states, sample_size, prob_cut_off, "scheduling_sum.csv"))
-scheduled_num <- sum(output$scheduling_summary[1,])
-unscheduled_num <- sum(output$scheduling_summary[2,])
-correct_scheduled_num <- scheduled_num - sum(output$scheduling_summary[3,])
-correct_unscheduled_num <- unscheduled_num - sum(output$scheduling_summary[4,])
-print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_num / scheduled_num, "Correct unscheduled rate:", correct_unscheduled_num / unscheduled_num))
+for (num_of_states in c(10, 20, 30, 50, 100)) {
+  summ <- data.frame(matrix(nrow = 4, ncol = 0))
+  avg_cycle <- c()
+  job_survival <- c()
+  correct_schedule_rate <- c()
+  correct_unschedule_rate <- c()
+  for (job_length in c(12, 36)) {
+    for (prob_cut_off in c(0.01, 0.1)) {
+      output <- ar_logistic_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size = initial_train_size, update_freq=1, num_of_states = num_of_states)
+      write.csv(output$avg_usage, file = paste("AR1_logistic_state",job_length, num_of_states, sample_size, prob_cut_off, "avg_usage.csv"))
+      print(paste("Avg cycle used:", "job length", job_length, num_of_states, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
+      avg_cycle <- c(avg_cycle, mean(as.matrix(output$avg_usage), na.rm = TRUE))
+      
+      write.csv(output$job_survival, file = paste("AR1_logistic_state",job_length, num_of_states, sample_size, prob_cut_off,"job_survival.csv"))
+      print(paste("Job survival rate:", "job length", job_length, num_of_states, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival)))))
+      job_survival <- c(job_survival, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival))))
+      
+      write.csv(output$scheduling_summary, file = paste("AR1_logistic_state", job_length, num_of_states, sample_size, prob_cut_off, "scheduling_sum.csv"))
+      scheduled_num <- sum(output$scheduling_summary[1,])
+      unscheduled_num <- sum(output$scheduling_summary[2,])
+      correct_scheduled_num <- scheduled_num - sum(output$scheduling_summary[3,])
+      correct_unscheduled_num <- unscheduled_num - sum(output$scheduling_summary[4,])
+      print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_num / scheduled_num, "Correct unscheduled rate:", correct_unscheduled_num / unscheduled_num))
+      
+      correct_schedule_rate <- c(correct_schedule_rate, correct_scheduled_num / scheduled_num)
+      correct_unschedule_rate <- c(correct_unschedule_rate, correct_unscheduled_num / unscheduled_num)
+    }
+  }
+  summ <- cbind(summ, avg_cycle)
+  summ <- cbind(summ, job_survival)
+  summ <- cbind(summ, correct_schedule_rate)
+  summ <- cbind(summ, correct_unschedule_rate)
+  colnames(summ) <- c("avg_cycle", "job_survival", "correct_schedule_rate", "correct_unschedule_rate")
+  write.csv(summ, file = paste("summ.csv", num_of_states))
+}

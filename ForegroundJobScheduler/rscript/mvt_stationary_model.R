@@ -408,10 +408,10 @@ mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p
 
 arg <- commandArgs(trailingOnly = TRUE)
 sample_size <- 3000
-window_size <- 12
+window_size <- 36
 job_length <- 1
 cpu_usage <- 3
-prob_cut_off <- 0.1
+prob_cut_off <- 0.01
 total_trace_length <- 8000
 initial_train_size <- 6000
 mode <- 'max'
