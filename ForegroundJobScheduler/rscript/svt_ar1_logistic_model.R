@@ -353,7 +353,7 @@ window_size <- 12
 job_length <- window_size
 cpu_usage <- 3
 prob_cut_off <- 0.1
-cond.var <- "kmeans"
+cond.var <- "lm"
 total_trace_length <- 8000
 initial_train_size <- 6000
 
@@ -362,7 +362,8 @@ cat(arg, sep = "\n")
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
 bg_job_pool <- NULL
 if (sample_size == 100 ) {
-  bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 background jobs.csv")[,2]
+  bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 background jobs.csv")[,1]
+  bg_job_pool <- sub(".pd", "", bg_job_pool)
 } else {
   bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled background jobs.csv")[,1]
   bg_job_pool <- sub(".pd", "", bg_job_pool)
@@ -375,8 +376,8 @@ for (job_num in bg_job_pool) {
   data_matrix_avg <- cbind(data_matrix_avg, bg_job$avg_cpu[1:total_trace_length])
   data_matrix_max <- cbind(data_matrix_max, bg_job$max_cpu[1:total_trace_length])
 }
-rownames(data_matrix_avg) <- seq(1, 1 + 5 * (nrow(data_matrix_avg) - 1),5)
-rownames(data_matrix_max) <- seq(1, 1 + 5 * (nrow(data_matrix_max) - 1),5)
+rownames(data_matrix_avg) <- seq(1, nrow(data_matrix_avg),  1)
+rownames(data_matrix_max) <- seq(1, nrow(data_matrix_max), 1)
 colnames(data_matrix_avg) <- bg_job_pool
 colnames(data_matrix_max) <- bg_job_pool
 
