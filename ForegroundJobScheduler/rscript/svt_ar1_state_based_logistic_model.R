@@ -363,7 +363,7 @@ for (j in 1:ncol(data_matrix_max)) {
   cpu_required[j] <- as.numeric(quantile(data_matrix_max[,j], c(0.15, 0.5, 0.85), type = 4)[cpu_usage])
 }
 
-for (num_of_states in c(10, 20, 30, 50, 100)) {
+for (num_of_states in c(30, 50)) {
   summ <- data.frame(matrix(nrow = 4, ncol = 0))
   avg_cycle <- c()
   job_survival <- c()
@@ -396,5 +396,5 @@ for (num_of_states in c(10, 20, 30, 50, 100)) {
   summ <- cbind(summ, correct_schedule_rate)
   summ <- cbind(summ, correct_unschedule_rate)
   colnames(summ) <- c("avg_cycle", "job_survival", "correct_schedule_rate", "correct_unschedule_rate")
-  write.csv(summ, file = paste("summ", num_of_states, ".csv"))
+  write.csv(summ, file = paste("summ.csv", num_of_states))
 }

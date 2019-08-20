@@ -349,11 +349,11 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
 
 arg <- commandArgs(trailingOnly = TRUE)
 sample_size <- 3000
-window_size <- 12
+window_size <- 36
 job_length <- window_size
 cpu_usage <- 3
 prob_cut_off <- 0.1
-cond.var <- "lm"
+cond.var <- "kmeans"
 total_trace_length <- 8000
 initial_train_size <- 6000
 
@@ -376,8 +376,8 @@ for (job_num in bg_job_pool) {
   data_matrix_avg <- cbind(data_matrix_avg, bg_job$avg_cpu[1:total_trace_length])
   data_matrix_max <- cbind(data_matrix_max, bg_job$max_cpu[1:total_trace_length])
 }
-rownames(data_matrix_avg) <- seq(1, nrow(data_matrix_avg),  1)
-rownames(data_matrix_max) <- seq(1, nrow(data_matrix_max), 1)
+rownames(data_matrix_avg) <- seq(1, 1 + 5 * (nrow(data_matrix_avg) - 1),5)
+rownames(data_matrix_max) <- seq(1, 1 + 5 * (nrow(data_matrix_max) - 1),5)
 colnames(data_matrix_avg) <- bg_job_pool
 colnames(data_matrix_max) <- bg_job_pool
 
