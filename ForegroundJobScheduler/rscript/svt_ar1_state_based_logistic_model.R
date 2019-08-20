@@ -396,5 +396,5 @@ for (num_of_states in c(10, 20, 30, 50, 100)) {
   summ <- cbind(summ, correct_schedule_rate)
   summ <- cbind(summ, correct_unschedule_rate)
   colnames(summ) <- c("avg_cycle", "job_survival", "correct_schedule_rate", "correct_unschedule_rate")
-  write.csv(summ, file = paste("summ.csv", num_of_states))
+  write.csv(summ, file = paste("summ", num_of_states, ".csv"))
 }
