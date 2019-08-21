@@ -43,7 +43,7 @@ do_prediction <- function(last_obs, phi, mean, variance) {
 
 find_evaluation <- function(pi_up, actual_obs) {
   usage <- (100 - pi_up) / (100 - actual_obs)
-  survival <- ifelse(actual_obs <= pi_up, 1, 0)
+  survival <- ifelse(actual_obs > pi_up, 0, ifelse(actual_obs == 100 & pi_up == 100, NA, 1))
   result <- list('usage' = ifelse(usage <= 1, usage, NA), 'survival'= survival)
   return(result)
 }
@@ -377,8 +377,8 @@ for (num_of_states in c(30, 50)) {
       avg_cycle <- c(avg_cycle, mean(as.matrix(output$avg_usage), na.rm = TRUE))
       
       write.csv(output$job_survival, file = paste("AR1_logistic_state",job_length, num_of_states, sample_size, prob_cut_off,"job_survival.csv"))
-      print(paste("Job survival rate:", "job length", job_length, num_of_states, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival)))))
-      job_survival <- c(job_survival, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival))))
+      print(paste("Job survival rate:", "job length", job_length, num_of_states, sum(as.matrix(output$job_survival), na.rm = TRUE) / (length(as.matrix(output$job_survival)[!is.na(as.matrix(output$job_survival))]))))
+      job_survival <- c(job_survival, sum(as.matrix(output$job_survival), na.rm = TRUE) / (length(as.matrix(output$job_survival)[!is.na(as.matrix(output$job_survival))])))
       
       write.csv(output$scheduling_summary, file = paste("AR1_logistic_state", job_length, num_of_states, sample_size, prob_cut_off, "scheduling_sum.csv"))
       scheduled_num <- sum(output$scheduling_summary[1,])

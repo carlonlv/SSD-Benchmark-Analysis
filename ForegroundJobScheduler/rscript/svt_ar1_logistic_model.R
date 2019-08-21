@@ -43,7 +43,7 @@ do_prediction <- function(last_obs, phi, mean, variance) {
 
 find_evaluation <- function(pi_up, actual_obs) {
   usage <- (100 - pi_up) / (100 - actual_obs)
-  survival <- ifelse(actual_obs <= pi_up, 1, 0)
+  survival <- ifelse(actual_obs > pi_up, 0, ifelse(actual_obs == 100 & pi_up == 100, NA, 1))
   result <- list('usage' = ifelse(usage <= 1, usage, NA), 'survival'= survival)
   return(result)
 }
@@ -376,8 +376,8 @@ for (job_num in bg_job_pool) {
   data_matrix_avg <- cbind(data_matrix_avg, bg_job$avg_cpu[1:total_trace_length])
   data_matrix_max <- cbind(data_matrix_max, bg_job$max_cpu[1:total_trace_length])
 }
-rownames(data_matrix_avg) <- seq(1, 1 + 5 * (nrow(data_matrix_avg) - 1),5)
-rownames(data_matrix_max) <- seq(1, 1 + 5 * (nrow(data_matrix_max) - 1),5)
+rownames(data_matrix_avg) <- seq(1, nrow(data_matrix_avg),1)
+rownames(data_matrix_max) <- seq(1, nrow(data_matrix_max),1)
 colnames(data_matrix_avg) <- bg_job_pool
 colnames(data_matrix_max) <- bg_job_pool
 
@@ -390,7 +390,7 @@ output <- ar_logistic_model(dataset_avg=data_matrix_avg, dataset_max = data_matr
 write.csv(output$avg_usage, file = paste("AR1_logistic_state",job_length, sample_size, prob_cut_off, "avg_usage.csv"))
 print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
 write.csv(output$job_survival, file = paste("AR1_logistic_state",job_length, sample_size, prob_cut_off,"job_survival.csv"))
-print(paste("Job survival rate:", "job length", job_length, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival)))))
+print(paste("Job survival rate:", "job length", job_length, sum(as.matrix(output$job_survival), na.rm = TRUE) / (length(as.matrix(output$job_survival)[!is.na(as.matrix(output$job_survival))]))))
 write.csv(output$scheduling_summary, file = paste("AR1_logistic_state", job_length, sample_size, prob_cut_off, "scheduling_sum.csv"))
 scheduled_num <- sum(output$scheduling_summary[1,])
 unscheduled_num <- sum(output$scheduling_summary[2,])

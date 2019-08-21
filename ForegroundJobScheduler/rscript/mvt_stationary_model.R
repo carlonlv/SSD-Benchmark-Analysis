@@ -166,11 +166,7 @@ compute_pi_up <- function(mu, varcov, predict_size, prob_cutoff) {
 
 find_evaluation <- function(pi_up, actual_obs) {
   usage <- (100 - pi_up) / (100 - actual_obs)
-  if (all(actual_obs <= pi_up)) {
-    survival = 1
-  } else {
-    survival = 0
-  }
+  survival <- ifelse(actual_obs > pi_up, 0, ifelse(actual_obs == 100 & pi_up == 100, NA, 1))
   avg_usage <- mean(usage[!is.infinite(usage) & !is.na(usage) & usage <= 1])
   result <- list('avg_usage' = avg_usage, 'survival'= survival)
   return(result)
@@ -447,8 +443,10 @@ for (j in 1:ncol(data_matrix_max)) {
 output <- mvt_stationary_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, p=1, q=0,job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size = initial_train_size, update_freq=1, mode = mode)
 write.csv(output$avg_usage, file = paste("VARMA",window_size, sample_size, prob_cut_off, "avg_usage.csv"))
 print(paste("Avg cycle used:", "job length", window_size, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
+
 write.csv(output$job_survival, file = paste("VARMA",window_size, sample_size, prob_cut_off,"job_survival.csv"))
-print(paste("Job survival rate:", "job length", window_size, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival)))))
+print(paste("Job survival rate:", "job length", window_size, sum(as.matrix(output$job_survival), na.rm = TRUE) / (length(as.matrix(output$job_survival)[!is.na(as.matrix(output$job_survival))]))))
+
 write.csv(output$scheduling_summary, file = paste("VARMA", window_size, sample_size, prob_cut_off, "scheduling_sum.csv"))
 scheduled_num <- sum(output$scheduling_summary[1,])
 unscheduled_num <- sum(output$scheduling_summary[2,])
