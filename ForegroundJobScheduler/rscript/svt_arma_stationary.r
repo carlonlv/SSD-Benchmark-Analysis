@@ -82,11 +82,7 @@ compute_pi_up <- function(mu, varcov, predict_size, prob_cutoff) {
 
 find_evaluation <- function(pi_up, actual_obs) {
   usage <- (100 - pi_up) / (100 - actual_obs)
-  if (all(actual_obs <= pi_up)) {
-    survival = 1
-  } else {
-    survival = 0
-  }
+  survival <- ifelse(actual_obs > pi_up, 0, ifelse(actual_obs == 100 & pi_up == 100, NA, 1))
   avg_usage <- mean(usage[!is.infinite(usage) & !is.na(usage) & usage <= 1])
   result <- list('avg_usage' = avg_usage, 'survival'= survival)
   return(result)
@@ -285,7 +281,7 @@ for (job_length in c(1, 12)) {
   write.csv(output$avg_usage, file = paste("ARMA", job_length, "100", 0.1, "avg_usage.csv"))
   print(paste("Avg cycle used:", "job length", job_length, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
   write.csv(output$job_survival, file = paste("ARMA", job_length, "100", 0.1, "job_survival.csv"))
-  print(paste("Job survival rate:", "job length", job_length, sum(as.matrix(output$job_survival)) / (length(as.matrix(output$job_survival)))))
+  print(paste("Job survival rate:", "job length", job_length, sum(as.matrix(output$job_survival), na.rm = TRUE) / (length(as.matrix(output$job_survival)[!is.na(as.matrix(output$job_survival))]))))
   write.csv(output$scheduling_summary, file = paste("ARMA",job_length, "100", 0.1,"scheduling_sum.csv"))
   scheduled_num <- sum(output$scheduling_summary[1,])
   unscheduled_num <- sum(output$scheduling_summary[2,])
