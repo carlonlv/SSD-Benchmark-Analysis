@@ -363,7 +363,7 @@ for (j in 1:ncol(data_matrix_max)) {
   cpu_required[j] <- as.numeric(quantile(data_matrix_max[,j], c(0.15, 0.5, 0.85), type = 4)[cpu_usage])
 }
 
-for (num_of_states in c(30, 50)) {
+for (num_of_states in c(10, 20, 30, 50)) {
   summ <- data.frame(matrix(nrow = 4, ncol = 0))
   avg_cycle <- c()
   job_survival <- c()
