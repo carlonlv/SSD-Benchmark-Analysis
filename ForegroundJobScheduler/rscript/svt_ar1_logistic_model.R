@@ -4,6 +4,7 @@ library("dplyr")
 library("arules")
 library("dict")
 library("cluster")
+library("xlsx")
 
 convert_frequency_dataset <- function(dataset, new_freq, mode) {
   new_avg_cpu <- c()
@@ -401,9 +402,8 @@ update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num, sampl
 ## Read back ground job pool
 
 arg <- commandArgs(trailingOnly = TRUE)
-sample_size <- 3000
+sample_size <- 100
 window_sizes <- c(12, 36)
-job_length <- 1
 cpu_usage <- 3
 prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1)
 total_trace_length <- 8000
