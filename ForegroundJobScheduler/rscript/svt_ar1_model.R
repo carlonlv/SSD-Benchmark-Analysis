@@ -248,15 +248,66 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
   return(result)
 }
 
+update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num, sample_size, window_size, utilization, survival, correct_scheduled_rate, correct_unscheduled_rate) {
+  if (is.na(state_num)) {
+    xlsx_file <- xlsx_file %>%
+      mutate(Avg.Cycle.Usage = ifelse(Model == model_name & 
+                                        Probability.Cut.Off == prob_cut_off & 
+                                        Sample.Size == sample_size &
+                                        Window.Size == window_size, 
+                                      utilization, Avg.Cycle.Usage)) %>%
+      mutate(Survival.Rate = ifelse(Model == model_name & 
+                                      Probability.Cut.Off == prob_cut_off & 
+                                      Sample.Size == sample_size &
+                                      Window.Size == window_size, 
+                                    survival, Survival.Rate)) %>%
+      mutate(Correctly.Scheduled = ifelse(Model == model_name & 
+                                            Probability.Cut.Off == prob_cut_off & 
+                                            Sample.Size == sample_size &
+                                            Window.Size == window_size, 
+                                          correct_scheduled_rate, Correctly.Scheduled)) %>%
+      mutate(Correctly.Unscheduled = ifelse(Model == model_name & 
+                                              Probability.Cut.Off == prob_cut_off & 
+                                              Sample.Size == sample_size &
+                                              Window.Size == window_size, 
+                                            correct_unscheduled_rate, Correctly.Unscheduled))
+  } else {
+    xlsx_file <- xlsx_file %>%
+      mutate(Avg.Cycle.Usage = ifelse(Model == model_name & 
+                                        Probability.Cut.Off == prob_cut_off & 
+                                        Sample.Size == sample_size &
+                                        StateNum == state_num & 
+                                        Window.Size == window_size, 
+                                      utilization, Avg.Cycle.Usage)) %>%
+      mutate(Survival.Rate = ifelse(Model == model_name & 
+                                      Probability.Cut.Off == prob_cut_off & 
+                                      Sample.Size == sample_size &
+                                      StateNum == state_num & 
+                                      Window.Size == window_size, 
+                                    survival, Survival.Rate)) %>%
+      mutate(Correctly.Scheduled = ifelse(Model == model_name & 
+                                            Probability.Cut.Off == prob_cut_off & 
+                                            Sample.Size == sample_size &
+                                            StateNum == state_num & 
+                                            Window.Size == window_size, 
+                                          correct_scheduled_rate, Correctly.Scheduled)) %>%
+      mutate(Correctly.Unscheduled = ifelse(Model == model_name & 
+                                              Probability.Cut.Off == prob_cut_off & 
+                                              Sample.Size == sample_size &
+                                              StateNum == state_num & 
+                                              Window.Size == window_size, 
+                                            correct_unscheduled_rate, Correctly.Unscheduled))
+  }
+  return(xlsx_file)
+}
 
 ## Read back ground job pool
 
 arg <- commandArgs(trailingOnly = TRUE)
 sample_size <- 3000
-window_size <- 36
-job_length <- 1
+window_sizes <- c(12, 36)
 cpu_usage <- 3
-prob_cut_off <- 0.01
+prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1)
 total_trace_length <- 8000
 initial_train_size <- 6000
 mode <- 'max'
@@ -273,31 +324,52 @@ if (sample_size == 100 ) {
   bg_job_pool <- sub(".pd", "", bg_job_pool)
 }
 
-data_matrix <- matrix(nrow = total_trace_length, ncol = 0)
+data_matrix_avg <- matrix(nrow = total_trace_length, ncol = 0)
+data_matrix_max <- matrix(nrow = total_trace_length, ncol = 0)
 for (job_num in bg_job_pool) {
   bg_job <- read.csv(paste(bg_jobs_path, job_num, ".csv", sep = ""))
-  if (mode == "max") {
-    data_matrix <- cbind(data_matrix, bg_job$max_cpu[1:total_trace_length])
-  } else {
-    data_matrix <- cbind(data_matrix, bg_job$avg_cpu[1:total_trace_length])
+  data_matrix_avg <- cbind(data_matrix_avg, bg_job$avg_cpu[1:total_trace_length])
+  data_matrix_max <- cbind(data_matrix_max, bg_job$max_cpu[1:total_trace_length])
+}
+rownames(data_matrix_avg) <- seq(1, nrow(data_matrix_avg) ,1)
+rownames(data_matrix_max) <- seq(1, nrow(data_matrix_max) ,1)
+colnames(data_matrix_avg) <- bg_job_pool
+colnames(data_matrix_max) <- bg_job_pool
+
+cpu_required <- rep(0, ncol(data_matrix_max))
+for (j in 1:ncol(data_matrix_max)) {
+  cpu_required[j] <- as.numeric(quantile(data_matrix_max[,j], c(0.15, 0.5, 0.85), type = 4)[cpu_usage])
+}
+
+output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max.xlsx"
+result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
+
+for (window_size in window_sizes) {
+  for (prob_cut_off in prob_cut_offs) {
+    job_length = 1
+    
+    output <- svt_stationary_model(dataset = data_matrix, job_length=job_length, window_size = window_size, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size = initial_train_size, update_freq=1, mode = mode)
+    write.csv(output$avg_usage, file = paste("AR1",window_size, sample_size, prob_cut_off, "avg_usage.csv"))
+    avg_utilization <- mean(as.matrix(output$avg_usage), na.rm = TRUE)
+    
+    
+    write.csv(output$job_survival, file = paste("AR1",window_size, sample_size, prob_cut_off,"job_survival.csv"))
+    survival <- sum(as.matrix(output$job_survival), na.rm = TRUE) / (length(as.matrix(output$job_survival)[!is.na(as.matrix(output$job_survival))]))
+    
+    
+    write.csv(output$scheduling_summary, file = paste("AR1", window_size, sample_size, prob_cut_off, "scheduling_sum.csv"))
+    scheduled_num <- sum(output$scheduling_summary[1,])
+    unscheduled_num <- sum(output$scheduling_summary[2,])
+    correct_scheduled_num <- scheduled_num - sum(output$scheduling_summary[3,])
+    correct_unscheduled_num <- unscheduled_num - sum(output$scheduling_summary[4,])
+    correct_scheduled_rate <- correct_scheduled_num / scheduled_num
+    correct_unscheduled_rate <- correct_unscheduled_num / unscheduled_num
+    
+    print(paste("Avg cycle used:", "job length", window_size, avg_utilization))
+    print(paste("Job survival rate:", "job length", window_size, survival))
+    print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
+    
+    result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1", prob_cut_off, NA, sample_size, window_size, avg_utilization, survival, correct_scheduled_rate, correct_unscheduled_rate)
+    write.xlsx(result_path.xlsx, showNA = FALSE, file = output_dp, row.names = FALSE)
   }
 }
-rownames(data_matrix) <- seq(1, nrow(data_matrix), 1)
-colnames(data_matrix) <- bg_job_pool
-
-cpu_required <- rep(0, ncol(data_matrix))
-for (j in 1:ncol(data_matrix)) {
-  cpu_required[j] <- as.numeric(quantile(data_matrix[,j], c(0.15, 0.5, 0.85), type = 4)[cpu_usage])
-}
-
-output <- svt_stationary_model(dataset = data_matrix, job_length=job_length, window_size = window_size, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size = initial_train_size, update_freq=1, mode = mode)
-write.csv(output$avg_usage, file = paste("AR1",window_size, sample_size, prob_cut_off, "avg_usage.csv"))
-print(paste("Avg cycle used:", "job length", window_size, mean(as.matrix(output$avg_usage), na.rm = TRUE)))
-write.csv(output$job_survival, file = paste("AR1",window_size, sample_size, prob_cut_off,"job_survival.csv"))
-print(paste("Job survival rate:", "job length", window_size, sum(as.matrix(output$job_survival), na.rm = TRUE) / (length(as.matrix(output$job_survival)[!is.na(as.matrix(output$job_survival))]))))
-write.csv(output$scheduling_summary, file = paste("AR1", window_size, sample_size, prob_cut_off, "scheduling_sum.csv"))
-scheduled_num <- sum(output$scheduling_summary[1,])
-unscheduled_num <- sum(output$scheduling_summary[2,])
-correct_scheduled_num <- scheduled_num - sum(output$scheduling_summary[3,])
-correct_unscheduled_num <- unscheduled_num - sum(output$scheduling_summary[4,])
-print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_num / scheduled_num, "Correct unscheduled rate:", correct_unscheduled_num / unscheduled_num))

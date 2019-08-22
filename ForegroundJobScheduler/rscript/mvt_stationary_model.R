@@ -458,11 +458,10 @@ update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num, sampl
 ## Read back ground job pool
 
 arg <- commandArgs(trailingOnly = TRUE)
-sample_size <- 100
-#window_size <- 36
-job_length <- 1
+sample_size <- 3000
+window_sizes <- c(12, 36)
 cpu_usage <- 3
-#prob_cut_off <- 0.01
+prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1)
 total_trace_length <- 8000
 initial_train_size <- 6000
 mode <- 'max'
@@ -499,8 +498,10 @@ for (j in 1:ncol(data_matrix_max)) {
 output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max.xlsx"
 result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
 
-for (window_size in c(12)) {
-  for (prob_cut_off in c(0.1, 0.01)) {
+for (window_size in window_sizes) {
+  for (prob_cut_off in prob_cut_offs) {
+    job_length <- 1
+    
     output <- mvt_stationary_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, p=1, q=0,job_length=job_length, window_size = window_size, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size = initial_train_size, update_freq=1, mode = mode)
     write.csv(output$avg_usage, file = paste("VAR1",window_size, sample_size, prob_cut_off, "avg_usage.csv"))
     avg_utilization <- mean(as.matrix(output$avg_usage), na.rm = TRUE)
@@ -523,7 +524,6 @@ for (window_size in c(12)) {
     print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
     
     result_path.xlsx <- update.xlsx.df(result_path.xlsx, "VAR1", prob_cut_off, NA, sample_size, window_size, avg_utilization, survival, correct_scheduled_rate, correct_unscheduled_rate)
+    write.xlsx(result_path.xlsx, showNA = FALSE, file = output_dp, row.names = FALSE)
   }
 }
-
-write.xlsx(result_path.xlsx, showNA = FALSE, file = "summary (windows) max.xlsx")
