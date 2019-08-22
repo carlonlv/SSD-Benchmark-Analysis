@@ -305,7 +305,7 @@ update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num, sampl
 ## Read back ground job pool
 
 arg <- commandArgs(trailingOnly = TRUE)
-sample_size <- 3000
+sample_size <- 100
 window_sizes <- c(12, 36)
 cpu_usage <- 3
 prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1)
@@ -325,21 +325,21 @@ if (sample_size == 100 ) {
   bg_job_pool <- sub(".pd", "", bg_job_pool)
 }
 
-data_matrix_avg <- matrix(nrow = total_trace_length, ncol = 0)
-data_matrix_max <- matrix(nrow = total_trace_length, ncol = 0)
+data_matrix <- matrix(nrow = total_trace_length, ncol = 0)
 for (job_num in bg_job_pool) {
   bg_job <- read.csv(paste(bg_jobs_path, job_num, ".csv", sep = ""))
-  data_matrix_avg <- cbind(data_matrix_avg, bg_job$avg_cpu[1:total_trace_length])
-  data_matrix_max <- cbind(data_matrix_max, bg_job$max_cpu[1:total_trace_length])
+  if (mode == "max") {
+    data_matrix <- cbind(data_matrix, bg_job$max_cpu[1:total_trace_length])
+  } else {
+    data_matrix <- cbind(data_matrix, bg_job$avg_cpu[1:total_trace_length])
+  }
 }
-rownames(data_matrix_avg) <- seq(1, nrow(data_matrix_avg) ,1)
-rownames(data_matrix_max) <- seq(1, nrow(data_matrix_max) ,1)
-colnames(data_matrix_avg) <- bg_job_pool
-colnames(data_matrix_max) <- bg_job_pool
+rownames(data_matrix) <- seq(1, nrow(data_matrix) ,1)
+colnames(data_matrix) <- bg_job_pool
 
-cpu_required <- rep(0, ncol(data_matrix_max))
-for (j in 1:ncol(data_matrix_max)) {
-  cpu_required[j] <- as.numeric(quantile(data_matrix_max[,j], c(0.15, 0.5, 0.85), type = 4)[cpu_usage])
+cpu_required <- rep(0, ncol(data_matrix))
+for (j in 1:ncol(data_matrix)) {
+  cpu_required[j] <- as.numeric(quantile(data_matrix[,j], c(0.15, 0.5, 0.85), type = 4)[cpu_usage])
 }
 
 output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max.xlsx"
