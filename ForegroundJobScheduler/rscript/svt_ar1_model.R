@@ -1,6 +1,7 @@
 library("forecast")
 library("mvtnorm")
 library("dict")
+library("xlsx")
 
 convert_frequency_dataset <- function(dataset, new_freq, mode) {
   new_avg_cpu <- c()
