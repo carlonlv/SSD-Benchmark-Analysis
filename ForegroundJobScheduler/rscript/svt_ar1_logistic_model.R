@@ -408,7 +408,7 @@ cpu_usage <- 3
 prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1)
 total_trace_length <- 8000
 initial_train_size <- 6000
-cond.var <- "lm"
+cond.var <- "kmeans"
 
 cat(arg, sep = "\n")
 
