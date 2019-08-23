@@ -379,11 +379,11 @@ update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num, sampl
 ## Read back ground job pool
 
 arg <- commandArgs(trailingOnly = TRUE)
-sample_size <- 100
+sample_size <- 3000
 job_length <- 1
 cpu_usage <- 3
 window_sizes <- c(12, 36)
-prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1)
+prob_cut_offs <- c(0.005)
 num_of_states_pool <- c(10, 20, 30, 50)
 total_trace_length <- 8000
 initial_train_size <- 6000
