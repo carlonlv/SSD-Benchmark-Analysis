@@ -38,9 +38,10 @@ read_from_models_xlsx <- function(model_results, xlsx, sample_size, window_size)
 }
 
 plot_results <- function(model_results, sample_size, window_size) {
-  ggplot(model_results, aes(x=Survival, y=Utilization, group=factor(Model))) +
-    geom_line(na.rm = TRUE, aes(linetype=as.factor(StateNum), colour=factor(Model))) +
-    geom_point(na.rm = TRUE, aes(shape=as.factor(StateNum), colour=factor(Model))) + 
+  ggplot(model_results, aes(x=Survival, y=Utilization, group=factor(Model), colour=factor(Model))) +
+    geom_point(na.rm=TRUE, aes(shape=as.factor(StateNum))) + 
+    geom_vline(xintercept=0.99, linetype="dashed", color="red") + 
+    xlim(0.8, 1.0) +
     ylab("Utilization") +
     xlab("Survival Rate") + 
     ggtitle(paste("Model Performance With Sample Size", sample_size, "and Window Size", window_size))
@@ -53,11 +54,11 @@ sample_size <- 3000
 window_size <- 12
 
 ar_xlsx <- read.xlsx(ar_data_path, sheetIndex = 1)
-mc_xlsx <- read.xlsx(mc_data_path, sheetIndex = 1)
+#mc_xlsx <- read.xlsx(mc_data_path, sheetIndex = 1)
 
 model_results <- data.frame(matrix(nrow = 0, ncol = 5), stringsAsFactors = FALSE)
 colnames(model_results) <- c("Model", "Prob_Cut_Off",  "StateNum", "Utilization", "Survival")
 model_results <- read_from_models_xlsx(model_results, ar_xlsx, sample_size, window_size)
-model_results <- read_from_models_xlsx(model_results, mc_xlsx, sample_size, window_size)
+#model_results <- read_from_models_xlsx(model_results, mc_xlsx, sample_size, window_size)
 
 plot_results(model_results, sample_size, window_size)
