@@ -405,7 +405,7 @@ arg <- commandArgs(trailingOnly = TRUE)
 sample_size <- 3000
 window_sizes <- c(12, 36)
 cpu_usage <- 3
-prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1)
+prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1, 0.125, 0.15, 0.175, 0.2)
 total_trace_length <- 8000
 initial_train_size <- 6000
 cond.var <- "kmeans"
