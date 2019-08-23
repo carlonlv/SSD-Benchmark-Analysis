@@ -441,11 +441,11 @@ for (window_size in window_sizes) {
       print(paste("Job survival rate:", "job length", window_size, survival))
       print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
       
-      write.csv(output$avg_usage, file = paste("AR1_logistic_state",job_length, num_of_states, sample_size, prob_cut_off, "avg_usage.csv"))
-      write.csv(output$job_survival, file = paste("AR1_logistic_state", job_length, num_of_states, sample_size, prob_cut_off, "job_survival.csv"))
-      write.csv(output$scheduling_summary, file = paste("AR1_logistic_state", job_length, num_of_states, sample_size, prob_cut_off, "scheduling_sum.csv"))
+      write.csv(output$avg_usage, file = paste("AR1_state_based_logistic",job_length, num_of_states, sample_size, prob_cut_off, "avg_usage.csv"))
+      write.csv(output$job_survival, file = paste("AR1_state_based_logistic", job_length, num_of_states, sample_size, prob_cut_off, "job_survival.csv"))
+      write.csv(output$scheduling_summary, file = paste("AR1_state_based_logistic", job_length, num_of_states, sample_size, prob_cut_off, "scheduling_sum.csv"))
       
-      result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1_logistic_state", prob_cut_off, num_of_states, sample_size, window_size, avg_utilization, survival, correct_scheduled_rate, correct_unscheduled_rate)
+      result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1_state_based_logistic", prob_cut_off, num_of_states, sample_size, window_size, avg_utilization, survival, correct_scheduled_rate, correct_unscheduled_rate)
       write.xlsx(result_path.xlsx, showNA = FALSE, file = output_dp, row.names = FALSE)
     }
   }
