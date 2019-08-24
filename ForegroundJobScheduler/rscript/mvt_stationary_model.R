@@ -508,7 +508,7 @@ find_overall_evaluation <- function(avg_usages, survivals, bad.seq.adj) {
 ## Read back ground job pool
 
 arg <- commandArgs(trailingOnly = TRUE)
-sample_size <- 3000
+sample_size <- 100
 window_sizes <- c(12, 36)
 cpu_usage <- 3
 prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1)
@@ -516,7 +516,7 @@ total_trace_length <- 8000
 initial_train_size <- 6000
 mode <- 'max'
 min_job_cpu <- 0
-bad.seq.adj <- FALSE
+bad.seq.adj <- TRUE
 
 cat(arg, sep = "\n")
 
