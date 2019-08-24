@@ -64,9 +64,7 @@ find_evaluation <- function(pi_up, actual_obs, min_job_cpu=-Inf) {
       }
     }
   }
-  avg_usage <- mean(usage[!is.na(usage)])
-  overall_survival <- ifelse(any(is.na(survival)), NA, ifelse(any(survival == 0), 0, 1))
-  result <- list('avg_usage' = avg_usage, 'survival'= survival)
+  result <- list('usage' = usage, 'survival'= survival)
   return(result)
 }
 
@@ -420,7 +418,6 @@ bad_seq_adjustment <- function(survivals) {
 }
 
 find_overall_evaluation <- function(avg_usages, survivals, bad.seq.adj) {
-  current_percent <- 0.00
   survivals <- apply(survivals, 2, bad_seq_adjustment)
   avg_utilization <- mean(as.matrix(avg_usages), na.rm = TRUE)
   survival <- sum(as.matrix(survivals), na.rm = TRUE) / (length(as.matrix(survivals)[!is.na(as.matrix(survivals))]))
@@ -430,7 +427,7 @@ find_overall_evaluation <- function(avg_usages, survivals, bad.seq.adj) {
 ## Read back ground job pool
 
 arg <- commandArgs(trailingOnly = TRUE)
-sample_size <- 3000
+sample_size <- 100
 job_length <- 1
 cpu_usage <- 3
 window_sizes <- c(12, 36)
@@ -439,7 +436,7 @@ num_of_states_pool <- c(10, 20, 30, 50)
 total_trace_length <- 8000
 initial_train_size <- 6000
 min_job_cpu <- 0
-bad.seq.adj <- FALSE
+bad.seq.adj <- TRUE
 
 cat(arg, sep = "\n")
 

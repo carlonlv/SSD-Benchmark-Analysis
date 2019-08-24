@@ -346,7 +346,6 @@ bad_seq_adjustment <- function(survivals) {
 }
 
 find_overall_evaluation <- function(avg_usages, survivals, bad.seq.adj) {
-  current_percent <- 0.00
   survivals <- apply(survivals, 2, bad_seq_adjustment)
   avg_utilization <- mean(as.matrix(avg_usages), na.rm = TRUE)
   survival <- sum(as.matrix(survivals), na.rm = TRUE) / (length(as.matrix(survivals)[!is.na(as.matrix(survivals))]))
