@@ -324,6 +324,7 @@ update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num, sampl
 }
 
 find_overall_evaluation <- function(avg_usages, survivals, bad.seq.adj) {
+  current_percent <- 0.00
   for (ts_num in 1:ncol(survivals)) {
     if (bad.seq.adj) {
       if (nrow(survivals) >= 2) {
@@ -343,6 +344,10 @@ find_overall_evaluation <- function(avg_usages, survivals, bad.seq.adj) {
           }
         }
       }
+      if (current_percent != round(ts_num / ncol(survivals), digits = 2)) {
+        print(paste("Adjusting", current_percent))
+        current_percent <- round(ts_num / ncol(survivals), digits = 2)
+      }
     }
   }
   avg_utilization <- mean(as.matrix(avg_usages), na.rm = TRUE)
@@ -361,7 +366,7 @@ total_trace_length <- 8000
 initial_train_size <- 6000
 mode <- 'max'
 min_job_cpu <- 0
-bad.seq.adj <- FALSE
+bad.seq.adj <- TRUE
 
 cat(arg, sep = "\n")
 
@@ -406,13 +411,10 @@ for (window_size in window_sizes) {
     
     output <- svt_stationary_model(dataset = data_matrix, job_length=job_length, window_size = window_size, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size = initial_train_size, update_freq=1, mode = mode, min_job_cpu = min_job_cpu)
     
-    write.csv(output$avg_usage, file = paste("AR1",window_size, sample_size, prob_cut_off, "avg_usage.csv"))
-    write.csv(output$job_survival, file = paste("AR1",window_size, sample_size, prob_cut_off,"job_survival.csv"))
     overall_evaluation <- find_overall_evaluation(output$avg_usage, output$job_survival, bad.seq.adj)
     avg_utilization <- overall_evaluation$avg_utilization
     survival <- overall_evaluation$survival
-
-    write.csv(output$scheduling_summary, file = paste("AR1", window_size, sample_size, prob_cut_off, "scheduling_sum.csv"))
+    
     scheduled_num <- sum(output$scheduling_summary[1,])
     unscheduled_num <- sum(output$scheduling_summary[2,])
     correct_scheduled_num <- scheduled_num - sum(output$scheduling_summary[3,])
@@ -423,6 +425,10 @@ for (window_size in window_sizes) {
     print(paste("Avg cycle used:", "job length", window_size, avg_utilization))
     print(paste("Job survival rate:", "job length", window_size, survival))
     print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
+    
+    write.csv(output$avg_usage, file = paste("AR1",window_size, sample_size, prob_cut_off, "avg_usage.csv"))
+    write.csv(output$job_survival, file = paste("AR1",window_size, sample_size, prob_cut_off,"job_survival.csv"))
+    write.csv(output$scheduling_summary, file = paste("AR1", window_size, sample_size, prob_cut_off, "scheduling_sum.csv"))
     
     result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1", prob_cut_off, NA, sample_size, window_size, avg_utilization, survival, correct_scheduled_rate, correct_unscheduled_rate)
     write.xlsx(result_path.xlsx, showNA = FALSE, file = output_dp, row.names = FALSE)

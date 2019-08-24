@@ -42,10 +42,31 @@ do_prediction <- function(last_obs, phi, mean, variance) {
   return(result)
 }
 
-find_evaluation <- function(pi_up, actual_obs) {
-  usage <- (100 - pi_up) / (100 - actual_obs)
-  survival <- ifelse(actual_obs > pi_up, 0, ifelse(actual_obs == 100 & pi_up == 100, NA, 1))
-  result <- list('usage' = ifelse(usage <= 1, usage, NA), 'survival'= survival)
+find_evaluation <- function(pi_up, actual_obs, min_job_cpu=-Inf) {
+  usage <- c()
+  survival <- c()
+  for (i in 1:length(pi_up)) {
+    if ((100 - pi_up[i]) <= min_job_cpu) {
+      if ((100 - actual_obs[i]) <= min_job_cpu) {
+        survival[i] <- NA
+        usage[i] <- NA
+      } else {
+        survival[i] <- 1
+        usage[i] <- 0
+      }
+    } else {
+      if ((100 - actual_obs[i]) <= min_job_cpu) {
+        survival[i] <- 0
+        usage[i] <- NA
+      } else {
+        survival[i] <- ifelse(actual_obs[i] <= pi_up[i], 1, 0)
+        usage[i] <- ifelse(survival[i] == 0, NA, ifelse(actual_obs[i] == pi_up[i], NA, (100 - pi_up[i]) / (100 - actual_obs[i])))
+      }
+    }
+  }
+  avg_usage <- mean(usage[!is.na(usage)])
+  overall_survival <- ifelse(any(is.na(survival)), NA, ifelse(any(survival == 0), 0, 1))
+  result <- list('avg_usage' = avg_usage, 'survival'= survival)
   return(result)
 }
 
@@ -227,7 +248,7 @@ logistic_model <- function(train_set_avg, train_set_max, predicted_avgs, update_
   return(result)
 }
 
-ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob_cut_off, update_freq, job_length, cpu_required, cond.var) {
+ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob_cut_off, update_freq, job_length, cpu_required, cond.var, min_job_cpu=-Inf) {
   #### input dataset_avg, dataset_max: N by M matrix, N being number of observations, M being number of time series
   #### input initial_train_size: The number of first observations used to train the model
   #### input window_size: The number of observations used to train and predict as one sample
@@ -301,7 +322,7 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
     pi_up <- mapply(compute_pi_up, expected_max, var_info[[ts_num]], MoreArgs = list(prob_cut_off=prob_cut_off))
     
     ##Evaluation
-    evaluation <- find_evaluation(pi_up, test_set_max[, ts_num][-1])
+    evaluation <- find_evaluation(pi_up, test_set_max[, ts_num][-1], min_job_cpu=min_job_cpu)
     avg_usage[,ts_num] <- evaluation$usage
     job_survival[,ts_num] <- evaluation$survival
     
@@ -399,6 +420,38 @@ update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num, sampl
   return(xlsx_file)
 }
 
+find_overall_evaluation <- function(avg_usages, survivals, bad.seq.adj) {
+  current_percent <- 0.00
+  for (ts_num in 1:ncol(survivals)) {
+    if (bad.seq.adj) {
+      if (nrow(survivals) >= 2) {
+        schedule <- TRUE
+        i <- 2
+        while (i <= nrow(survivals)) {
+          if (schedule) {
+            if (!is.na(survivals[i-1,ts_num]) & survivals[i-1, ts_num] == 0 & survivals[i, ts_num] == 0) {
+              schedule <- FALSE
+              survivals[i, ts_num] <- NA
+            }
+          } else {
+            if (survivals[i, ts_num] == 1) {
+              schedule <- TRUE
+            }
+            survivals[i, ts_num] <- NA
+          }
+        }
+      }
+      if (current_percent != round(ts_num / ncol(survivals), digits = 2)) {
+        print(paste("Adjusting", current_percent))
+        current_percent <- round(ts_num / ncol(survivals), digits = 2)
+      }
+    }
+  }
+  avg_utilization <- mean(as.matrix(avg_usages), na.rm = TRUE)
+  survival <- sum(as.matrix(survivals), na.rm = TRUE) / (length(as.matrix(survivals)[!is.na(as.matrix(survivals))]))
+  return(list("avg_utilization"=avg_utilization, "survival"=survival))
+}
+
 ## Read back ground job pool
 
 arg <- commandArgs(trailingOnly = TRUE)
@@ -409,6 +462,8 @@ prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1, 0.125, 0.15, 0.175, 0.2)
 total_trace_length <- 8000
 initial_train_size <- 6000
 cond.var <- "kmeans"
+min_job_cpu <- 0
+bad.seq.adj <- FALSE
 
 cat(arg, sep = "\n")
 
@@ -439,17 +494,23 @@ for (j in 1:ncol(data_matrix_max)) {
   cpu_required[j] <- as.numeric(quantile(data_matrix_max[,j], c(0.15, 0.5, 0.85), type = 4)[cpu_usage])
 }
 
-output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max.xlsx"
+output_dp <- NULL
+if (bad.seq.adj) {
+  output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max post adj.xlsx"
+} else {
+  output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max.xlsx"
+}
 result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
 
 for (window_size in window_sizes) {
   for (prob_cut_off in prob_cut_offs) {
     job_length <- window_size
     
-    output <- ar_logistic_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size = initial_train_size, update_freq=1, cond.var = cond.var)
-  
-    avg_utilization <- mean(as.matrix(output$avg_usage), na.rm = TRUE)
-    survival <- sum(as.matrix(output$job_survival), na.rm = TRUE) / (length(as.matrix(output$job_survival)[!is.na(as.matrix(output$job_survival))]))
+    output <- ar_logistic_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size=initial_train_size, update_freq=1, cond.var=cond.var, min_job_cpu=min_job_cpu)
+    
+    overall_evaluation <- find_overall_evaluation(output$avg_usage, output$job_survival, bad.seq.adj)
+    avg_utilization <- overall_evaluation$avg_utilization
+    survival <- overall_evaluation$survival
     
     scheduled_num <- sum(output$scheduling_summary[1,])
     unscheduled_num <- sum(output$scheduling_summary[2,])
