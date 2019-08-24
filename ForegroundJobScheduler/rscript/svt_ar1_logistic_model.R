@@ -420,33 +420,31 @@ update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num, sampl
   return(xlsx_file)
 }
 
-find_overall_evaluation <- function(avg_usages, survivals, bad.seq.adj) {
-  current_percent <- 0.00
-  for (ts_num in 1:ncol(survivals)) {
-    if (bad.seq.adj) {
-      if (nrow(survivals) >= 2) {
-        schedule <- TRUE
-        i <- 2
-        while (i <= nrow(survivals)) {
-          if (schedule) {
-            if (!is.na(survivals[i-1,ts_num]) & survivals[i-1, ts_num] == 0 & survivals[i, ts_num] == 0) {
-              schedule <- FALSE
-              survivals[i, ts_num] <- NA
-            }
-          } else {
-            if (survivals[i, ts_num] == 1) {
-              schedule <- TRUE
-            }
-            survivals[i, ts_num] <- NA
-          }
+bad_seq_adjustment <- function(survivals) {
+  if (length(survivals) >= 2) {
+    schedule <- TRUE
+    i <- 2
+    while (i <= length(survivals)) {
+      if (schedule) {
+        if (!is.na(survivals[i-1]) & survivals[i-1] == 0 & !is.na(survivals[i]) & survivals[i] == 0) {
+          schedule <- FALSE
+          survivals[i] <- NA
         }
+      } else {
+        if (survivals[i] == 1) {
+          schedule <- TRUE
+        }
+        survivals[i] <- NA
       }
-      if (current_percent != round(ts_num / ncol(survivals), digits = 2)) {
-        print(paste("Adjusting", current_percent))
-        current_percent <- round(ts_num / ncol(survivals), digits = 2)
-      }
+      i <- i + 1
     }
   }
+  return(survivals)
+}
+
+find_overall_evaluation <- function(avg_usages, survivals, bad.seq.adj) {
+  current_percent <- 0.00
+  survivals <- apply(survivals, 2, bad_seq_adjustment)
   avg_utilization <- mean(as.matrix(avg_usages), na.rm = TRUE)
   survival <- sum(as.matrix(survivals), na.rm = TRUE) / (length(as.matrix(survivals)[!is.na(as.matrix(survivals))]))
   return(list("avg_utilization"=avg_utilization, "survival"=survival))
