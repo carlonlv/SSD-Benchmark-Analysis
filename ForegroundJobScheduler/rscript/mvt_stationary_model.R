@@ -166,15 +166,35 @@ compute_pi_up <- function(mu, varcov, predict_size, prob_cutoff) {
   return(upper_bounds)
 }
 
-find_evaluation <- function(pi_up, actual_obs) {
-  usage <- (100 - pi_up) / (100 - actual_obs)
-  survival <- ifelse(actual_obs > pi_up, 0, ifelse(actual_obs == 100 & pi_up == 100, NA, 1))
-  avg_usage <- mean(usage[!is.infinite(usage) & !is.na(usage) & usage <= 1])
+find_evaluation <- function(pi_up, actual_obs, min_job_cpu=-Inf) {
+  usage <- c()
+  survival <- c()
+  for (i in 1:length(pi_up)) {
+    if ((100 - pi_up[i]) <= min_job_cpu) {
+      if ((100 - actual_obs[i]) <= min_job_cpu) {
+        survival[i] <- NA
+        usage[i] <- NA
+      } else {
+        survival[i] <- 1
+        usage[i] <- 0
+      }
+    } else {
+      if ((100 - actual_obs[i]) <= min_job_cpu) {
+        survival[i] <- 0
+        usage[i] <- NA
+      } else {
+        survival[i] <- ifelse(actual_obs[i] <= pi_up[i], 1, 0)
+        usage[i] <- ifelse(survival[i] == 0, NA, ifelse(actual_obs[i] == pi_up[i], NA, (100 - pi_up[i]) / (100 - actual_obs[i])))
+      }
+    }
+  }
+  avg_usage <- mean(usage[!is.na(usage)])
+  overall_survival <- ifelse(any(is.na(survival)), NA, ifelse(any(survival == 0), 0, 1))
   result <- list('avg_usage' = avg_usage, 'survival'= survival)
   return(result)
 }
 
-mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p, q, job_length, window_size, cpu_required, prob_cut_off, update_freq, ts_models_import = NULL, mode) {
+mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p, q, job_length, window_size, cpu_required, prob_cut_off, update_freq, ts_models_import = NULL, mode, min_job_cpu=-Inf) {
   #### input dataset_avg: N by M matrix, N being number of observations, M being number of time series
   #### input dataset_max: N by M matrix, N being number of observations, M being number of time series
   #### input initial_train_size: The number of first observations used to train the model'
@@ -352,7 +372,7 @@ mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p
             }
           }
           pi_up <- pi_up_bounds[[paste(ts_num, ",", start_time, sep = "")]]
-          evalulation <- find_evaluation(pi_up=pi_up, actual_obs=position_vec)
+          evalulation <- find_evaluation(pi_up=pi_up, actual_obs=position_vec, min_job_cpu=min_job_cpu)
           avg_cycle_used[ts_num] <- evalulation$avg_usage
           survival[ts_num] <- evalulation$survival
         }
@@ -455,6 +475,33 @@ update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num, sampl
   return(xlsx_file)
 }
 
+find_overall_evaluation <- function(avg_usages, survivals, bad.seq.adj) {
+  for (ts_num in 1:ncol(survivals)) {
+    if (bad.seq.adj) {
+      if (nrow(survivals) >= 2) {
+        schedule <- TRUE
+        i <- 2
+        while (i <= nrow(survivals)) {
+          if (schedule) {
+            if (!is.na(survivals[i-1,ts_num]) & survivals[i-1, ts_num] == 0 & survivals[i, ts_num] == 0) {
+              schedule <- FALSE
+              survivals[i, ts_num] <- NA
+            }
+          } else {
+            if (survivals[i, ts_num] == 1) {
+              schedule <- TRUE
+            }
+            survivals[i, ts_num] <- NA
+          }
+        }
+      }
+    }
+  }
+  avg_utilization <- mean(as.matrix(avg_usages), na.rm = TRUE)
+  survival <- sum(as.matrix(survivals), na.rm = TRUE) / (length(as.matrix(survivals)[!is.na(as.matrix(survivals))]))
+  return(list("avg_utilization"=avg_utilization, "survival"=survival))
+}
+
 ## Read back ground job pool
 
 arg <- commandArgs(trailingOnly = TRUE)
@@ -465,6 +512,8 @@ prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1)
 total_trace_length <- 8000
 initial_train_size <- 6000
 mode <- 'max'
+min_job_cpu <- 0
+bad.seq.adj <- FALSE
 
 cat(arg, sep = "\n")
 
@@ -495,21 +544,25 @@ for (j in 1:ncol(data_matrix_max)) {
   cpu_required[j] <- as.numeric(quantile(data_matrix_max[,j], c(0.15, 0.5, 0.85), type = 4)[cpu_usage])
 }
 
-output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max.xlsx"
+output_dp <- NULL
+if (bad.seq.adj) {
+  output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max post adj.xlsx"
+} else {
+  output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max.xlsx"
+}
 result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
 
 for (window_size in window_sizes) {
   for (prob_cut_off in prob_cut_offs) {
     job_length <- 1
     
-    output <- mvt_stationary_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, p=1, q=0,job_length=job_length, window_size = window_size, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size = initial_train_size, update_freq=1, mode = mode)
+    output <- mvt_stationary_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, p=1, q=0,job_length=job_length, window_size=window_size, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size=initial_train_size, update_freq=1, mode=mode, min_job_cpu=min_job_cpu)
+    
     write.csv(output$avg_usage, file = paste("VAR1",window_size, sample_size, prob_cut_off, "avg_usage.csv"))
-    avg_utilization <- mean(as.matrix(output$avg_usage), na.rm = TRUE)
-    
-    
     write.csv(output$job_survival, file = paste("VAR1",window_size, sample_size, prob_cut_off,"job_survival.csv"))
-    survival <- sum(as.matrix(output$job_survival), na.rm = TRUE) / (length(as.matrix(output$job_survival)[!is.na(as.matrix(output$job_survival))]))
-    
+    overall_evaluation <- find_overall_evaluation(output$avg_usage, output$job_survival, bad.seq.adj)
+    avg_utilization <- overall_evaluation$avg_utilization
+    survival <- overall_evaluation$survival
     
     write.csv(output$scheduling_summary, file = paste("VAR1", window_size, sample_size, prob_cut_off, "scheduling_sum.csv"))
     scheduled_num <- sum(output$scheduling_summary[1,])
