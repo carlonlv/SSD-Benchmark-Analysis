@@ -397,24 +397,29 @@ update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num, sampl
 
 bad_seq_adjustment <- function(survivals) {
   if (length(survivals) >= 2) {
-    schedule <- TRUE
+    result <- survivals[1]
+    schedule <- 0
     i <- 2
     while (i <= length(survivals)) {
-      if (schedule) {
-        if (!is.na(survivals[i-1]) & survivals[i-1] == 0 & !is.na(survivals[i]) & survivals[i] == 0) {
-          schedule <- FALSE
-          survivals[i] <- NA
+      if (schedule < 2) {
+        if (!is.na(survivals[i-1]) & survivals[i-1] == 0) {
+          schedule <- schedule + 1
+        } else if (!is.na(survivals[i-1]) & survivals[i-1] == 1) {
+          schedule <- 0
         }
+        result[i] <- survivals[i]
       } else {
-        if (survivals[i] == 1) {
-          schedule <- TRUE
+        if (survivals[i-1] == 1) {
+          schedule <- 0
         }
-        survivals[i] <- NA
+        result[i] <- NA
       }
       i <- i + 1
     }
+    return(result)
+  } else {
+    return(survivals)
   }
-  return(survivals)
 }
 
 find_overall_evaluation <- function(avg_usages, survivals, bad.seq.adj) {
@@ -497,11 +502,11 @@ for (window_size in window_sizes) {
       print(paste("Job survival rate:", "job length", window_size, survival))
       print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
       
-      write.csv(output$avg_usage, file = paste("AR1_state_based_logistic",window_size, sample_size, prob_cut_off, "avg_usage.csv"))
-      write.csv(output$job_survival, file = paste("AR1_state_based_logistic",window_size, sample_size, prob_cut_off,"job_survival.csv"))
-      write.csv(output$scheduling_summary, file = paste("AR1_state_based_logistic", window_size, sample_size, prob_cut_off, "scheduling_sum.csv"))
+      write.csv(output$avg_usage, file = paste("AR1_logistic_state",window_size, num_of_states, sample_size, prob_cut_off, "avg_usage.csv"))
+      write.csv(output$job_survival, file = paste("AR1_logistic_state",window_size, num_of_states, sample_size, prob_cut_off,"job_survival.csv"))
+      write.csv(output$scheduling_summary, file = paste("AR1_logistic_state", window_size, num_of_states, sample_size, prob_cut_off, "scheduling_sum.csv"))
       
-      result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1_state_based_logistic", prob_cut_off, num_of_states, sample_size, window_size, avg_utilization, survival, correct_scheduled_rate, correct_unscheduled_rate)
+      result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1_logistic_state", prob_cut_off, num_of_states, sample_size, window_size, avg_utilization, survival, correct_scheduled_rate, correct_unscheduled_rate)
       write.xlsx(result_path.xlsx, showNA = FALSE, file = output_dp, row.names = FALSE)
     }
   }
