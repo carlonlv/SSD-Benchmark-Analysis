@@ -409,7 +409,7 @@ bad_seq_adjustment <- function(survivals) {
         }
         result[i] <- survivals[i]
       } else {
-        if (survivals[i-1] == 1) {
+        if (!is.na(survivals[i-1]) & survivals[i-1] == 1) {
           schedule <- 0
         }
         result[i] <- NA
