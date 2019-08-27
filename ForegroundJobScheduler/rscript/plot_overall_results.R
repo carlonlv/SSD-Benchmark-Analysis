@@ -40,6 +40,7 @@ read_from_models_xlsx <- function(model_results, xlsx, sample_size, window_size)
 plot_results <- function(model_results, sample_size, window_size) {
   ggplot(model_results, aes(x=Survival, y=Utilization, group=factor(Model), colour=factor(Model))) +
     geom_point(na.rm=TRUE, aes(shape=as.factor(StateNum))) + 
+    scale_shape_manual(values=seq(0,5)) +
     geom_vline(xintercept=0.99, linetype="dashed", color="red") + 
     ylab("Utilization") +
     xlab("Survival Rate") + 
@@ -48,6 +49,7 @@ plot_results <- function(model_results, sample_size, window_size) {
 }
 
 ar_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max.xlsx"
+#ar_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max post adj.xlsx"
 mc_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//mc summary.xlsx"
 sample_size <- 3000
 window_size <- 36
@@ -58,6 +60,5 @@ ar_xlsx <- read.xlsx(ar_data_path, sheetIndex = 1)
 model_results <- data.frame(matrix(nrow = 0, ncol = 5), stringsAsFactors = FALSE)
 colnames(model_results) <- c("Model", "Prob_Cut_Off",  "StateNum", "Utilization", "Survival")
 model_results <- read_from_models_xlsx(model_results, ar_xlsx, sample_size, window_size)
-#model_results <- read_from_models_xlsx(model_results, mc_xlsx, sample_size, window_size)
 
 plot_results(model_results, sample_size, window_size)
