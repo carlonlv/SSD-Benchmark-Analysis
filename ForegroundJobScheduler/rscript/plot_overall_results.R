@@ -40,7 +40,7 @@ read_from_models_xlsx <- function(model_results, xlsx, sample_size, window_size)
 plot_results <- function(model_results, sample_size, window_size) {
   ggplot(model_results, aes(x=Survival, y=Utilization, group=factor(Model), colour=factor(Model))) +
     geom_point(na.rm=TRUE, aes(shape=as.factor(StateNum))) + 
-    scale_shape_manual(values=seq(0,5)) +
+    scale_shape_manual(values=seq(0,6)) +
     geom_vline(xintercept=0.99, linetype="dashed", color="red") + 
     ylab("Utilization") +
     xlab("Survival Rate") + 
@@ -48,8 +48,8 @@ plot_results <- function(model_results, sample_size, window_size) {
   ggsave(paste("Model Performance With Sample Size", sample_size, "and Window Size", window_size, ".png"))
 }
 
-ar_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max.xlsx"
-#ar_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max post adj.xlsx"
+#ar_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max.xlsx"
+ar_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max post adj.xlsx"
 mc_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//mc summary.xlsx"
 sample_size <- 3000
 window_size <- 36
