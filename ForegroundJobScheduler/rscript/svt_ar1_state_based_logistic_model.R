@@ -457,10 +457,10 @@ find_overall_evaluation <- function(avg_usages, survivals, bad.seq.adj) {
 
 wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, initial_train_size, update_freq, bad.seq.adj) {
   
-  job_length <- parameter[1]
-  prob_cut_off <- parameter[2]
-  num_of_states <- parameter[3]
-  granularity <- parameter[4]
+  job_length <- as.numeric(parameter[1])
+  prob_cut_off <- as.numeric(parameter[2])
+  num_of_states <- as.numeric(parameter[3])
+  granularity <- as.numeric(parameter[4])
   
   output <- ar_logistic_model(dataset_avg=data_matrix_avg, dataset_max=data_matrix_max, job_length=job_length, cpu_required=cpu_required, prob_cut_off=prob_cut_off, initial_train_size=initial_train_size, update_freq=1, num_of_states=num_of_states, granularity=granularity)
   

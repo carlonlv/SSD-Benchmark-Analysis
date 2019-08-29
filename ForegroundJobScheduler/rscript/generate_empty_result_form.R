@@ -17,8 +17,9 @@ result.df <- result.df %>%
   mutate(StateNum=ifelse(Model=="AR1_state_based_logistic", StateNum, NA)) %>%
   mutate(Probability.Cut.Off=ifelse(Model!="AR1_logistic_kmeans" & Model!="AR1_logistic_lm" & any(Probability.Cut.Off==c(0.125, 0.15, 0.175, 0.2)), NA, Probability.Cut.Off)) %>%
   distinct() %>%
+  filter(!is.na(Probability.Cut.Off)) %>%
   arrange(Model, StateNum, Probability.Cut.Off, Granularity, Window.Size, Sample.Size) %>%
-  mutate(Avg.Cycle.Usage=NA, Survival.Rate=NA, Correctly.Scheduled=NA, Correctly.Unscheduled=NA)
+  mutate(Avg.Cycle.Usage=NA, Survival.Rate=NA, Correctly.Scheduled=NA, Correctly.Unscheduled=NA) 
 
 write.xlsx(result.df, file = result.dp1, row.names = FALSE, showNA = FALSE)
 write.xlsx(result.df, file = result.dp2, row.names = FALSE, showNA = FALSE)
