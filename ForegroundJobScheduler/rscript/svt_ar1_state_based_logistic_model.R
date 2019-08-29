@@ -24,6 +24,14 @@ convert_frequency_dataset <- function(dataset, new_freq, mode) {
   return(new_avg_cpu)
 }
 
+round_to_nearest <- function(data, divisor, lower) {
+  if (lower) {
+    return(floor(data / divisor) * divisor)
+  } else {
+    return(ceiling(data / divisor) * divisor)
+  }
+}
+ 
 calculate_var_cov_matrix_ar1 <-function(var, l, phi) {
   #### input var: A vector from var(an+l) to var(an+1) of length l
   #### input l: number of prediction
@@ -140,7 +148,7 @@ parser_for_logistic_model_states <- function(train_set_avg, train_set_max, break
   return(ts_logistic_input)
 }
 
-compute_pi_up <- function(job_based_prob, prob_cut_off) {
+compute_pi_up <- function(job_based_prob, prob_cut_off, granularity) {
   
   num_of_states <- ncol(job_based_prob)
   num_of_obs <- nrow(job_based_prob)
@@ -155,6 +163,7 @@ compute_pi_up <- function(job_based_prob, prob_cut_off) {
     }
     pi_up[obs] <- current_state * (100 / num_of_states)
   }
+  pi_up <- sapply(pi_up, round_to_nearest, granularity, FALSE)
   return(pi_up)
 }
 
@@ -210,7 +219,7 @@ multi_state_logistic_model <- function(train_set_avg, train_set_max, predicted_a
   return(job_based_probability)
 }
 
-ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob_cut_off, update_freq, job_length, cpu_required, num_of_states, min_job_cpu=-Inf) {
+ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob_cut_off, update_freq, job_length, cpu_required, num_of_states, granularity) {
   #### input dataset_avg, dataset_max: N by M matrix, N being number of observations, M being number of time series
   #### input initial_train_size: The number of first observations used to train the model
   #### input window_size: The number of observations used to train and predict as one sample
@@ -220,6 +229,8 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   #### input update_freq: The number of windows to do the prediction
   
   window_size <- job_length
+  cpu_required <- sapply(cpu_required, round_to_nearest, granularity, FALSE)
+  
   ## Convert Frequency
   train_set_avg <- matrix(nrow = floor(initial_train_size / window_size), ncol = 0)
   train_set_max <- matrix(nrow = floor(initial_train_size / window_size), ncol = 0)
@@ -255,6 +266,7 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   
   ## N by M dataframe
   probability <- data.frame(matrix(nrow = (nrow(test_set_max) - 1), ncol = ncol(test_set_max)))
+  pi_upper_bounds <- data.frame(matrix(nrow = (nrow(test_set_max) - 1), ncol = ncol(test_set_max)))
   ## N by M dataframe
   avg_usage <- data.frame(matrix(nrow = (nrow(test_set_max) - 1), ncol = ncol(test_set_max)))
   job_survival <- data.frame(matrix(nrow = (nrow(test_set_max) - 1), ncol = ncol(test_set_max)))
@@ -288,8 +300,9 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
     if (state_num == 0) {
       pi_up <- rep(0, nrow(probability))
     } else {
-      pi_up <- compute_pi_up(job_based_prob[[ts_num]], prob_cut_off)
+      pi_up <- compute_pi_up(job_based_prob[[ts_num]], prob_cut_off, granularity)
     }
+    pi_upper_bounds[,ts_num] <- pi_up
     
     ##Evaluation
     evaluation <- find_evaluation(pi_up, test_set_max[, ts_num][-1], min_job_cpu=min_job_cpu)
@@ -319,6 +332,9 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   colnames(probability) <- colnames(dataset_max)
   rownames(probability) <- seq(initial_train_size + window_size + 1, initial_train_size + window_size + 1 + update_freq * (nrow(probability) - 1), update_freq)
   
+  colnames(pi_upper_bounds) <- colnames(pi_upper_bounds)
+  rownames(pi_upper_bounds) <- seq(initial_train_size + window_size + 1, initial_train_size + window_size + 1 + update_freq * (nrow(pi_upper_bounds) - 1), update_freq)
+  
   colnames(avg_usage) <- colnames(dataset_max)
   rownames(avg_usage) <- seq(initial_train_size + window_size + 1, initial_train_size + window_size + 1 + update_freq * (nrow(avg_usage) - 1), update_freq)
   
@@ -338,7 +354,7 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   scheduling_summary[4,] <- falsely_unscheduled_num
   rownames(scheduling_summary) <- c('Scheduled_Num', 'Unscheduled_Num', 'Falsely_scheduled_Num', 'Falsely_unscheduled_Num')
   
-  result <- list('prob' = probability, 'avg_usage'=avg_usage, 'job_survival'=job_survival, 'predict' = predict_result, 'actual' = actual_result, 'scheduling_summary' = scheduling_summary)
+  result <- list('prob' = probability, 'pi_up' = pi_upper_bounds, 'avg_usage'=avg_usage, 'job_survival'=job_survival, 'predict' = predict_result, 'actual' = actual_result, 'scheduling_summary' = scheduling_summary)
   return(result)
 }
 
@@ -485,7 +501,7 @@ for (window_size in window_sizes) {
     for (num_of_states in num_of_states_pool) {
       job_length <- window_size
       
-      output <- ar_logistic_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size=initial_train_size, update_freq=1, num_of_states=num_of_states, min_job_cpu=min_job_cpu)
+      output <- ar_logistic_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size=initial_train_size, update_freq=1, num_of_states=num_of_states, granularity=granularity)
       
       overall_evaluation <- find_overall_evaluation(output$avg_usage, output$job_survival, bad.seq.adj)
       avg_utilization <- overall_evaluation$avg_utilization
@@ -502,8 +518,7 @@ for (window_size in window_sizes) {
       print(paste("Job survival rate:", "job length", window_size, survival))
       print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
       
-      write.csv(output$avg_usage, file = paste("AR1_state_based_logistic",window_size, num_of_states, sample_size, prob_cut_off, "avg_usage.csv"))
-      write.csv(output$job_survival, file = paste("AR1_state_based_logistic",window_size, num_of_states, sample_size, prob_cut_off,"job_survival.csv"))
+      write.csv(output$pi_up, file = paste("AR1_state_based_logistic",window_size, num_of_states, sample_size, prob_cut_off, "pi_upper.csv"))
       write.csv(output$scheduling_summary, file = paste("AR1_state_based_logistic", window_size, num_of_states, sample_size, prob_cut_off, "scheduling_sum.csv"))
       
       result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1_state_based_logistic", prob_cut_off, num_of_states, sample_size, window_size, avg_utilization, survival, correct_scheduled_rate, correct_unscheduled_rate)
