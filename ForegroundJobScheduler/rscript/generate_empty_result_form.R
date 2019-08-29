@@ -15,9 +15,9 @@ colnames(result.df) <- c("Model", "StateNum", "Probability.Cut.Off", "Granularit
 
 result.df <- result.df %>%
   mutate(StateNum=ifelse(Model=="AR1_state_based_logistic", StateNum, NA)) %>%
-  mutate(Probability.Cut.Off=ifelse(Model!="AR1_logistic_kmeans" & Model!="AR1_logistic_lm" & any(Probability.Cut.Off==c(0.125, 0.15, 0.175, 0.2)), NA, Probability.Cut.Off)) %>%
-  distinct() %>%
+  mutate(Probability.Cut.Off=ifelse(Model!="AR1_logistic_kmeans" & Model!="AR1_logistic_lm" & (Probability.Cut.Off==0.125 | Probability.Cut.Off==0.15 | Probability.Cut.Off==0.175 | Probability.Cut.Off==0.2), NA, Probability.Cut.Off)) %>%
   filter(!is.na(Probability.Cut.Off)) %>%
+  distinct() %>%
   arrange(Model, StateNum, Probability.Cut.Off, Granularity, Window.Size, Sample.Size) %>%
   mutate(Avg.Cycle.Usage=NA, Survival.Rate=NA, Correctly.Scheduled=NA, Correctly.Unscheduled=NA) 
 
