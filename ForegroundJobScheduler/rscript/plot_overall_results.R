@@ -7,7 +7,7 @@ plot_results <- function(model_results, sample_size, window_size) {
   model_results <- model_results %>% 
     filter(Sample.Size== sample_size & Window.Size == window_size)
   ggplot(model_results, aes(x=Survival.Rate, y=Avg.Cycle.Usage)) +
-    geom_point(na.rm=TRUE, aes(color=factor(Model))) + 
+    geom_point(na.rm=TRUE, aes(color=factor(Model), shape=factor(StateNum))) + 
     scale_shape_manual(values=c(16,17,18,21,22,23,24)) +
     geom_vline(xintercept=0.99, linetype="dashed", color="red") + 
     ylab("Utilization") +
@@ -22,11 +22,12 @@ mc_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//Foregro
 sample_size <- 3000
 window_size <- 12
 
-ar_xlsx <- read.xlsx(ar_data_path, sheetIndex = 1)
-ar_xlsx <- ar_xlsx %>%
-  mutate(StateNum=ifelse(is.na(StateNum), 0, StateNum))
+#ar_xlsx <- read.xlsx(ar_data_path, sheetIndex = 1)
+#ar_xlsx <- ar_xlsx %>%
+  #mutate(StateNum=ifelse(is.na(StateNum), 0, StateNum))
 
 mc_xlsx <- read.csv(mc_data_path)
+colnames(mc_xlsx) <- c("Model", "Survival.Rate", "Avg.Cycle.Usage", "Sample.Size", "Window.Size", "StateNum","Probability.Cut.Off")
 
 #model_results <- data.frame(matrix(nrow = 0, ncol = 5), stringsAsFactors = FALSE)
 #colnames(model_results) <- c("Model", "Prob_Cut_Off",  "StateNum", "Utilization", "Survival")
