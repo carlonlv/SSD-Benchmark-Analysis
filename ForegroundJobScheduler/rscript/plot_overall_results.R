@@ -44,8 +44,8 @@ read_from_models_xlsx <- function(model_results, xlsx, sample_size, window_size)
 }
 
 plot_results <- function(model_results, sample_size, window_size) {
-  ggplot(model_results, aes(x=Survival, y=Utilization, group=factor(Model), colour=factor(Model))) +
-    geom_point(na.rm=TRUE, aes(shape=factor(StateNum), alpha=factor(Granularity))) + 
+  ggplot(model_results, aes(x=Survival, y=Utilization)) +
+    geom_point(na.rm=TRUE, aes(shape=factor(StateNum), alpha=Granularity, color=factor(Model))) + 
     scale_shape_manual(values=c(16,17,18,0,1,2,6)) +
     geom_vline(xintercept=0.99, linetype="dashed", color="red") + 
     ylab("Utilization") +
