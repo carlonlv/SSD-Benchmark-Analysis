@@ -51,24 +51,38 @@ do_prediction <- function(last_obs, phi, mean, variance) {
 }
 
 find_evaluation <- function(pi_up, actual_obs, granularity=0) {
+  if (granularity != 0) {
+    actual_available <- round_to_nearest(100 - actual_obs, granularity, TRUE)
+    actual_obs <- 100 - actual_available
+  }
   usage <- c()
   survival <- c()
   for (i in 1:length(pi_up)) {
-    if ((100 - pi_up[i]) < granularity) {
-      if ((100 - actual_obs[i]) < granularity) {
+    if (granularity == 0) {
+      if ((100 - pi_up[i]) == 0 & (100 - actual_obs[i]) == 0) {
         survival[i] <- NA
-        usage[i] <- NA
-      } else {
-        survival[i] <- 1
-        usage[i] <- 0
-      }
-    } else {
-      if ((100 - actual_obs[i]) < granularity) {
-        survival[i] <- 0
         usage[i] <- NA
       } else {
         survival[i] <- ifelse(actual_obs[i] <= pi_up[i], 1, 0)
         usage[i] <- ifelse(survival[i] == 0, NA, ifelse(actual_obs[i] == pi_up[i], NA, (100 - pi_up[i]) / (100 - actual_obs[i])))
+      }
+    } else {
+      if ((100 - pi_up[i]) < granularity) {
+        if ((100 - actual_obs[i]) < granularity) {
+          survival[i] <- NA
+          usage[i] <- NA
+        } else {
+          survival[i] <- 1
+          usage[i] <- 0
+        }
+      } else {
+        if ((100 - actual_obs[i]) < granularity) {
+          survival[i] <- 0
+          usage[i] <- NA
+        } else {
+          survival[i] <- ifelse(actual_obs[i] <= pi_up[i], 1, 0)
+          usage[i] <- ifelse(survival[i] == 0, NA, ifelse(actual_obs[i] == pi_up[i], NA, (100 - pi_up[i]) / (100 - actual_obs[i])))
+        }
       }
     }
   }
@@ -156,15 +170,16 @@ compute_pi_up <- function(job_based_prob, prob_cut_off, granularity) {
   pi_up <- rep(NA, num_of_obs)
   for (obs in 1:num_of_obs) {
     current_state <- 1
-    current_prob <- job_based_prob[,current_state]
+    current_prob <- job_based_prob[obs, current_state]
     while (current_prob < (1 - prob_cut_off) & current_state < num_of_states) {
       current_state <- current_state + 1
-      current_prob <- job_based_prob[,current_state]
+      current_prob <- job_based_prob[obs, current_state]
     }
     pi_up[obs] <- current_state * (100 / num_of_states)
   }
   if (granularity > 0) {
-    pi_up <- sapply(pi_up, round_to_nearest, granularity, FALSE)
+    scheduled_size <- sapply(100 - pi_up, round_to_nearest, granularity, TRUE)
+    pi_up <- 100 - scheduled_size
   }
   return(pi_up)
 }
@@ -231,7 +246,9 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   #### input update_freq: The number of windows to do the prediction
   
   window_size <- job_length
-  cpu_required <- sapply(cpu_required, round_to_nearest, granularity, FALSE)
+  if (granularity > 0) {
+    cpu_required <- sapply(cpu_required, round_to_nearest, granularity, FALSE)
+  }
   
   ## Convert Frequency
   train_set_avg <- matrix(nrow = floor(initial_train_size / window_size), ncol = 0)
@@ -298,12 +315,7 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
     }
     
     ## Scoring
-    pi_up <- NULL
-    if (state_num == 0) {
-      pi_up <- rep(0, nrow(probability))
-    } else {
-      pi_up <- compute_pi_up(job_based_prob[[ts_num]], prob_cut_off, granularity)
-    }
+    pi_up <- compute_pi_up(job_based_prob[[ts_num]], prob_cut_off, granularity)
     pi_upper_bounds[,ts_num] <- pi_up
     
     ##Evaluation
@@ -334,7 +346,7 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   colnames(probability) <- colnames(dataset_max)
   rownames(probability) <- seq(initial_train_size + window_size + 1, initial_train_size + window_size + 1 + update_freq * (nrow(probability) - 1), update_freq)
   
-  colnames(pi_upper_bounds) <- colnames(pi_upper_bounds)
+  colnames(pi_upper_bounds) <- colnames(dataset_max)
   rownames(pi_upper_bounds) <- seq(initial_train_size + window_size + 1, initial_train_size + window_size + 1 + update_freq * (nrow(pi_upper_bounds) - 1), update_freq)
   
   colnames(avg_usage) <- colnames(dataset_max)
@@ -449,20 +461,22 @@ bad_seq_adjustment <- function(survivals) {
 }
 
 find_overall_evaluation <- function(avg_usages, survivals, bad.seq.adj) {
-  survivals <- apply(survivals, 2, bad_seq_adjustment)
+  if (bad.seq.adj) {
+    survivals <- apply(survivals, 2, bad_seq_adjustment)
+  }
   avg_utilization <- mean(as.matrix(avg_usages), na.rm = TRUE)
   survival <- sum(as.matrix(survivals), na.rm = TRUE) / (length(as.matrix(survivals)[!is.na(as.matrix(survivals))]))
   return(list("avg_utilization"=avg_utilization, "survival"=survival))
 }
 
-wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, initial_train_size, update_freq, bad.seq.adj) {
+wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, initial_train_size, update_freq, bad.seq.adj, output_dp) {
   
   job_length <- as.numeric(parameter[1])
   prob_cut_off <- as.numeric(parameter[2])
   num_of_states <- as.numeric(parameter[3])
   granularity <- as.numeric(parameter[4])
   
-  output <- ar_logistic_model(dataset_avg=data_matrix_avg, dataset_max=data_matrix_max, job_length=job_length, cpu_required=cpu_required, prob_cut_off=prob_cut_off, initial_train_size=initial_train_size, update_freq=1, num_of_states=num_of_states, granularity=granularity)
+  output <- ar_logistic_model(dataset_avg=dataset_avg, dataset_max=dataset_max, job_length=job_length, cpu_required=cpu_required, prob_cut_off=prob_cut_off, initial_train_size=initial_train_size, update_freq=1, num_of_states=num_of_states, granularity=granularity)
   
   overall_evaluation <- find_overall_evaluation(output$avg_usage, output$job_survival, bad.seq.adj)
   avg_utilization <- overall_evaluation$avg_utilization
@@ -482,13 +496,13 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
   write.csv(output$pi_up, file = paste("AR1_state_based_logistic",job_length, num_of_states, sample_size, prob_cut_off, "pi_upper.csv"))
   write.csv(output$scheduling_summary, file = paste("AR1_state_based_logistic", job_length, num_of_states, sample_size, prob_cut_off, "scheduling_sum.csv"))
   
-  result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1_state_based_logistic", prob_cut_off, num_of_states, sample_size, job_length, granularity,avg_utilization, survival, correct_scheduled_rate, correct_unscheduled_rate)
+  result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
+  result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1_state_based_logistic", prob_cut_off, num_of_states, sample_size, job_length, granularity, avg_utilization, survival, correct_scheduled_rate, correct_unscheduled_rate)
   write.xlsx(result_path.xlsx, showNA = FALSE, file = output_dp, row.names = FALSE)
 }
 
 ## Read back ground job pool
 
-arg <- commandArgs(trailingOnly = TRUE)
 sample_size <- 100
 cpu_usage <- 3
 total_trace_length <- 8000
@@ -498,9 +512,7 @@ bad.seq.adj <- FALSE
 window_sizes <- c(12, 36)
 prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1)
 num_of_states_pool <- c(5, 8, 10, 20, 30, 50)
-granularity <- c(100 / 32, 100 / 64, 100 / 128)
-
-cat(arg, sep = "\n")
+granularity <- c(100 / 32, 100 / 64, 100 / 128, 0)
 
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
 bg_job_pool <- NULL
@@ -537,8 +549,7 @@ if (bad.seq.adj) {
   #output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max.xlsx"
   output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows,granularity).xlsx"
 }
-result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
 
 parameter.df <- expand.grid(window_sizes, prob_cut_offs, num_of_states_pool, granularity)
 colnames(parameter.df) <- c("job_length", "prob_cut_off", "num_of_states", "granularity")
-apply(parameter.df, 1, wrapper.epoche, dataset_avg=data_matrix_avg, dataset_max=data_matrix_max, cpu_required=(100-cpu_required), initial_train_size=initial_train_size, update_freq=1, bad.seq.adj=bad.seq.adj)
+slt <- apply(parameter.df, 1, wrapper.epoche, dataset_avg=data_matrix_avg, dataset_max=data_matrix_max, cpu_required=(100-cpu_required), initial_train_size=initial_train_size, update_freq=1, bad.seq.adj=bad.seq.adj, output_dp=output_dp)

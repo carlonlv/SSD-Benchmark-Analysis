@@ -24,6 +24,14 @@ convert_frequency_dataset <- function(dataset, new_freq, mode) {
   return(new_avg_cpu)
 }
 
+round_to_nearest <- function(data, divisor, lower) {
+  if (lower) {
+    return(floor(data / divisor) * divisor)
+  } else {
+    return(ceiling(data / divisor) * divisor)
+  }
+}
+
 calculate_var_cov_matrix_ar1 <-function(var, l, phi) {
   #### input var: A vector from var(an+l) to var(an+1) of length l
   #### input l: number of prediction
@@ -42,25 +50,39 @@ do_prediction <- function(last_obs, phi, mean, variance) {
   return(result)
 }
 
-find_evaluation <- function(pi_up, actual_obs, min_job_cpu=-Inf) {
+find_evaluation <- function(pi_up, actual_obs, granularity=0) {
+  if (granularity != 0) {
+    actual_available <- round_to_nearest(100 - actual_obs, granularity, TRUE)
+    actual_obs <- 100 - actual_available
+  }
   usage <- c()
   survival <- c()
   for (i in 1:length(pi_up)) {
-    if ((100 - pi_up[i]) <= min_job_cpu) {
-      if ((100 - actual_obs[i]) <= min_job_cpu) {
+    if (granularity == 0) {
+      if ((100 - pi_up[i]) == 0 & (100 - actual_obs[i]) == 0) {
         survival[i] <- NA
-        usage[i] <- NA
-      } else {
-        survival[i] <- 1
-        usage[i] <- 0
-      }
-    } else {
-      if ((100 - actual_obs[i]) <= min_job_cpu) {
-        survival[i] <- 0
         usage[i] <- NA
       } else {
         survival[i] <- ifelse(actual_obs[i] <= pi_up[i], 1, 0)
         usage[i] <- ifelse(survival[i] == 0, NA, ifelse(actual_obs[i] == pi_up[i], NA, (100 - pi_up[i]) / (100 - actual_obs[i])))
+      }
+    } else {
+      if ((100 - pi_up[i]) < granularity) {
+        if ((100 - actual_obs[i]) < granularity) {
+          survival[i] <- NA
+          usage[i] <- NA
+        } else {
+          survival[i] <- 1
+          usage[i] <- 0
+        }
+      } else {
+        if ((100 - actual_obs[i]) < granularity) {
+          survival[i] <- 0
+          usage[i] <- NA
+        } else {
+          survival[i] <- ifelse(actual_obs[i] <= pi_up[i], 1, 0)
+          usage[i] <- ifelse(survival[i] == 0, NA, ifelse(actual_obs[i] == pi_up[i], NA, (100 - pi_up[i]) / (100 - actual_obs[i])))
+        }
       }
     }
   }
@@ -206,8 +228,13 @@ find_expected_max <- function(probability, variance, cpu_required) {
 }
 
 
-compute_pi_up <- function(expected_max, expected_var, prob_cut_off) {
-  return(min(expected_max + qnorm(p=(1-prob_cut_off)) * sqrt(expected_var), 100))
+compute_pi_up <- function(expected_max, expected_var, prob_cut_off, granularity) {
+  pi_up <- min(expected_max + qnorm(p=(1-prob_cut_off)) * sqrt(expected_var), 100)
+  if (granularity > 0) {
+    scheduled_size <- sapply(100 - pi_up, round_to_nearest, granularity, TRUE)
+    pi_up <- 100 - scheduled_size
+  }
+  return(pi_up)
 }
 
 logistic_model <- function(train_set_avg, train_set_max, predicted_avgs, update_freq=1, cpu_required, cond.var) {
@@ -246,7 +273,7 @@ logistic_model <- function(train_set_avg, train_set_max, predicted_avgs, update_
   return(result)
 }
 
-ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob_cut_off, update_freq, job_length, cpu_required, cond.var, min_job_cpu=-Inf) {
+ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob_cut_off, update_freq, job_length, cpu_required, cond.var, granularity) {
   #### input dataset_avg, dataset_max: N by M matrix, N being number of observations, M being number of time series
   #### input initial_train_size: The number of first observations used to train the model
   #### input window_size: The number of observations used to train and predict as one sample
@@ -256,6 +283,10 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   #### input update_freq: The number of windows to do the prediction
   
   window_size <- job_length
+  if (granularity > 0) {
+    cpu_required <- sapply(cpu_required, round_to_nearest, granularity, FALSE)
+  }
+  
   ## Convert Frequency
   train_set_avg <- matrix(nrow = floor(initial_train_size / window_size), ncol = 0)
   train_set_max <- matrix(nrow = floor(initial_train_size / window_size), ncol = 0)
@@ -291,6 +322,7 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   
   ## N by M dataframe
   probability <- data.frame(matrix(nrow = (nrow(test_set_max) - 1), ncol = ncol(test_set_max)))
+  pi_upper_bounds <- data.frame(matrix(nrow = (nrow(test_set_max) - 1), ncol = ncol(test_set_max)))
   ## N by M dataframe
   avg_usage <- data.frame(matrix(nrow = (nrow(test_set_max) - 1), ncol = ncol(test_set_max)))
   job_survival <- data.frame(matrix(nrow = (nrow(test_set_max) - 1), ncol = ncol(test_set_max)))
@@ -317,10 +349,11 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
     probability[,ts_num] <- prob_info[[ts_num]]
     
     ## Scoring
-    pi_up <- mapply(compute_pi_up, expected_max, var_info[[ts_num]], MoreArgs = list(prob_cut_off=prob_cut_off))
+    pi_up <- mapply(compute_pi_up, expected_max, var_info[[ts_num]], MoreArgs = list(prob_cut_off=prob_cut_off, granularity=granularity))
+    pi_upper_bounds[,ts_num] <- pi_up
     
     ##Evaluation
-    evaluation <- find_evaluation(pi_up, test_set_max[, ts_num][-1], min_job_cpu=min_job_cpu)
+    evaluation <- find_evaluation(pi_up, test_set_max[, ts_num][-1], granularity=granularity)
     avg_usage[,ts_num] <- evaluation$usage
     job_survival[,ts_num] <- evaluation$survival
     
@@ -342,6 +375,9 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   colnames(probability) <- colnames(dataset_max)
   rownames(probability) <- seq(initial_train_size + window_size + 1, initial_train_size + window_size + 1 + update_freq * (nrow(probability) - 1), update_freq)
   
+  colnames(pi_upper_bounds) <- colnames(dataset_max)
+  rownames(pi_upper_bounds) <- seq(initial_train_size + window_size + 1, initial_train_size + window_size + 1 + update_freq * (nrow(pi_upper_bounds) - 1), update_freq)
+  
   colnames(avg_usage) <- colnames(dataset_max)
   rownames(avg_usage) <- seq(initial_train_size + window_size + 1, initial_train_size + window_size + 1 + update_freq * (nrow(avg_usage) - 1), update_freq)
   
@@ -361,32 +397,36 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   scheduling_summary[4,] <- falsely_unscheduled_num
   rownames(scheduling_summary) <- c('Scheduled_Num', 'Unscheduled_Num', 'Falsely_scheduled_Num', 'Falsely_unscheduled_Num')
   
-  result <- list('prob' = probability, 'avg_usage'=avg_usage, 'job_survival'=job_survival, 'predict' = predict_result, 'actual' = actual_result, 'scheduling_summary' = scheduling_summary)
+  result <- list('prob' = probability, 'pi_up' = pi_upper_bounds, 'avg_usage'=avg_usage, 'job_survival'=job_survival, 'predict' = predict_result, 'actual' = actual_result, 'scheduling_summary' = scheduling_summary)
   return(result)
 }
 
-update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num, sample_size, window_size, utilization, survival, correct_scheduled_rate, correct_unscheduled_rate) {
+update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num, sample_size, window_size, granularity,utilization, survival, correct_scheduled_rate, correct_unscheduled_rate) {
   if (is.na(state_num)) {
     xlsx_file <- xlsx_file %>%
       mutate(Avg.Cycle.Usage = ifelse(Model == model_name & 
                                         Probability.Cut.Off == prob_cut_off & 
                                         Sample.Size == sample_size &
-                                        Window.Size == window_size, 
+                                        Window.Size == window_size &
+                                        Granularity == granularity, 
                                       utilization, Avg.Cycle.Usage)) %>%
       mutate(Survival.Rate = ifelse(Model == model_name & 
                                       Probability.Cut.Off == prob_cut_off & 
                                       Sample.Size == sample_size &
-                                      Window.Size == window_size, 
+                                      Window.Size == window_size &
+                                      Granularity == granularity, 
                                     survival, Survival.Rate)) %>%
       mutate(Correctly.Scheduled = ifelse(Model == model_name & 
                                             Probability.Cut.Off == prob_cut_off & 
                                             Sample.Size == sample_size &
-                                            Window.Size == window_size, 
+                                            Window.Size == window_size &
+                                            Granularity == granularity, 
                                           correct_scheduled_rate, Correctly.Scheduled)) %>%
       mutate(Correctly.Unscheduled = ifelse(Model == model_name & 
                                               Probability.Cut.Off == prob_cut_off & 
                                               Sample.Size == sample_size &
-                                              Window.Size == window_size, 
+                                              Window.Size == window_size &
+                                              Granularity == granularity, 
                                             correct_unscheduled_rate, Correctly.Unscheduled))
   } else {
     xlsx_file <- xlsx_file %>%
@@ -394,25 +434,29 @@ update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num, sampl
                                         Probability.Cut.Off == prob_cut_off & 
                                         Sample.Size == sample_size &
                                         StateNum == state_num & 
-                                        Window.Size == window_size, 
+                                        Window.Size == window_size &
+                                        Granularity == granularity, 
                                       utilization, Avg.Cycle.Usage)) %>%
       mutate(Survival.Rate = ifelse(Model == model_name & 
                                       Probability.Cut.Off == prob_cut_off & 
                                       Sample.Size == sample_size &
                                       StateNum == state_num & 
-                                      Window.Size == window_size, 
+                                      Window.Size == window_size &
+                                      Granularity == granularity, 
                                     survival, Survival.Rate)) %>%
       mutate(Correctly.Scheduled = ifelse(Model == model_name & 
                                             Probability.Cut.Off == prob_cut_off & 
                                             Sample.Size == sample_size &
                                             StateNum == state_num & 
-                                            Window.Size == window_size, 
+                                            Window.Size == window_size &
+                                            Granularity == granularity, 
                                           correct_scheduled_rate, Correctly.Scheduled)) %>%
       mutate(Correctly.Unscheduled = ifelse(Model == model_name & 
                                               Probability.Cut.Off == prob_cut_off & 
                                               Sample.Size == sample_size &
                                               StateNum == state_num & 
-                                              Window.Size == window_size, 
+                                              Window.Size == window_size &
+                                              Granularity == granularity, 
                                             correct_unscheduled_rate, Correctly.Unscheduled))
   }
   return(xlsx_file)
@@ -446,26 +490,68 @@ bad_seq_adjustment <- function(survivals) {
 }
 
 find_overall_evaluation <- function(avg_usages, survivals, bad.seq.adj) {
-  survivals <- apply(survivals, 2, bad_seq_adjustment)
+  if (bad.seq.adj) {
+    survivals <- apply(survivals, 2, bad_seq_adjustment)
+  }
   avg_utilization <- mean(as.matrix(avg_usages), na.rm = TRUE)
   survival <- sum(as.matrix(survivals), na.rm = TRUE) / (length(as.matrix(survivals)[!is.na(as.matrix(survivals))]))
   return(list("avg_utilization"=avg_utilization, "survival"=survival))
 }
 
+wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, initial_train_size, update_freq, cond.var, bad.seq.adj, output_dp) {
+  
+  job_length <- as.numeric(parameter[1])
+  prob_cut_off <- as.numeric(parameter[2])
+  granularity <- as.numeric(parameter[3])
+  
+  output <- ar_logistic_model(dataset_avg=dataset_avg, dataset_max=dataset_max, job_length=job_length, cpu_required=cpu_required, prob_cut_off=prob_cut_off, initial_train_size=initial_train_size, update_freq=1, cond.var=cond.var, granularity=granularity)
+  
+  overall_evaluation <- find_overall_evaluation(output$avg_usage, output$job_survival, bad.seq.adj)
+  avg_utilization <- overall_evaluation$avg_utilization
+  survival <- overall_evaluation$survival
+  
+  scheduled_num <- sum(output$scheduling_summary[1,])
+  unscheduled_num <- sum(output$scheduling_summary[2,])
+  correct_scheduled_num <- scheduled_num - sum(output$scheduling_summary[3,])
+  correct_unscheduled_num <- unscheduled_num - sum(output$scheduling_summary[4,])
+  correct_scheduled_rate <- correct_scheduled_num / scheduled_num
+  correct_unscheduled_rate <- correct_unscheduled_num / unscheduled_num
+  
+  print(paste("Avg cycle used:", "job length", job_length, avg_utilization))
+  print(paste("Job survival rate:", "job length", job_length, survival))
+  print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
+  
+  if (cond.var == "lm") {
+    
+    write.csv(output$pi_up, file = paste("AR1_logistic_lm",job_length, sample_size, prob_cut_off, "pi_upper.csv"))
+    write.csv(output$scheduling_summary, file = paste("AR1_logistic_lm", job_length, sample_size, prob_cut_off, "scheduling_sum.csv"))
+    
+    result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
+    result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1_logistic_lm", prob_cut_off, NA, sample_size, job_length, granularity, avg_utilization, survival, correct_scheduled_rate, correct_unscheduled_rate)
+    write.xlsx(result_path.xlsx, showNA = FALSE, file = output_dp, row.names = FALSE)
+  } else {
+    
+    write.csv(output$pi_up, file = paste("AR1_logistic_kmeans",job_length, sample_size, prob_cut_off, "pi_upper.csv"))
+    write.csv(output$scheduling_summary, file = paste("AR1_logistic_kmeans", job_length, sample_size, prob_cut_off, "scheduling_sum.csv"))
+    
+    result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
+    result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1_logistic_kmeans", prob_cut_off, NA, sample_size, job_length, granularity, avg_utilization, survival, correct_scheduled_rate, correct_unscheduled_rate)
+    write.xlsx(result_path.xlsx, showNA = FALSE, file = output_dp, row.names = FALSE)
+  }
+}
+
 ## Read back ground job pool
 
-arg <- commandArgs(trailingOnly = TRUE)
 sample_size <- 100
-window_sizes <- c(12, 36)
 cpu_usage <- 3
-prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1, 0.125, 0.15, 0.175, 0.2)
 total_trace_length <- 8000
 initial_train_size <- 6000
-cond.var <- "kmeans"
-min_job_cpu <- 0
-bad.seq.adj <- TRUE
+bad.seq.adj <- FALSE
+cond.var <- "lm"
 
-cat(arg, sep = "\n")
+window_sizes <- c(12, 36)
+prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1, 0.125, 0.15, 0.175, 0.2)
+granularity <- c(100 / 32, 100 / 64, 100 / 128, 0)
 
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
 bg_job_pool <- NULL
@@ -496,50 +582,13 @@ for (j in 1:ncol(data_matrix_max)) {
 
 output_dp <- NULL
 if (bad.seq.adj) {
-  output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max post adj.xlsx"
+  #output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max post adj.xlsx"
+  output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows,granularity) post adj.xlsx"
 } else {
-  output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max.xlsx"
+  #output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max.xlsx"
+  output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows,granularity).xlsx"
 }
-result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
 
-for (window_size in window_sizes) {
-  for (prob_cut_off in prob_cut_offs) {
-    job_length <- window_size
-    
-    output <- ar_logistic_model(dataset_avg=data_matrix_avg, dataset_max = data_matrix_max, job_length=job_length, cpu_required=(100-cpu_required), prob_cut_off=prob_cut_off, initial_train_size=initial_train_size, update_freq=1, cond.var=cond.var, min_job_cpu=min_job_cpu)
-    
-    overall_evaluation <- find_overall_evaluation(output$avg_usage, output$job_survival, bad.seq.adj)
-    avg_utilization <- overall_evaluation$avg_utilization
-    survival <- overall_evaluation$survival
-    
-    scheduled_num <- sum(output$scheduling_summary[1,])
-    unscheduled_num <- sum(output$scheduling_summary[2,])
-    correct_scheduled_num <- scheduled_num - sum(output$scheduling_summary[3,])
-    correct_unscheduled_num <- unscheduled_num - sum(output$scheduling_summary[4,])
-    correct_scheduled_rate <- correct_scheduled_num / scheduled_num
-    correct_unscheduled_rate <- correct_unscheduled_num / unscheduled_num
-    
-    print(paste("Avg cycle used:", "job length", window_size, avg_utilization))
-    print(paste("Job survival rate:", "job length", window_size, survival))
-    print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
-    
-    if (cond.var == "lm") {
-      
-      write.csv(output$avg_usage, file = paste("AR1_logistic_lm", window_size, sample_size, prob_cut_off, "avg_usage.csv"))
-      write.csv(output$job_survival, file = paste("AR1_logistic_lm", window_size, sample_size, prob_cut_off,"job_survival.csv"))
-      write.csv(output$scheduling_summary, file = paste("AR1_logistic_lm", window_size, sample_size, prob_cut_off, "scheduling_sum.csv"))
-      
-      result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1_logistic_lm", prob_cut_off, NA, sample_size, window_size, avg_utilization, survival, correct_scheduled_rate, correct_unscheduled_rate)
-      write.xlsx(result_path.xlsx, showNA = FALSE, file = output_dp, row.names = FALSE)
-      
-    } else {
-      
-      write.csv(output$avg_usage, file = paste("AR1_logistic_kmeans", window_size, sample_size, prob_cut_off, "avg_usage.csv"))
-      write.csv(output$job_survival, file = paste("AR1_logistic_kmeans", window_size, sample_size, prob_cut_off,"job_survival.csv"))
-      write.csv(output$scheduling_summary, file = paste("AR1_logistic_kmeans", window_size, sample_size, prob_cut_off, "scheduling_sum.csv"))
-      
-      result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1_logistic_kmeans", prob_cut_off, NA, sample_size, window_size, avg_utilization, survival, correct_scheduled_rate, correct_unscheduled_rate)
-      write.xlsx(result_path.xlsx, showNA = FALSE, file = output_dp, row.names = FALSE)
-    }
-  }
-}
+parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity)
+colnames(parameter.df) <- c("job_length", "prob_cut_off", "granularity")
+slt <- apply(parameter.df, 1, wrapper.epoche, dataset_avg=data_matrix_avg, dataset_max=data_matrix_max, cpu_required=(100-cpu_required), initial_train_size=initial_train_size, update_freq=1, cond.var=cond.var, bad.seq.adj=bad.seq.adj, output_dp=output_dp)
