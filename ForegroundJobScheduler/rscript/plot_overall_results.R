@@ -3,46 +3,6 @@ library("readxl")
 library("ggplot2")
 library("dplyr")
 
-read_from_models_xlsx <- function(model_results, xlsx, sample_size, window_size) {
-  xlsx <- xlsx %>%
-    filter(Sample.Size== sample_size & Window.Size == window_size)
-  model_names <- unique(xlsx$Model)
-  for (model in model_names) {
-    current_model <- xlsx %>%
-      filter(Model == model)
-    for (alpha in current_model$Probability.Cut.Off) {
-      current_model_prob <- current_model %>%
-        filter(Probability.Cut.Off == alpha)
-      for (granularity in current_model_prob$Granularity) {
-        current_model_prob_gran <- current_model_prob %>%
-          filter(Granularity == granularity)
-        
-        if (all(is.na(current_model_prob_gran$StateNum))) {
-          
-          utilization <- current_model_prob_gran$Avg.Cycle.Usage
-          survival_rate <- current_model_prob_gran$Survival.Rate
-          
-          result <- data.frame("Model" = model, "Prob_Cut_Off" = alpha, "StateNum" = 0, "Granularity" = granularity, "Utilization" = utilization, "Survival" = survival_rate)
-          model_results <- rbind(model_results, result)
-        } else {
-          
-          for (stateNum in current_model_prob_gran$StateNum) {
-            current_model_prob_gran_stateNum <- current_model_prob_gran %>%
-              filter(StateNum == stateNum)
-            utilization <- current_model_prob_gran_stateNum$Avg.Cycle.Usage
-            survival_rate <- current_model_prob_gran_stateNum$Survival.Rate
-            
-            result <- data.frame("Model" = model, "Prob_Cut_Off" = alpha, "StateNum" = stateNum, "Granularity" = granularity, "Utilization" = utilization, "Survival" = survival_rate)
-            model_results <- rbind(model_results, result)
-          }
-        }
-        
-      }
-    }
-  }
-  return(model_results)
-}
-
 plot_results <- function(model_results, sample_size, window_size) {
   model_results <- model_results %>% 
     filter(Sample.Size== sample_size & Window.Size == window_size)
