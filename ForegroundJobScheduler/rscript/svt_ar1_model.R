@@ -432,6 +432,8 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, initial_train_size,
   
   write.csv(output$pi_up, file = paste("AR1",window_size, sample_size, prob_cut_off, granularity, "pi_upper.csv"))
   write.csv(output$scheduling_summary, file = paste("AR1", window_size, sample_size, prob_cut_off, granularity, "scheduling_sum.csv"))
+  write.csv(output$avg_usage, file = paste("AR1", window_size, sample_size, prob_cut_off, granularity, "avg_usage.csv"))
+  write.csv(output$job_survival, file = paste("AR1", window_size, sample_size, prob_cut_off, granularity, "job_survival.csv"))
   
   result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
   result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1", prob_cut_off, NA, sample_size, window_size, granularity, avg_utilization, survival, correct_scheduled_rate, correct_unscheduled_rate)
