@@ -7,7 +7,7 @@ plot_results <- function(model_results, sample_size, window_size) {
   model_results <- model_results %>% 
     filter(Sample.Size== sample_size & Window.Size == window_size)
   ggplot(model_results, aes(x=Survival.Rate, y=Avg.Cycle.Usage)) +
-    geom_point(na.rm=TRUE, aes(color=factor(Model), shape=factor(StateNum))) + 
+    geom_point(na.rm=TRUE, aes(color=factor(Model), shape=factor(StateNum), alpha=factor(Granularity))) + 
     scale_shape_manual(values=c(16,17,18,21,22,23,24)) +
     geom_vline(xintercept=0.99, linetype="dashed", color="red") + 
     ylab("Utilization") +

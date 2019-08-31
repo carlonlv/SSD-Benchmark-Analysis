@@ -523,16 +523,16 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
   
   if (cond.var == "lm") {
     
-    write.csv(output$pi_up, file = paste("AR1_logistic_lm",job_length, sample_size, prob_cut_off, "pi_upper.csv"))
-    write.csv(output$scheduling_summary, file = paste("AR1_logistic_lm", job_length, sample_size, prob_cut_off, "scheduling_sum.csv"))
+    write.csv(output$pi_up, file = paste("AR1_logistic_lm",job_length, sample_size, prob_cut_off, granularity, "pi_upper.csv"))
+    write.csv(output$scheduling_summary, file = paste("AR1_logistic_lm", job_length, sample_size, prob_cut_off, granularity, "scheduling_sum.csv"))
     
     result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
     result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1_logistic_lm", prob_cut_off, NA, sample_size, job_length, granularity, avg_utilization, survival, correct_scheduled_rate, correct_unscheduled_rate)
     write.xlsx(result_path.xlsx, showNA = FALSE, file = output_dp, row.names = FALSE)
   } else {
     
-    write.csv(output$pi_up, file = paste("AR1_logistic_kmeans",job_length, sample_size, prob_cut_off, "pi_upper.csv"))
-    write.csv(output$scheduling_summary, file = paste("AR1_logistic_kmeans", job_length, sample_size, prob_cut_off, "scheduling_sum.csv"))
+    write.csv(output$pi_up, file = paste("AR1_logistic_kmeans",job_length, sample_size, prob_cut_off, granularity, "pi_upper.csv"))
+    write.csv(output$scheduling_summary, file = paste("AR1_logistic_kmeans", job_length, sample_size, prob_cut_off, granularity, "scheduling_sum.csv"))
     
     result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
     result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1_logistic_kmeans", prob_cut_off, NA, sample_size, job_length, granularity, avg_utilization, survival, correct_scheduled_rate, correct_unscheduled_rate)
@@ -550,8 +550,8 @@ bad.seq.adj <- FALSE
 cond.var <- "lm"
 
 window_sizes <- c(12, 36)
-prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1, 0.125, 0.15, 0.175, 0.2)
-granularity <- c(100 / 32, 100 / 64, 100 / 128, 0)
+prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1, 0.125, 0.15, 0.175, 0.2, 0.25)
+granularity <- c(10, 100/32, 100/64, 100/32, 0)
 
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
 bg_job_pool <- NULL

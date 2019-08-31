@@ -582,8 +582,8 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
   print(paste("Job survival rate:", "job length", window_size, survival))
   print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
   
-  write.csv(output$pi_up, file = paste("VAR1",window_size, sample_size, prob_cut_off, "pi_upper.csv"))
-  write.csv(output$scheduling_summary, file = paste("VAR1", window_size, sample_size, prob_cut_off, "scheduling_sum.csv"))
+  write.csv(output$pi_up, file = paste("VAR1",window_size, sample_size, prob_cut_off, granularity, "pi_upper.csv"))
+  write.csv(output$scheduling_summary, file = paste("VAR1", window_size, sample_size, prob_cut_off, granularity, "scheduling_sum.csv"))
   
   result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
   result_path.xlsx <- update.xlsx.df(result_path.xlsx, "VAR1", prob_cut_off, NA, sample_size, window_size, granularity, avg_utilization, survival, correct_scheduled_rate, correct_unscheduled_rate)
@@ -600,7 +600,7 @@ bad.seq.adj <- FALSE
 
 window_sizes <- c(12, 36)
 prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1)
-granularity <- c(100 / 32, 100 / 64, 100 / 128, 0)
+granularity <- c(10, 100/32, 100/64, 100/32, 0)
 
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
 bg_job_pool <- NULL
