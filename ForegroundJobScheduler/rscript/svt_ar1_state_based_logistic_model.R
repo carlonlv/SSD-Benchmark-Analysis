@@ -554,4 +554,6 @@ if (bad.seq.adj) {
 
 parameter.df <- expand.grid(window_sizes, prob_cut_offs, num_of_states_pool, granularity)
 colnames(parameter.df) <- c("job_length", "prob_cut_off", "num_of_states", "granularity")
+parameter.df <- parameter.df %>%
+  arrange(window_size)
 slt <- apply(parameter.df, 1, wrapper.epoche, dataset_avg=data_matrix_avg, dataset_max=data_matrix_max, cpu_required=(100-cpu_required), initial_train_size=initial_train_size, update_freq=1, bad.seq.adj=bad.seq.adj, output_dp=output_dp)
