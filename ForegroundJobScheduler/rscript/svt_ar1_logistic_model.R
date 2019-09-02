@@ -555,7 +555,7 @@ cond.var <- "lm"
 
 window_sizes <- c(12, 36)
 prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1, 0.125, 0.15, 0.175, 0.2, 0.25)
-granularity <- c(10, 100/32, 100/64, 100/32, 0)
+granularity <- c(10, 100/32, 100/64, 100/128, 0)
 
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
 bg_job_pool <- NULL
