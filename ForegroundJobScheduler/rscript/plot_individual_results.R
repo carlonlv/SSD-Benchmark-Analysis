@@ -30,7 +30,7 @@ find_runs <- function(survival_for_trace) {
 compute_distribution_of_runs <- function(survival_info) {
   total_count_of_runs <- rep(0, nrow(survival_info))
   result.lst <- apply(survival_info, 2, find_runs)
-  sapply(list, sum)
+  
 }
 
 read_from_ar_result <- function(model, window_size, sample_size, prob_cut_off, state_num, granularity, datapath) {
