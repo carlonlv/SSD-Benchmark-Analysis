@@ -89,7 +89,7 @@ sample_size <- 3000
 prob_cut_off <- 0.01
 granularity <- 0.78125
 state_num <- NA
-cpu_usage <- 1
+cpu_usage <- 3
 
 model_performance <- read_from_ar_result(model_name, window_size, sample_size, prob_cut_off, state_num, granularity, cpu_usage, result_folder_path, mode="raw")
 
