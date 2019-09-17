@@ -17,7 +17,7 @@ calculate_var_cov_matrix_ar1 <-function(var, l, phi) {
 }
 
 
-do_prediction <- function(last_obs, phi, mean, variance, predict_size, level) {
+do_prediction <- function(last_obs, phi, mean, variance, predict_size, level=NULL) {
   # Construct mean
   mu <- rep(last_obs, predict_size)
   mu <- mu * phi^(1:predict_size) + (1 - phi^(1:predict_size)) * mean
@@ -25,10 +25,13 @@ do_prediction <- function(last_obs, phi, mean, variance, predict_size, level) {
   var <- cumsum((phi^2)^(0:(predict_size-1)))*variance
   varcov <- calculate_var_cov_matrix_ar1(var, predict_size, phi)
   # caclulate probability
-  up_bound <- rep(level, predict_size)
-  lower_bound <- rep(0, predict_size)
-  prob <- 1 - pmvnorm(upper = up_bound, lower = lower_bound, mean = mu, sigma = varcov)
-  return(as.numeric(prob))
+  prob <- NULL
+  if (!is.null(level)) {
+    up_bound <- rep(level, predict_size)
+    lower_bound <- rep(0, predict_size)
+    prob <- 1 - pmvnorm(upper = up_bound, lower = lower_bound, mean = mu, sigma = varcov)
+  }
+  return(list("prob"=as.numeric(prob), "mu"=mu, "varcov"=varcov))
 }
 
 
@@ -47,7 +50,7 @@ scheduling_foreground <- function(ts_num, test_dataset, coeffs, means, vars, win
     ## Schedule based on model predictions
     last_obs <- test_dataset[(current_end-1), ts_num]
     prediction_result <- do_prediction(last_obs=last_obs, phi=coeffs[ts_num], mean=means[ts_num], variance=vars[ts_num], predict_size=job_length, level=(100-cpu_required[ts_num]))
-    prediction <- ifelse(prediction_result <= prob_cut_off, 1, 0)
+    prediction <- ifelse(prediction_result$prob <= prob_cut_off, 1, 0)
     scheduled_num <- ifelse(prediction == 1, scheduled_num + 1, scheduled_num)
     unscheduled_num <- ifelse(prediction == 1, unscheduled_num, unscheduled_num + 1)
     
@@ -67,7 +70,7 @@ scheduling_foreground <- function(ts_num, test_dataset, coeffs, means, vars, win
 }
 
 
-scheduling_model <- function(ts_num, test_dataset, means, vars, window_size, prob_cut_off, granularity, mode, seek_length=NULL, last_time_schedule=NULL) {
+scheduling_model <- function(ts_num, test_dataset, coeffs, means, vars, window_size, prob_cut_off, granularity, mode, seek_length=NULL, last_time_schedule=NULL) {
   utilization <- c()
   survival <- c()
   runs <- rep(0, 5)
@@ -82,7 +85,9 @@ scheduling_model <- function(ts_num, test_dataset, means, vars, window_size, pro
 
   while (current_end <= last_time_schedule) {
     ## Schedule based on model predictions
-    pi_up <- compute_pi_up(mu=as.vector(means[ts_num]), varcov=as.matrix(vars[ts_num]), predict_size=1, prob_cutoff=prob_cut_off, granularity=granularity)
+    last_obs <- test_dataset[(current_end-1), ts_num]
+    prediction_result <- do_prediction(last_obs=last_obs, phi=coeffs[ts_num], mean=means[ts_num], variance=vars[ts_num], predict_size=1)
+    pi_up <- compute_pi_up(mu=prediction_result$mu, varcov=prediction_result$varcov, predict_size=1, prob_cutoff=prob_cut_off, granularity=granularity)
     
     ## Evalute schedulings based on prediction
     start_time <- current_end
@@ -194,7 +199,7 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
     }
     
     result_foreground <- sapply(1:ncol(new_testset), scheduling_foreground, test_dataset=new_testset, coeffs=coeffs, means=means, vars=vars, window_size=window_size, job_length=job_length, prob_cut_off=prob_cut_off, cpu_required=cpu_required, granularity=granularity, mode="fixed", seek_length=seek_length, last_time_schedule=last_time_schedule)
-    result_model <- sapply(1:ncol(new_testset), scheduling_model, test_dataset=new_testset, means=means, vars=vars, window_size=window_size, prob_cut_off=prob_cut_off, granularity=granularity, mode="fixed", seek_length=seek_length, last_time_schedule=last_time_schedule)
+    result_model <- sapply(1:ncol(new_testset), scheduling_model, test_dataset=new_testset, coeffs=coeffs, means=means, vars=vars, window_size=window_size, prob_cut_off=prob_cut_off, granularity=granularity, mode="fixed", seek_length=seek_length, last_time_schedule=last_time_schedule)
   } else {
     
     new_testset <- test_dataset
@@ -202,7 +207,7 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
     colnames(new_testset) <- colnames(test_dataset)
     
     result_foreground <- sapply(1:ncol(new_testset), scheduling_foreground, test_dataset=new_testset, coeffs=coeffs, means=means, vars=vars, window_size=window_size, job_length=job_length, prob_cut_off=prob_cut_off, cpu_required=cpu_required, granularity=granularity, mode="dynamic")
-    result_model <- sapply(1:ncol(new_testset), scheduling_model, test_dataset=new_testset, means=means, vars=vars, window_size=window_size, prob_cut_off=prob_cut_off, granularity=granularity, mode="dynamic")
+    result_model <- sapply(1:ncol(new_testset), scheduling_model, test_dataset=new_testset, coeffs=coeffs, means=means, vars=vars, window_size=window_size, prob_cut_off=prob_cut_off, granularity=granularity, mode="dynamic")
     
     for (i in 1:5) {
       overall_runs <- cbind(overall_runs, unlist(result_model_fixed[2+i,]))
@@ -311,6 +316,8 @@ if (bad.seq.adj) {
   #output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max.xlsx"
   output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows,granularity).xlsx"
 }
+
+asd <- c(0.328852027, 0.974297827)
 
 parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity)
 colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity")
