@@ -257,10 +257,10 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, initial_train_size,
   scheduled_num <- sum(output$scheduled_num[,1])
   unscheduled_num <- sum(output$unscheduled_num[,1])
   correct_scheduled_num <- sum(output$correct_scheduled_num[,1])
-  correct_unscheduled_num <- mean(output$correct_unscheduled_num[,1])
+  correct_unscheduled_num <- sum(output$correct_unscheduled_num[,1])
   
   correct_scheduled_rate <- correct_scheduled_num / scheduled_num
-  correct_unscheduled_rate <- correct_unscheduled_num / correct_unscheduled_num
+  correct_unscheduled_rate <- correct_unscheduled_num / unscheduled_num
   
   print(paste("Avg cycle used:", "job length", window_size, utilization_rate))
   print(paste("Job survival rate:", "job length", window_size, survival_rate))
