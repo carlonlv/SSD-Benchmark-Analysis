@@ -35,6 +35,16 @@ do_prediction <- function(last_obs, phi, mean, variance, predict_size, level=NUL
 }
 
 
+train_ar1_model <- function(ts_num, train_dataset) {
+  ts_model <- tryCatch({
+    arima(x=train_dataset[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000))
+  }, error = function(cond) {
+    return(arima(x=train_dataset[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "ML", optim.control = list(maxit=2000)))
+  })
+  return(list("coeffs"=as.numeric(ts_model$coef[1]), "means"= as.numeric(ts_model$coef[2]), "vars"=ts_model$sigma2))
+}
+
+
 scheduling_foreground <- function(ts_num, test_dataset, coeffs, means, vars, window_size, job_length, prob_cut_off, cpu_required, granularity, mode, seek_length=NULL, last_time_schedule=NULL) {
   seek_length <- ifelse(mode == "dynamic", window_size * job_length, seek_length)
   last_time_schedule <- ifelse(mode == "dynamic", length(test_dataset) - window_size * job_length + 1, last_time_schedule)
@@ -156,24 +166,11 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
   colnames(new_trainset) <- colnames(train_dataset)
   
   ## Train Model
-  coeffs <- rep(NA, ncol(new_trainset))
-  means <- rep(NA, ncol(new_trainset))
-  vars <- rep(NA, ncol(new_trainset))
-  train_percent <- 0.00
-  for (ts_num in 1:ncol(new_trainset)) {
-    if (round(ts_num / ncol(new_trainset), 2) != train_percent) {
-      print(paste("Training", train_percent))
-      train_percent <- round(ts_num / ncol(new_trainset), 2)
-    }
-    ts_model <- tryCatch({
-      arima(x=new_trainset[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000))
-    }, error = function(cond) {
-      return(arima(x=new_trainset[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "ML", optim.control = list(maxit=2000)))
-    })
-    coeffs[ts_num] <- as.numeric(ts_model$coef[1])
-    means[ts_num] <- as.numeric(ts_model$coef[2])
-    vars[ts_num] <- ts_model$sigma2
-  }
+  print("Training:")
+  train_result <- sapply(1:ncol(new_trainset), train_ar1_model, new_trainset)
+  coeffs <- unlist(train_result[1,])
+  means <- unlist(train_result[2,])
+  vars <- unlist(train_result[3,])
   
   ## Test Model
   if (schedule_policy != "real") {
@@ -198,7 +195,9 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
       seek_length <- job_length * window_size
     }
     
+    print("Testing on Foreground job:")
     result_foreground <- sapply(1:ncol(new_testset), scheduling_foreground, test_dataset=new_testset, coeffs=coeffs, means=means, vars=vars, window_size=window_size, job_length=job_length, prob_cut_off=prob_cut_off, cpu_required=cpu_required, granularity=granularity, mode="fixed", seek_length=seek_length, last_time_schedule=last_time_schedule)
+    print("Testing on Model:")
     result_model <- sapply(1:ncol(new_testset), scheduling_model, test_dataset=new_testset, coeffs=coeffs, means=means, vars=vars, window_size=window_size, prob_cut_off=prob_cut_off, granularity=granularity, mode="fixed", seek_length=seek_length, last_time_schedule=last_time_schedule)
   } else {
     
@@ -206,7 +205,9 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
     rownames(new_testset) <- rownames(test_dataset)
     colnames(new_testset) <- colnames(test_dataset)
     
+    print("Testing on Foreground job:")
     result_foreground <- sapply(1:ncol(new_testset), scheduling_foreground, test_dataset=new_testset, coeffs=coeffs, means=means, vars=vars, window_size=window_size, job_length=job_length, prob_cut_off=prob_cut_off, cpu_required=cpu_required, granularity=granularity, mode="dynamic")
+    print("Testing on Model:")
     result_model <- sapply(1:ncol(new_testset), scheduling_model, test_dataset=new_testset, coeffs=coeffs, means=means, vars=vars, window_size=window_size, prob_cut_off=prob_cut_off, granularity=granularity, mode="dynamic")
     
     for (i in 1:5) {
