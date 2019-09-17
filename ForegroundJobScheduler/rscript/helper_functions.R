@@ -84,7 +84,7 @@ find_evaluation <- function(pi_up, actual_obs, granularity=0) {
   }
   avg_usage <- mean(usage, na.rm=TRUE)
   overall_survival <- ifelse(any(is.na(survival)), NA, ifelse(any(survival == 0), 0, 1))
-  result <- list('avg_usage' = avg_usage, 'survival'= overall_survival)
+  result <- list('usage' = avg_usage, 'survival'= overall_survival)
   return(result)
 }
 
@@ -179,13 +179,10 @@ bad_seq_adjustment <- function(survivals) {
 }
 
 
-find_overall_evaluation <- function(avg_usages, survivals, bad.seq.adj) {
-  if (bad.seq.adj) {
-    survivals <- apply(survivals, 2, bad_seq_adjustment)
-  }
+find_overall_evaluation <- function(avg_usages, survivals) {
   avg_utilization <- mean(as.matrix(avg_usages), na.rm = TRUE)
   survival <- sum(as.matrix(survivals), na.rm = TRUE) / (length(as.matrix(survivals)[!is.na(as.matrix(survivals))]))
-  return(list("avg_utilization"=avg_utilization, "survival"=survival))
+  return(list("utilization_rate"=avg_utilization, "survival_rate"=survival))
 }
 
 
