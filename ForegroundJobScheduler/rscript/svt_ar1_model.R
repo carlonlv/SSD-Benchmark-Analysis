@@ -4,7 +4,6 @@ library("dict")
 library("dplyr")
 library("xlsx")
 
-
 source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//helper_functions.R")
 
 
@@ -263,7 +262,7 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, initial_train_size,
   print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
   
   result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
-  result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1", prob_cut_off, NA, sample_size, window_size, granularity, avg_utilization, survival, correct_scheduled_rate, correct_unscheduled_rate)
+  result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1", prob_cut_off, NA, sample_size, window_size, granularity, utilization_rate, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
   write.xlsx(result_path.xlsx, showNA = FALSE, file = output_dp, row.names = FALSE)
 }
 
