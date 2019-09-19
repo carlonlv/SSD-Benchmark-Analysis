@@ -45,20 +45,20 @@ train_ar1_model <- function(ts_num, train_dataset) {
 }
 
 
-scheduling_foreground <- function(ts_num, test_dataset, coeffs, means, vars, window_size, job_length, prob_cut_off, cpu_required, granularity, mode, seek_length=NULL, last_time_schedule=NULL) {
-  seek_length <- ifelse(mode == "dynamic", window_size * job_length, seek_length)
-  last_time_schedule <- ifelse(mode == "dynamic", length(test_dataset) - window_size * job_length + 1, last_time_schedule)
-  update_policy <- 1
-
+scheduling_foreground <- function(ts_num, test_dataset, coeffs, means, vars, window_size, job_length, prob_cut_off, cpu_required, granularity, mode, schedule_policy) {
   scheduled_num <- 0
   unscheduled_num <- 0
   correct_scheduled_num <- 0
   correct_unscheduled_num <- 0
   
-  current_end <- 2
+  seek_length <- window_size * job_length
+  last_time_schedule <- nrow(test_dataset) - window_size * job_length + 1
+
+  update_policy = ifelse(schedule_policy == "disjoint", window_size, 1)
+  current_end <- window_size + 1
   while (current_end <= last_time_schedule) {
     ## Schedule based on model predictions
-    last_obs <- test_dataset[(current_end-1), ts_num]
+    last_obs <- convert_frequency_dataset(test_dataset[(current_end-window_size):(current_end-1), ts_num], window_size, mode = mode)
     prediction_result <- do_prediction(last_obs=last_obs, phi=coeffs[ts_num], mean=means[ts_num], variance=vars[ts_num], predict_size=job_length, level=(100-cpu_required[ts_num]))
     prediction <- ifelse(prediction_result$prob <= prob_cut_off, 1, 0)
     scheduled_num <- ifelse(prediction == 1, scheduled_num + 1, scheduled_num)
@@ -67,12 +67,18 @@ scheduling_foreground <- function(ts_num, test_dataset, coeffs, means, vars, win
     ## Evalute schedulings based on prediction
     start_time <- current_end
     end_time <- current_end + seek_length - 1
-    position_vec <- test_dataset[start_time:end_time, ts_num]
+    position_vec <- convert_frequency_dataset(test_dataset[start_time:end_time, ts_num], window_size, mode = mode)
     actual <- ifelse(all(position_vec <= (100 - cpu_required[ts_num])), 1, 0)
     correct_scheduled_num <- ifelse(prediction == 1 & actual == 1, correct_scheduled_num + 1, correct_scheduled_num)
     correct_unscheduled_num <- ifelse(prediction == 0 & actual == 0, correct_unscheduled_num + 1, correct_unscheduled_num)
     
-    update_policy <- ifelse(mode == "dynamic", ifelse(is.na(survival), update_policy, ifelse(survival == 1, window_size * job_length, 1)), 1)
+    if (schedule_policy == "dynamic") {
+      if (prediction == 1) {
+        update_policy = ifelse(actual == 1, window_size * job_length, 1)
+      } else {
+        update_policy = 1
+      }
+    }
     current_end <- current_end + update_policy
   }
   
@@ -80,43 +86,42 @@ scheduling_foreground <- function(ts_num, test_dataset, coeffs, means, vars, win
 }
 
 
-scheduling_model <- function(ts_num, test_dataset, coeffs, means, vars, window_size, prob_cut_off, granularity, mode, seek_length=NULL, last_time_schedule=NULL) {
+scheduling_model <- function(ts_num, test_dataset, coeffs, means, vars, window_size, prob_cut_off, granularity, mode, schedule_policy) {
   utilization <- c()
   survival <- c()
   runs <- rep(0, 5)
   run_counter <- 0
   run_switch <- FALSE
   
-  current_end <- 2
-
-  seek_length <- ifelse(mode == "dynamic", window_size, seek_length)
-  last_time_schedule <- ifelse(mode == "dynamic", length(test_dataset) - window_size + 1, last_time_schedule)
-  update_policy <- 1
-
+  seek_length <- window_size
+  last_time_schedule <- nrow(test_dataset) - window_size + 1
+  
+  current_end <- window_size + 1
+  update_policy <- ifelse(schedule_policy == "disjoint", window_size, 1)
   while (current_end <= last_time_schedule) {
     ## Schedule based on model predictions
-    last_obs <- test_dataset[(current_end-1), ts_num]
+    last_obs <- convert_frequency_dataset(test_dataset[(current_end-window_size):(current_end-1), ts_num], window_size, mode = mode)
     prediction_result <- do_prediction(last_obs=last_obs, phi=coeffs[ts_num], mean=means[ts_num], variance=vars[ts_num], predict_size=1)
     pi_up <- compute_pi_up(mu=prediction_result$mu, varcov=prediction_result$varcov, predict_size=1, prob_cutoff=prob_cut_off, granularity=granularity)
     
     ## Evalute schedulings based on prediction
     start_time <- current_end
     end_time <- current_end + seek_length - 1
-    position_vec <- test_dataset[start_time:end_time, ts_num]
+    position_vec <- convert_frequency_dataset(test_dataset[start_time:end_time, ts_num], window_size, mode = mode)
     evalulation <- find_evaluation(pi_up=pi_up, actual_obs=position_vec, granularity=granularity)
     utilization <- c(utilization, evalulation$usage)
     survival <- c(survival, evalulation$survival)
     
-    if (mode == "dynamic") {
-      if (!is.na(survival) & survival == 1) {
+    if (schedule_policy == "dynamic") {
+      if (!is.na(evalulation$survival) & evalulation$survival == 1) {
         update_policy <- window_size
         if (run_switch) {
           idx <- ifelse(run_counter > 5, 5, run_counter)
-          runs[idx] <- runs[idx] + run_counter
+          runs[idx] <- runs[idx] + 1
           run_counter <- 0
           run_switch <- FALSE
         }
-      } else if (!is.na(survival) & survival == 0) {
+      } else if (!is.na(evalulation$survival) & evalulation$survival == 0) {
         update_policy <- 1
         if (!run_switch) {
           run_switch <- TRUE
@@ -141,7 +146,7 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
   #### input prob_cut_off: If the probability of background job exceeding 100-cpu_required is smaller than prob_cut_off, then schedule it. Otherwise, don't.
   #### input mode:
   #### input granularity:
-  #### input schedule_policy: real, disjoint, overlap
+  #### input schedule_policy: dynamic, disjoint, overlap
   
   if (granularity > 0) {
     cpu_required <- sapply(cpu_required, round_to_nearest, granularity, FALSE)
@@ -154,7 +159,7 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
   
   avg_usage <- data.frame(matrix(nrow=ncol(dataset), ncol=0))
   job_survival <- data.frame(matrix(nrow=ncol(dataset), ncol=0))
-  overall_runs <- data.frame(matrix(nrow=ncol(dataset), ncol = 5))
+  overall_runs <- data.frame(matrix(nrow=ncol(dataset), ncol = 0))
   
   ## Split in Training and Testing Set
   train_dataset <- dataset[1:initial_train_size, 1:ncol(dataset)]
@@ -173,47 +178,16 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
   vars <- unlist(train_result[3,])
   
   ## Test Model
-  if (schedule_policy != "real") {
-    
-    new_testset <- NULL
-    last_time_schedule <- NULL
-    seek_length <- NULL
-    
-    if (schedule_policy == "disjoint") {
-      new_testset <- apply(test_dataset, 2, convert_frequency_dataset, new_freq=window_size, mode=mode)
-      rownames(new_trainset) <- seq(1, 1 + window_size * (nrow(new_trainset) - 1), window_size)
-      colnames(new_trainset) <- colnames(train_dataset)
-      
-      last_time_schedule <- nrow(new_testset) - job_length + 1
-      seek_length <- job_length
-    } else {
-      new_testset <- test_dataset
-      rownames(new_testset) <- rownames(test_dataset)
-      colnames(new_testset) <- colnames(test_dataset)
-      
-      last_time_schedule <- nrow(new_testset) - job_length * window_size + 1
-      seek_length <- job_length * window_size
-    }
-    
-    print("Testing on Foreground job:")
-    result_foreground <- sapply(1:ncol(new_testset), scheduling_foreground, test_dataset=new_testset, coeffs=coeffs, means=means, vars=vars, window_size=window_size, job_length=job_length, prob_cut_off=prob_cut_off, cpu_required=cpu_required, granularity=granularity, mode="fixed", seek_length=seek_length, last_time_schedule=last_time_schedule)
-    print("Testing on Model:")
-    result_model <- sapply(1:ncol(new_testset), scheduling_model, test_dataset=new_testset, coeffs=coeffs, means=means, vars=vars, window_size=window_size, prob_cut_off=prob_cut_off, granularity=granularity, mode="fixed", seek_length=seek_length, last_time_schedule=last_time_schedule)
-  } else {
-    
-    new_testset <- test_dataset
-    rownames(new_testset) <- rownames(test_dataset)
-    colnames(new_testset) <- colnames(test_dataset)
-    
-    print("Testing on Foreground job:")
-    result_foreground <- sapply(1:ncol(new_testset), scheduling_foreground, test_dataset=new_testset, coeffs=coeffs, means=means, vars=vars, window_size=window_size, job_length=job_length, prob_cut_off=prob_cut_off, cpu_required=cpu_required, granularity=granularity, mode="dynamic")
-    print("Testing on Model:")
-    result_model <- sapply(1:ncol(new_testset), scheduling_model, test_dataset=new_testset, coeffs=coeffs, means=means, vars=vars, window_size=window_size, prob_cut_off=prob_cut_off, granularity=granularity, mode="dynamic")
-    
+  print("Testing on Foreground job:")
+  result_foreground <- sapply(1:ncol(test_dataset), scheduling_foreground, test_dataset=test_dataset, coeffs=coeffs, means=means, vars=vars, window_size=window_size, job_length=job_length, prob_cut_off=prob_cut_off, cpu_required=cpu_required, granularity=granularity, mode=mode, schedule_policy=schedule_policy)
+  print("Testing on Model:")
+  result_model <- sapply(1:ncol(test_dataset), scheduling_model, test_dataset=test_dataset, coeffs=coeffs, means=means, vars=vars, window_size=window_size, prob_cut_off=prob_cut_off, granularity=granularity, mode=mode, schedule_policy=schedule_policy)
+  
+  if (schedule_policy == "dynamic") {
     for (i in 1:5) {
-      overall_runs <- cbind(overall_runs, unlist(result_model_fixed[2+i,]))
+      overall_runs <- cbind(overall_runs, unlist(result_model[2+i,]))
     }
-  }
+  } 
   scheduled_num <- cbind(scheduled_num, unlist(result_foreground[1,]))
   unscheduled_num <- cbind(unscheduled_num, unlist(result_foreground[2,]))
   correct_scheduled_num <- cbind(correct_scheduled_num, unlist(result_foreground[3,]))
@@ -235,11 +209,15 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
   colnames(avg_usage) <- "avg_usage"
   rownames(job_survival) <- colnames(test_dataset)
   colnames(job_survival) <- "survival"
-  rownames(overall_runs) <- colnames(test_dataset)
-  colnames(overall_runs) <- sapply(1:5, function(i) as.character(i))
-  
-  result <- list('avg_usage'=avg_usage, 'job_survival'=job_survival, 'scheduled_num'=scheduled_num, "unscheduled_num"=unscheduled_num, "correct_scheduled_num"=correct_scheduled_num, "correct_unscheduled_num"=correct_unscheduled_num, "overall_runs"=overall_runs)
-  return(result)
+  if (schedule_policy == "dynamic") {
+    rownames(overall_runs) <- colnames(test_dataset)
+    colnames(overall_runs) <- sapply(1:5, function(i) as.character(i))
+    result <- list('avg_usage'=avg_usage, 'job_survival'=job_survival, 'scheduled_num'=scheduled_num, "unscheduled_num"=unscheduled_num, "correct_scheduled_num"=correct_scheduled_num, "correct_unscheduled_num"=correct_unscheduled_num, "overall_runs"=overall_runs)
+    return(result)  
+  } else {
+    result <- list('avg_usage'=avg_usage, 'job_survival'=job_survival, 'scheduled_num'=scheduled_num, "unscheduled_num"=unscheduled_num, "correct_scheduled_num"=correct_scheduled_num, "correct_unscheduled_num"=correct_unscheduled_num)
+    return(result)
+  }
 }
 
 
@@ -284,7 +262,7 @@ window_sizes <- c(12, 36)
 prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1)
 granularity <- c(10, 100/32, 100/64, 100/128, 0)
 
-schedule_policy <- "disjoint"
+schedule_policy <- "dynamic"
 
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
 bg_job_pool <- NULL
@@ -317,8 +295,6 @@ if (bad.seq.adj) {
   #output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max.xlsx"
   output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows,granularity).xlsx"
 }
-
-asd <- c(0.328852027, 0.974297827)
 
 parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity)
 colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity")
