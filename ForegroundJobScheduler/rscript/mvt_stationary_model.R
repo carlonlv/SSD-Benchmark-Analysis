@@ -4,31 +4,8 @@ library("MTS")
 library("dplyr")
 library("xlsx")
 
-convert_frequency_dataset <- function(dataset, new_freq, mode) {
-  new_avg_cpu <- c()
-  window_num <- NULL
-  window_num <- floor(length(dataset) / new_freq)
-  for (i in 1:window_num) {
-    from <- (i - 1) * new_freq + 1
-    to <- i * new_freq
-    new_val <- NULL
-    if (mode == 'max') {
-      new_val <- max(dataset[from:to], na.rm = TRUE)
-    } else {
-      new_val <- mean(dataset[from:to], na.rm = TRUE)
-    }
-    new_avg_cpu <- c(new_avg_cpu, new_val)
-  }
-  return(new_avg_cpu)
-}
+source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//helper_functions.R")
 
-round_to_nearest <- function(data, divisor, lower) {
-  if (lower) {
-    return(floor(data / divisor) * divisor)
-  } else {
-    return(ceiling(data / divisor) * divisor)
-  }
-}
 
 initialize_coefficient_matrix <- function(ma_coef, q, predict_size, current_err) {
   initial <- matrix(0, nrow = 2, ncol = 2*(predict_size + q))
@@ -39,6 +16,7 @@ initialize_coefficient_matrix <- function(ma_coef, q, predict_size, current_err)
   }
   return(initial)
 }
+
 
 update_dict_matrices <- function(prev, ar_coef) {
   num_small_matrices <- ncol(prev) / 2
@@ -95,6 +73,7 @@ calculate_var_cov_matrix <-function(p, q, var, predict_size, ar_coef, ma_coef) {
   return(var_cov)
 }
 
+
 calculate_estimates <- function(p, ar_coef, last_obs, predict_size, intercept) {
   estimate <- matrix(nrow = 2, ncol = predict_size)
   if (p == 0) {
@@ -129,7 +108,8 @@ calculate_estimates <- function(p, ar_coef, last_obs, predict_size, intercept) {
   }
 }
 
-do_prediction <- function(last_obs, ts_model, predict_size=1, level) {
+
+do_prediction <- function(last_obs, ts_model, predict_size=1, level=NULL) {
   p <- ts_model$ARorder
   q <- ts_model$MAorder
   intercept <- matrix(nrow = 2, ncol = 1)
@@ -160,67 +140,144 @@ do_prediction <- function(last_obs, ts_model, predict_size=1, level) {
   sample_var <- ts_model$Sigma
   mu <- calculate_estimates(p, ar_coef, last_obs, predict_size, intercept)
   varcov <- calculate_var_cov_matrix(p, q, sample_var, predict_size, ar_coef, ma_coef)
-  prob <- 1 - pmvnorm(lower = rep(0, predict_size), upper = rep(level, predict_size), mean = mu, sigma = varcov)
   
+  prob <- NULL
+  if (!is.null(level)) {
+    prob <- 1 - pmvnorm(lower = rep(0, predict_size), upper = rep(level, predict_size), mean = mu, sigma = varcov)
+  }
   result <- list('prob' = as.numeric(prob), 'mu' = mu, 'varcov'=varcov)
   return(result)
 }
 
-compute_pi_up <- function(mu, varcov, predict_size, prob_cutoff, granularity) {
-  upper_bounds <- rep(NA, predict_size)
-  for (i in 1:predict_size) {
-    upper_bounds[i] <- min(mu[i] + qnorm((1-prob_cutoff), 0, 1) * sqrt(varcov[i,i]), 100)
-  }
-  if (granularity > 0) {
-    scheduled_size <- sapply(100 - upper_bounds, round_to_nearest, granularity, TRUE)
-    upper_bounds <- 100 - scheduled_size
-  }
-  return(upper_bounds)
-}
 
-find_evaluation <- function(pi_up, actual_obs, granularity=0) {
-  if (granularity != 0) {
-    actual_available <- round_to_nearest(100 - actual_obs, granularity, TRUE)
-    actual_obs <- 100 - actual_available
-  }
-  usage <- c()
-  survival <- c()
-  for (i in 1:length(pi_up)) {
-    if (granularity == 0) {
-      if ((100 - pi_up[i]) == 0 & (100 - actual_obs[i]) == 0) {
-        survival[i] <- NA
-        usage[i] <- NA
-      } else {
-        survival[i] <- ifelse(actual_obs[i] <= pi_up[i], 1, 0)
-        usage[i] <- ifelse(survival[i] == 0, NA, ifelse(actual_obs[i] == pi_up[i], NA, (100 - pi_up[i]) / (100 - actual_obs[i])))
-      }
+scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, ts_models, window_size, job_length, prob_cut_off, cpu_required, granularity, mode, schedule_policy) {
+  scheduled_num <- 0
+  unscheduled_num <- 0
+  correct_scheduled_num <- 0
+  correct_unscheduled_num <- 0
+  
+  seek_length <- window_size * job_length
+  last_time_schedule <- nrow(test_dataset_max) - window_size * job_length + 1
+  
+  ts_model <- ts_models[[ts_num]]
+  p <- ts_model$ARorder
+  
+  update_policy = ifelse(schedule_policy == "disjoint", window_size, 1)
+  current_end <- p * window_size + 1
+  while (current_end <= last_time_schedule) {
+    ## Schedule based on model predictions
+    last_obs_max <- convert_frequency_dataset(test_dataset_max[(current_end-p*window_size):(current_end-1), ts_num], window_size, mode=mode)
+    last_obs_avg <- convert_frequency_dataset(test_dataset_avg[(current_end-p*window_size):(current_end-1), ts_num], window_size, mode=mode)
+    last_obs <- matrix(nrow = 2, ncol = length(last_obs_max))
+    if (mode == "max") {
+      last_obs[1,] <- last_obs_max
+      last_obs[2,] <- last_obs_avg
     } else {
-      if ((100 - pi_up[i]) < granularity) {
-        if ((100 - actual_obs[i]) < granularity) {
-          survival[i] <- NA
-          usage[i] <- NA
-        } else {
-          survival[i] <- 1
-          usage[i] <- 0
-        }
+      last_obs[1,] <- last_obs_avg
+      last_obs[2,] <- last_obs_max
+    }
+    
+    prediction_result <- do_prediction(last_obs=last_obs, ts_model=ts_model, predict_size=job_length, level=(100-cpu_required[ts_num]))
+    prediction <- ifelse(prediction_result$prob <= prob_cut_off, 1, 0)
+    scheduled_num <- ifelse(prediction == 1, scheduled_num + 1, scheduled_num)
+    unscheduled_num <- ifelse(prediction == 1, unscheduled_num, unscheduled_num + 1)
+    
+    ## Evalute schedulings based on prediction
+    start_time <- current_end
+    end_time <- current_end + seek_length - 1
+    if (mode == "max") {
+      position_vec <- convert_frequency_dataset(test_dataset_max[start_time:end_time, ts_num], window_size, mode)
+    } else {
+      position_vec <- convert_frequency_dataset(test_dataset_avg[start_time:end_time, ts_num], window_size, mode)
+    }
+    actual <- ifelse(all(position_vec <= (100-cpu_required[ts_num])), 1, 0)
+    correct_scheduled_num <- ifelse(prediction == 1 & actual == 1, correct_scheduled_num + 1, correct_scheduled_num)
+    correct_unscheduled_num <- ifelse(prediction == 0 & actual == 0, correct_unscheduled_num + 1, correct_unscheduled_num)
+    
+    if (schedule_policy == "dynamic") {
+      if (prediction == 1) {
+        update_policy = ifelse(actual == 1, window_size * job_length, 1)
       } else {
-        if ((100 - actual_obs[i]) < granularity) {
-          survival[i] <- 0
-          usage[i] <- NA
-        } else {
-          survival[i] <- ifelse(actual_obs[i] <= pi_up[i], 1, 0)
-          usage[i] <- ifelse(survival[i] == 0, NA, ifelse(actual_obs[i] == pi_up[i], NA, (100 - pi_up[i]) / (100 - actual_obs[i])))
-        }
+        update_policy = 1
       }
     }
+    current_end <- current_end + update_policy
   }
-  avg_usage <- mean(usage, na.rm=TRUE)
-  overall_survival <- ifelse(any(is.na(survival)), NA, ifelse(any(survival == 0), 0, 1))
-  result <- list('avg_usage' = avg_usage, 'survival'= overall_survival)
-  return(result)
+  
+  return(list("scheduled_num"=scheduled_num, "unscheduled_num"=unscheduled_num, "correct_scheduled_num"=correct_scheduled_num, "correct_unscheduled_num"=correct_unscheduled_num))
 }
 
-mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p, q, job_length, window_size, cpu_required, prob_cut_off, update_freq, ts_models_import = NULL, mode, granularity=granularity) {
+
+scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, ts_models, window_size, prob_cut_off, granularity, mode, schedule_policy) {
+  utilization <- c()
+  survival <- c()
+  runs <- rep(0, 5)
+  run_counter <- 0
+  run_switch <- FALSE
+  
+  seek_length <- window_size
+  last_time_schedule <- nrow(test_dataset_max) - window_size + 1
+  
+  ts_model=ts_models[[ts_num]]
+  p = ts_model$ARorder
+  
+  current_end <- window_size + 1
+  update_policy <- ifelse(schedule_policy == "disjoint", window_size, 1)
+  while (current_end <= last_time_schedule) {
+    ## Schedule based on model predictions
+    last_obs_max <- convert_frequency_dataset(test_dataset_max[(current_end-p*window_size):(current_end-1), ts_num], window_size, mode=mode)
+    last_obs_avg <- convert_frequency_dataset(test_dataset_avg[(current_end-p*window_size):(current_end-1), ts_num], window_size, mode=mode)
+    last_obs <- matrix(nrow = 2, ncol = length(last_obs_max))
+    if (mode == "max") {
+      last_obs[1,] <- last_obs_max
+      last_obs[2,] <- last_obs_avg
+    } else {
+      last_obs[1,] <- last_obs_avg
+      last_obs[2,] <- last_obs_max
+    }
+    
+    prediction_result <- do_prediction(last_obs=last_obs, ts_model=ts_model, predict_size=1)
+    pi_up <- compute_pi_up(mu=prediction_result$mu, varcov=prediction_result$varcov, predict_size=1, prob_cutoff=prob_cut_off, granularity=granularity)
+    
+    ## Evalute schedulings based on prediction
+    start_time <- current_end
+    end_time <- current_end + seek_length - 1
+    position_vec <- NULL
+    if (mode == "max") {
+      position_vec <- convert_frequency_dataset(test_dataset_max[start_time:end_time, ts_num], window_size, mode)
+    } else {
+      position_vec <- convert_frequency_dataset(test_dataset_avg[start_time:end_time, ts_num], window_size, mode)
+    }
+    evalulation <- find_evaluation(pi_up=pi_up, actual_obs=position_vec, granularity=granularity)
+    utilization <- c(utilization, evalulation$usage)
+    survival <- c(survival, evalulation$survival)
+    
+    if (schedule_policy == "dynamic") {
+      if (!is.na(evalulation$survival) & evalulation$survival == 1) {
+        update_policy <- window_size
+        if (run_switch) {
+          idx <- ifelse(run_counter > 5, 5, run_counter)
+          runs[idx] <- runs[idx] + 1
+          run_counter <- 0
+          run_switch <- FALSE
+        }
+      } else if (!is.na(evalulation$survival) & evalulation$survival == 0) {
+        update_policy <- 1
+        if (!run_switch) {
+          run_switch <- TRUE
+        }
+        run_counter <- run_counter + 1
+      }
+    }
+    current_end <- current_end + update_policy
+  }
+  
+  overall_rate <- find_overall_evaluation(utilization, survival)
+  return(list("utilization"=overall_rate$utilization_rate, "survival"=overall_rate$survival_rate, "one"=runs[1], "two"=runs[2], "thr"=runs[3], "fou"=runs[4], "fiv"=runs[5]))
+}
+
+
+mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p, q, job_length, window_size, cpu_required, prob_cut_off, update_freq, mode, granularity, schedule_policy) {
   #### input dataset_avg: N by M matrix, N being number of observations, M being number of time series
   #### input dataset_max: N by M matrix, N being number of observations, M being number of time series
   #### input initial_train_size: The number of first observations used to train the model'
@@ -235,357 +292,117 @@ mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p
     cpu_required <- sapply(cpu_required, round_to_nearest, granularity, FALSE)
   }
   
-  ## N by M dataframe
-  probability <- data.frame(row.names = 1)
-  pi_upper_bounds <- data.frame(row.names = 1)
-  ## N by M dataframe
-  avg_usage <- data.frame(row.names = 1)
-  job_survival <- data.frame(row.names = 1)
-  ## N by M dataframe
-  predict_result <- data.frame(row.names = 1)
-  ## N by M dataframe
-  actual_result <- data.frame(row.names = 1)
-  ## 4 by M dataframe
-  scheduling_summary <- data.frame(matrix(nrow = 4, ncol = ncol(dataset_avg)))
+  scheduled_num <- data.frame(matrix(nrow=ncol(dataset_max), ncol=0))
+  unscheduled_num <- data.frame(matrix(nrow=ncol(dataset_max), ncol=0))
+  correct_scheduled_num <- data.frame(matrix(nrow=ncol(dataset_max), ncol=0))
+  correct_unscheduled_num <- data.frame(matrix(nrow=ncol(dataset_max), ncol=0))
+  
+  avg_usage <- data.frame(matrix(nrow=ncol(dataset_max), ncol=0))
+  job_survival <- data.frame(matrix(nrow=ncol(dataset_max), ncol=0))
+  overall_runs <- data.frame(matrix(nrow=ncol(dataset_max), ncol = 0))
   
   ## Dictionaries
-  end_time_testing_queue <- numvecdict()
   ts_models <- dict()
-  pi_up_bounds <- dict()
-  
-  ## Summary Counts
-  scheduled_num <- rep(0, ncol(dataset_avg))
-  unscheduled_num <- rep(0, ncol(dataset_avg))
-  falsely_scheduled_num <- rep(0, ncol(dataset_avg))
-  falsely_unscheduled_num <- rep(0, ncol(dataset_avg))
-  
+
   ## Split in Training and Testing Set
   train_dataset_max <- dataset_max[1:initial_train_size,]
   test_dataset_max <- dataset_max[(initial_train_size+1):nrow(dataset_max),]
   train_dataset_avg <- dataset_avg[1:initial_train_size,]
   test_dataset_avg <- dataset_avg[(initial_train_size+1):nrow(dataset_avg),]
   
-  ## Convert Frequency
-  new_trainset_max <- matrix(nrow = floor(nrow(train_dataset_max) / window_size), ncol = 0)
-  new_testset_max <- matrix(nrow = floor(nrow(test_dataset_max) / window_size), ncol = 0)
-  new_trainset_avg <- matrix(nrow = floor(nrow(train_dataset_avg) / window_size), ncol = 0)
-  new_testset_avg <- matrix(nrow = floor(nrow(test_dataset_avg) / window_size), ncol = 0)
-  for (ts_num in 1:ncol(train_dataset_max)) {
-    converted_data <- convert_frequency_dataset(train_dataset_max[, ts_num], window_size, "max")
-    new_trainset_max <- cbind(new_trainset_max, converted_data)
-    converted_data <- convert_frequency_dataset(test_dataset_max[, ts_num], window_size, "max")
-    new_testset_max <- cbind(new_testset_max, converted_data)
-    
-    converted_data <- convert_frequency_dataset(train_dataset_avg[, ts_num], window_size, "avg")
-    new_trainset_avg <- cbind(new_trainset_avg, converted_data)
-    converted_data <- convert_frequency_dataset(test_dataset_avg[, ts_num], window_size, "avg")
-    new_testset_avg <- cbind(new_testset_avg, converted_data)
-  }
+  ## Convert Frequency for training set
+  new_trainset_max <- apply(train_dataset_max, 2, convert_frequency_dataset, new_freq=window_size, mode=mode)
   rownames(new_trainset_max) <- seq(1, 1 + window_size * (nrow(new_trainset_max) - 1), window_size)
   colnames(new_trainset_max) <- colnames(train_dataset_max)
-  rownames(new_testset_max) <- seq(initial_train_size + 1, initial_train_size + nrow(new_testset_max), 1)
-  colnames(new_testset_max) <- colnames(test_dataset_max)
+  
+  new_trainset_avg <- apply(train_dataset_avg, 2, convert_frequency_dataset, new_freq=window_size, mode=mode)
   rownames(new_trainset_avg) <- seq(1, 1 + window_size * (nrow(new_trainset_avg) - 1), window_size)
   colnames(new_trainset_avg) <- colnames(train_dataset_avg)
-  rownames(new_testset_avg) <- seq(initial_train_size + 1, initial_train_size + nrow(new_testset_avg), 1)
-  colnames(new_testset_avg) <- colnames(test_dataset_avg)
   
   ## Train Model
-  train_percent <- 0.00
   for (ts_num in 1:ncol(new_trainset_max)) {
-    if (is.null(ts_models_import)) {
-      if (round(ts_num / ncol(new_trainset_max), 2) != train_percent) {
-        print(paste("Training", train_percent))
-        train_percent <- round(ts_num / ncol(new_trainset_max), 2)
-      }
-      uni_data_max <- new_trainset_max[, ts_num]
-      uni_data_avg <- new_trainset_avg[, ts_num]
-      uni_data_matrix <- matrix(nrow = nrow(new_trainset_max), ncol = 2)
-      
-      if (mode == "max") {
-        uni_data_matrix[,1] <- uni_data_max
-        uni_data_matrix[,2] <- uni_data_avg
-      } else {
-        uni_data_matrix[,1] <- uni_data_avg
-        uni_data_matrix[,2] <- uni_data_max
-      }
-      ts_model <- VARMACpp(uni_data_matrix, p=p, q=0,include.mean = TRUE)
-      ts_models[[ts_num]] <- ts_model
+    uni_data_max <- new_trainset_max[, ts_num]
+    uni_data_avg <- new_trainset_avg[, ts_num]
+    uni_data_matrix <- matrix(nrow = nrow(new_trainset_max), ncol = 2)
+    
+    if (mode == "max") {
+      uni_data_matrix[,1] <- uni_data_max
+      uni_data_matrix[,2] <- uni_data_avg
     } else {
-      ts_models[[ts_num]] <- ts_models_import[[ts_num]]
+      uni_data_matrix[,1] <- uni_data_avg
+      uni_data_matrix[,2] <- uni_data_max
     }
+    ts_models[[ts_num]] <- VARMACpp(uni_data_matrix, p=p, q=0,include.mean = TRUE)
   }
   
-  current_end <- p + 1
-  current_percent <- 0.00
-  while (current_end <= nrow(new_testset_max)) {
-    
-    ## Initialize Model 
-    prob_vector <- c()
-    pi_up <- c()
-    prediction <- c()
-    
-    for (ts_num in 1:ncol(new_testset_max)) {
-      
-      ## Schedule the job
-      if (current_end <= (nrow(new_testset_max) - job_length + 1)) {
-        ts_model <- ts_models[[ts_num]]
-        last_obs_max <- new_testset_max[(current_end-p):(current_end-1), ts_num]
-        last_obs_avg <- new_testset_avg[(current_end-p):(current_end-1), ts_num]
-        last_obs <- matrix(nrow = 2, ncol = length(last_obs_max))
-        
-        if (mode == "max") {
-          last_obs[1,] <- last_obs_max
-          last_obs[2,] <- last_obs_avg
-        } else {
-          last_obs[1,] <- last_obs_avg
-          last_obs[2,] <- last_obs_max
-        }
-        
-        prediction_result <- do_prediction(last_obs = last_obs, ts_model = ts_model, predict_size = job_length, level = (100 - cpu_required[ts_num]))
-        prob_vector[ts_num] <- prediction_result$prob
-        if (prob_vector[ts_num] < prob_cut_off) {
-          prediction[ts_num] <- 1
-          scheduled_num[ts_num] <- scheduled_num[ts_num] + 1
-        } else {
-          prediction[ts_num] <- 0
-          unscheduled_num[ts_num] <- unscheduled_num[ts_num] + 1
-        }
-        pi_up_bounds[[paste(ts_num, ",", current_end, sep = "")]] <- compute_pi_up(mu=prediction_result$mu, varcov=prediction_result$varcov, predict_size=job_length, prob_cutoff=prob_cut_off, granularity=granularity)
-        if (job_length == 1) {
-          pi_up[ts_num] <- pi_up_bounds[[paste(ts_num, ",", current_end, sep = "")]]
-        }
-      }
+  ## Test Model
+  print("Testing on Foreground job:")
+  result_foreground <- sapply(1:ncol(dataset_max), scheduling_foreground, test_dataset_max=test_dataset_max, test_dataset_avg=test_dataset_avg, ts_models=ts_models, window_size=window_size, job_length=job_length, prob_cut_off=prob_cut_off, cpu_required=cpu_required, granularity=granularity, mode=mode, schedule_policy=schedule_policy)
+  print("Testing on Model:")
+  result_model <- sapply(1:ncol(dataset_max), scheduling_model, test_dataset_max=test_dataset_max, test_dataset_avg=test_dataset_avg, ts_models=ts_models, window_size=window_size, prob_cut_off=prob_cut_off, granularity=granularity, mode=mode, schedule_policy=schedule_policy)
+  
+  if (schedule_policy == "dynamic") {
+    for (i in 1:5) {
+      overall_runs <- cbind(overall_runs, unlist(result_model[2+i,]))
     }
-    
-    ## Store Probability
-    probability <- rbind(probability, prob_vector)
-    
-    ## Store Prediction Upper Bounds
-    pi_upper_bounds <- rbind(pi_upper_bounds, pi_up)
-    
-    ## Store Prediction
-    predict_result <- rbind(predict_result, prediction)
-    
-    ## Queue the jobs to check their correctness later
-    closest_update <- NA
-    if (job_length == 1) {
-      closest_update <- current_end
-    } else {
-      closest_update <- current_end + ceiling(job_length / update_freq) * update_freq
-    }
-    end_time_testing_queue$append_number(closest_update, current_end)
-    end_time_testing_queue$append_number(closest_update, current_end + job_length - 1)
-    end_time_testing_queue$append_number(closest_update, nrow(predict_result))
-    
-    actual <- c()
-    avg_cycle_used <- c()
-    survival <- c()
-    
-    ## Check correctness of previous schedulings
-    for (ts_num in 1:ncol(new_testset_max)) {
-      if (length(end_time_testing_queue[[current_end]]) != 0) {
-        info_lst <- end_time_testing_queue[[current_end]]
-        lst_len <- length(info_lst)
-        for (i in seq(1, lst_len, 3)) {
-          start_time <- info_lst[i]
-          end_time <- info_lst[i+1]
-          row_num <- info_lst[i+2]
-          
-          position_vec <- NULL
-          if (mode == "max") {
-            position_vec <- new_testset_max[start_time:end_time, ts_num]
-          } else {
-            position_vec <- new_testset_avg[start_time:end_time, ts_num]
-          }
-          
-          if (all(position_vec < (100 - cpu_required[ts_num]))) {
-            actual[ts_num] <- 1
-            if (predict_result[row_num, ts_num] == 0) {
-              falsely_unscheduled_num[ts_num] <- falsely_unscheduled_num[ts_num] + 1
-            }
-          } else {
-            actual[ts_num] <- 0
-            if (predict_result[row_num, ts_num] == 1) {
-              falsely_scheduled_num[ts_num] <- falsely_scheduled_num[ts_num] + 1
-            }
-          }
-          pi_up <- pi_up_bounds[[paste(ts_num, ",", start_time, sep = "")]]
-          evalulation <- find_evaluation(pi_up=pi_up, actual_obs=position_vec, granularity=granularity)
-          avg_cycle_used[ts_num] <- evalulation$avg_usage
-          survival[ts_num] <- evalulation$survival
-        }
-      }
-    }
-    
-    ## Store Actual
-    actual_result <- rbind(actual_result, actual)
-    
-    ## Store Evaluations
-    avg_usage <- rbind(avg_usage, avg_cycle_used)
-    job_survival <- rbind(job_survival, survival)
-    
-    ## Update current_end
-    current_end <- current_end + update_freq
-    if (current_percent != round((current_end - p - 1) / (nrow(new_testset_max) - job_length + 1 - p), digits = 2)) {
-      print(paste("Testing", current_percent))
-      current_percent <- round((current_end - p - 1) / (nrow(new_testset_max) - job_length + 1 - p), digits = 2)
-    }
-  }
+  } 
+  scheduled_num <- cbind(scheduled_num, unlist(result_foreground[1,]))
+  unscheduled_num <- cbind(unscheduled_num, unlist(result_foreground[2,]))
+  correct_scheduled_num <- cbind(correct_scheduled_num, unlist(result_foreground[3,]))
+  correct_unscheduled_num <- cbind(correct_unscheduled_num, unlist(result_foreground[4,]))
+  
+  avg_usage <- cbind(avg_usage, unlist(result_model[1,]))
+  job_survival <- cbind(job_survival, unlist(result_model[2,]))
   
   ## Change column and row names, N by M
-  colnames(probability) <- colnames(new_testset_max)
-  rownames(probability) <- seq(initial_train_size + p *window_size + 1, initial_train_size + p *window_size + 1 + (update_freq * window_size) * (nrow(probability) - 1), update_freq * window_size)
-  
-  colnames(pi_upper_bounds) <- colnames(new_testset_max)
-  rownames(pi_upper_bounds) <- seq(initial_train_size + window_size + 1, initial_train_size + window_size + 1 + update_freq * (nrow(pi_upper_bounds) - 1), update_freq)
-  
-  colnames(avg_usage) <- colnames(new_testset_max)
-  rownames(avg_usage) <- seq(initial_train_size + p *window_size + 1, initial_train_size + p *window_size + 1 + (update_freq * window_size) * (nrow(avg_usage) - 1), update_freq * window_size)
-  
-  colnames(job_survival) <- colnames(new_testset_max)
-  rownames(job_survival) <- seq(initial_train_size + p *window_size + 1, initial_train_size + p *window_size + 1 + (update_freq * window_size) * (nrow(job_survival) - 1), update_freq * window_size)
-  
-  colnames(predict_result) <- colnames(new_testset_max)
-  rownames(predict_result) <- seq(initial_train_size + p *window_size + 1, initial_train_size + p *window_size + 1 + (update_freq * window_size) * (nrow(predict_result) - 1), update_freq * window_size)
-  
-  colnames(actual_result) <- colnames(new_testset_max)
-  rownames(actual_result) <- seq(initial_train_size + p *window_size + 1, initial_train_size + p *window_size + 1 + (update_freq * window_size) * (nrow(actual_result) - 1), update_freq * window_size)
-  
-  colnames(scheduling_summary) <- colnames(new_testset_max)
-  scheduling_summary[1,] <- scheduled_num
-  scheduling_summary[2,] <- unscheduled_num
-  scheduling_summary[3,] <- falsely_scheduled_num
-  scheduling_summary[4,] <- falsely_unscheduled_num
-  rownames(scheduling_summary) <- c('Scheduled_Num', 'Unscheduled_Num', 'Falsly_scheduled_Num', 'Falsely_unscheduled_Num')
-  
-  result <- list('prob' = probability, 'pi_up' = pi_upper_bounds, 'avg_usage'=avg_usage, 'job_survival'=job_survival, 'predict' = predict_result, 'actual' = actual_result, 'scheduling_summary' = scheduling_summary)
+  rownames(scheduled_num) <- colnames(dataset_max)
+  colnames(scheduled_num) <- "scheduled_num"
+  rownames(unscheduled_num) <- colnames(dataset_max)
+  colnames(unscheduled_num) <- "unscheduled_num"
+  rownames(correct_scheduled_num) <- colnames(dataset_max)
+  colnames(correct_scheduled_num) <- "correct_scheduled_num"
+  rownames(correct_unscheduled_num) <- colnames(dataset_max)
+  colnames(correct_unscheduled_num) <- "correct_unscheduled_num"
+  rownames(avg_usage) <- colnames(dataset_max)
+  colnames(avg_usage) <- "avg_usage"
+  rownames(job_survival) <- colnames(dataset_max)
+  colnames(job_survival) <- "survival"
+  if (schedule_policy == "dynamic") {
+    rownames(overall_runs) <- colnames(dataset_max)
+    colnames(overall_runs) <- sapply(1:5, function(i) as.character(i))
+    result <- list('avg_usage'=avg_usage, 'job_survival'=job_survival, 'scheduled_num'=scheduled_num, "unscheduled_num"=unscheduled_num, "correct_scheduled_num"=correct_scheduled_num, "correct_unscheduled_num"=correct_unscheduled_num, "overall_runs"=overall_runs)
+    return(result)  
+  } else {
+    result <- list('avg_usage'=avg_usage, 'job_survival'=job_survival, 'scheduled_num'=scheduled_num, "unscheduled_num"=unscheduled_num, "correct_scheduled_num"=correct_scheduled_num, "correct_unscheduled_num"=correct_unscheduled_num)
+    return(result)
+  }
   return(result)
 }
 
-update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num, sample_size, window_size, granularity,utilization, survival, correct_scheduled_rate, correct_unscheduled_rate) {
-  if (is.na(state_num)) {
-    xlsx_file <- xlsx_file %>%
-      mutate(Avg.Cycle.Usage = ifelse(Model == model_name & 
-                                        Probability.Cut.Off == prob_cut_off & 
-                                        Sample.Size == sample_size &
-                                        Window.Size == window_size &
-                                        Granularity == granularity, 
-                                      utilization, Avg.Cycle.Usage)) %>%
-      mutate(Survival.Rate = ifelse(Model == model_name & 
-                                      Probability.Cut.Off == prob_cut_off & 
-                                      Sample.Size == sample_size &
-                                      Window.Size == window_size &
-                                      Granularity == granularity, 
-                                    survival, Survival.Rate)) %>%
-      mutate(Correctly.Scheduled = ifelse(Model == model_name & 
-                                            Probability.Cut.Off == prob_cut_off & 
-                                            Sample.Size == sample_size &
-                                            Window.Size == window_size &
-                                            Granularity == granularity, 
-                                          correct_scheduled_rate, Correctly.Scheduled)) %>%
-      mutate(Correctly.Unscheduled = ifelse(Model == model_name & 
-                                              Probability.Cut.Off == prob_cut_off & 
-                                              Sample.Size == sample_size &
-                                              Window.Size == window_size &
-                                              Granularity == granularity, 
-                                            correct_unscheduled_rate, Correctly.Unscheduled))
-  } else {
-    xlsx_file <- xlsx_file %>%
-      mutate(Avg.Cycle.Usage = ifelse(Model == model_name & 
-                                        Probability.Cut.Off == prob_cut_off & 
-                                        Sample.Size == sample_size &
-                                        StateNum == state_num & 
-                                        Window.Size == window_size &
-                                        Granularity == granularity, 
-                                      utilization, Avg.Cycle.Usage)) %>%
-      mutate(Survival.Rate = ifelse(Model == model_name & 
-                                      Probability.Cut.Off == prob_cut_off & 
-                                      Sample.Size == sample_size &
-                                      StateNum == state_num & 
-                                      Window.Size == window_size &
-                                      Granularity == granularity, 
-                                    survival, Survival.Rate)) %>%
-      mutate(Correctly.Scheduled = ifelse(Model == model_name & 
-                                            Probability.Cut.Off == prob_cut_off & 
-                                            Sample.Size == sample_size &
-                                            StateNum == state_num & 
-                                            Window.Size == window_size &
-                                            Granularity == granularity, 
-                                          correct_scheduled_rate, Correctly.Scheduled)) %>%
-      mutate(Correctly.Unscheduled = ifelse(Model == model_name & 
-                                              Probability.Cut.Off == prob_cut_off & 
-                                              Sample.Size == sample_size &
-                                              StateNum == state_num & 
-                                              Window.Size == window_size &
-                                              Granularity == granularity, 
-                                            correct_unscheduled_rate, Correctly.Unscheduled))
-  }
-  return(xlsx_file)
-}
 
-bad_seq_adjustment <- function(survivals) {
-  if (length(survivals) >= 2) {
-    result <- survivals[1]
-    schedule <- 0
-    i <- 2
-    while (i <= length(survivals)) {
-      if (schedule < 2) {
-        if (!is.na(survivals[i-1]) & survivals[i-1] == 0) {
-          schedule <- schedule + 1
-        } else if (!is.na(survivals[i-1]) & survivals[i-1] == 1) {
-          schedule <- 0
-        }
-        result[i] <- survivals[i]
-      } else {
-        if (!is.na(survivals[i-1]) & survivals[i-1] == 1) {
-          schedule <- 0
-        }
-        result[i] <- NA
-      }
-      i <- i + 1
-    }
-    return(result)
-  } else {
-    return(survivals)
-  }
-}
-
-find_overall_evaluation <- function(avg_usages, survivals, bad.seq.adj) {
-  if (bad.seq.adj) {
-    survivals <- apply(survivals, 2, bad_seq_adjustment)
-  }
-  avg_utilization <- mean(as.matrix(avg_usages), na.rm = TRUE)
-  survival <- sum(as.matrix(survivals), na.rm = TRUE) / (length(as.matrix(survivals)[!is.na(as.matrix(survivals))]))
-  return(list("avg_utilization"=avg_utilization, "survival"=survival))
-}
-
-wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, initial_train_size, update_freq, bad.seq.adj, output_dp) {
+wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, initial_train_size, update_freq, output_dp, schedule_policy) {
   
   window_size <- as.numeric(parameter[1])
   prob_cut_off <- as.numeric(parameter[2])
   granularity <- as.numeric(parameter[3])
   
-  output <- mvt_stationary_model(dataset_avg=dataset_avg, dataset_max=dataset_max, p=1, q=0, job_length=1, window_size=window_size, cpu_required=cpu_required, prob_cut_off=prob_cut_off, initial_train_size=initial_train_size, update_freq=1, mode="max", granularity=granularity)
-  overall_evaluation <- find_overall_evaluation(output$avg_usage, output$job_survival, bad.seq.adj)
-  avg_utilization <- overall_evaluation$avg_utilization
-  survival <- overall_evaluation$survival
+  output <- mvt_stationary_model(dataset_avg=dataset_avg, dataset_max=dataset_max, p=1, q=0, job_length=1, window_size=window_size, cpu_required=cpu_required, prob_cut_off=prob_cut_off, initial_train_size=initial_train_size, update_freq=1, mode="max", granularity=granularity, schedule_policy=schedule_policy)
+  overall_evaluation <- find_overall_evaluation(output$avg_usage, output$job_survival)
   
-  scheduled_num <- sum(output$scheduling_summary[1,])
-  unscheduled_num <- sum(output$scheduling_summary[2,])
-  correct_scheduled_num <- scheduled_num - sum(output$scheduling_summary[3,])
-  correct_unscheduled_num <- unscheduled_num - sum(output$scheduling_summary[4,])
+  utilization_rate <- overall_evaluation$utilization_rate
+  survival_rate <- overall_evaluation$survival_rate
+  
+  scheduled_num <- sum(output$scheduled_num[,1])
+  unscheduled_num <- sum(output$unscheduled_num[,1])
+  correct_scheduled_num <- sum(output$correct_scheduled_num[,1])
+  correct_unscheduled_num <- sum(output$correct_unscheduled_num[,1])
+  
   correct_scheduled_rate <- correct_scheduled_num / scheduled_num
   correct_unscheduled_rate <- correct_unscheduled_num / unscheduled_num
   
-  print(paste("Avg cycle used:", "job length", window_size, avg_utilization))
-  print(paste("Job survival rate:", "job length", window_size, survival))
+  print(paste("Avg cycle used:", "job length", window_size, utilization_rate))
+  print(paste("Job survival rate:", "job length", window_size, survival_rate))
   print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
-  
-  write.csv(output$pi_up, file = paste("VAR1",window_size, sample_size, prob_cut_off, granularity, "pi_upper.csv"))
-  write.csv(output$scheduling_summary, file = paste("VAR1", window_size, sample_size, prob_cut_off, granularity, "scheduling_sum.csv"))
-  write.csv(output$avg_usage, file = paste("VAR1",window_size, sample_size, prob_cut_off, granularity, "avg_usage.csv"))
-  write.csv(output$job_survival, file = paste("VAR1", window_size, sample_size, prob_cut_off, granularity, "job_survival.csv"))
   
   result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
   result_path.xlsx <- update.xlsx.df(result_path.xlsx, "VAR1", prob_cut_off, NA, sample_size, window_size, granularity, avg_utilization, survival, correct_scheduled_rate, correct_unscheduled_rate)
@@ -603,6 +420,8 @@ bad.seq.adj <- FALSE
 window_sizes <- c(12, 36)
 prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1)
 granularity <- c(10, 100/32, 100/64, 100/128, 0)
+
+schedule_policy <- "dynamic"
 
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
 bg_job_pool <- NULL
@@ -644,4 +463,4 @@ parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity)
 colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity")
 parameter.df <- parameter.df %>%
   arrange(window_size)
-slt <- apply(parameter.df, 1, wrapper.epoche, dataset_avg=data_matrix_avg, dataset_max=data_matrix_max, cpu_required=(100-cpu_required), initial_train_size=initial_train_size, update_freq=1, bad.seq.adj=bad.seq.adj, output_dp=output_dp)
+slt <- apply(parameter.df, 1, wrapper.epoche, dataset_avg=data_matrix_avg, dataset_max=data_matrix_max, cpu_required=(100-cpu_required), initial_train_size=initial_train_size, update_freq=1, output_dp=output_dp, schedule_policy=schedule_policy)

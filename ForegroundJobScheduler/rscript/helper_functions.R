@@ -184,12 +184,3 @@ find_overall_evaluation <- function(avg_usages, survivals) {
   survival <- sum(as.matrix(survivals), na.rm = TRUE) / (length(as.matrix(survivals)[!is.na(as.matrix(survivals))]))
   return(list("utilization_rate"=avg_utilization, "survival_rate"=survival))
 }
-
-
-counter <- function(current_percent, current_idx, total_idx, msg) {
-  if (current_percent != round(current_idx / total_idx, digits = 2)) {
-    print(paste(msg, current_percent))
-    current_percent <- round(current_idx / total_idx, digits = 2)
-  }
-  return(current_percent)
-}

@@ -27,9 +27,7 @@ do_prediction <- function(last_obs, phi, mean, variance, predict_size, level=NUL
   # caclulate probability
   prob <- NULL
   if (!is.null(level)) {
-    up_bound <- rep(level, predict_size)
-    lower_bound <- rep(0, predict_size)
-    prob <- 1 - pmvnorm(upper = up_bound, lower = lower_bound, mean = mu, sigma = varcov)
+    prob <- 1 - pmvnorm(lower = rep(0, predict_size), upper = rep(level, predict_size), mean = mu, sigma = varcov)
   }
   return(list("prob"=as.numeric(prob), "mu"=mu, "varcov"=varcov))
 }
@@ -165,7 +163,7 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
   train_dataset <- dataset[1:initial_train_size, 1:ncol(dataset)]
   test_dataset <- dataset[(initial_train_size+1):nrow(dataset), 1:ncol(dataset)]
   
-  ## Convert Frequency
+  ## Convert Frequency for trainning set
   new_trainset <- apply(train_dataset, 2, convert_frequency_dataset, new_freq=window_size, mode=mode)
   rownames(new_trainset) <- seq(1, 1 + window_size * (nrow(new_trainset) - 1), window_size)
   colnames(new_trainset) <- colnames(train_dataset)
