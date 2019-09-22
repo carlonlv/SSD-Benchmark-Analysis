@@ -6,31 +6,8 @@ library("dict")
 library("cluster")
 library("xlsx")
 
-convert_frequency_dataset <- function(dataset, new_freq, mode) {
-  new_avg_cpu <- c()
-  window_num <- NULL
-  window_num <- floor(length(dataset) / new_freq)
-  for (i in 1:window_num) {
-    from <- (i - 1) * new_freq + 1
-    to <- i * new_freq
-    new_val <- NULL
-    if (mode == 'max') {
-      new_val <- max(dataset[from:to], na.rm = TRUE)
-    } else {
-      new_val <- mean(dataset[from:to], na.rm = TRUE)
-    }
-    new_avg_cpu <- c(new_avg_cpu, new_val)
-  }
-  return(new_avg_cpu)
-}
+source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//helper_functions.R")
 
-round_to_nearest <- function(data, divisor, lower) {
-  if (lower) {
-    return(floor(data / divisor) * divisor)
-  } else {
-    return(ceiling(data / divisor) * divisor)
-  }
-}
 
 calculate_var_cov_matrix_ar1 <-function(var, l, phi) {
   #### input var: A vector from var(an+l) to var(an+1) of length l
@@ -41,6 +18,7 @@ calculate_var_cov_matrix_ar1 <-function(var, l, phi) {
   return(var_cov)
 }
 
+
 do_prediction <- function(last_obs, phi, mean, variance) {
   # Construct mean
   mu <- last_obs * phi + (1 - phi) * mean
@@ -50,155 +28,6 @@ do_prediction <- function(last_obs, phi, mean, variance) {
   return(result)
 }
 
-find_evaluation <- function(pi_up, actual_obs, granularity=0) {
-  if (granularity != 0) {
-    actual_available <- round_to_nearest(100 - actual_obs, granularity, TRUE)
-    actual_obs <- 100 - actual_available
-  }
-  usage <- c()
-  survival <- c()
-  for (i in 1:length(pi_up)) {
-    if (granularity == 0) {
-      if ((100 - pi_up[i]) == 0 & (100 - actual_obs[i]) == 0) {
-        survival[i] <- NA
-        usage[i] <- NA
-      } else {
-        survival[i] <- ifelse(actual_obs[i] <= pi_up[i], 1, 0)
-        usage[i] <- ifelse(survival[i] == 0, NA, ifelse(actual_obs[i] == pi_up[i], NA, (100 - pi_up[i]) / (100 - actual_obs[i])))
-      }
-    } else {
-      if ((100 - pi_up[i]) < granularity) {
-        if ((100 - actual_obs[i]) < granularity) {
-          survival[i] <- NA
-          usage[i] <- NA
-        } else {
-          survival[i] <- 1
-          usage[i] <- 0
-        }
-      } else {
-        if ((100 - actual_obs[i]) < granularity) {
-          survival[i] <- 0
-          usage[i] <- NA
-        } else {
-          survival[i] <- ifelse(actual_obs[i] <= pi_up[i], 1, 0)
-          usage[i] <- ifelse(survival[i] == 0, NA, ifelse(actual_obs[i] == pi_up[i], NA, (100 - pi_up[i]) / (100 - actual_obs[i])))
-        }
-      }
-    }
-  }
-  result <- list('usage' = usage, 'survival'= survival)
-  return(result)
-}
-
-ar1_model <- function(train_set, test_set, update_freq=1) {
-
-  ## N by M dataframe
-  predicted_result <- data.frame(row.names = 1)
-
-  ## Train Model
-  coeffs <- rep(NA, ncol(train_set))
-  means <- rep(NA, ncol(train_set))
-  vars <- rep(NA, ncol(train_set))
-  train_percent <- 0.00
-  for (ts_num in 1:ncol(train_set)) {
-    if (round(ts_num / ncol(train_set), 2) != train_percent) {
-      print(paste("Training", train_percent))
-      train_percent <- round(ts_num / ncol(train_set), 2)
-    }
-    ts_model <- tryCatch({
-      arima(x=train_set[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000))
-    }, error = function(cond) {
-      return(arima(x=train_set[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "ML", optim.control = list(maxit=2000)))
-    })
-    coeffs[ts_num] <- as.numeric(ts_model$coef[1])
-    means[ts_num] <- as.numeric(ts_model$coef[2])
-    vars[ts_num] <- ts_model$sigma2
-  }
-  
-  ## Test Model
-  current_end <- 2
-  test_percent <- 0.00
-  while (current_end <= nrow(test_set)) {
-    
-    ## Initialize Model 
-    predicted_mean <- c()
-    
-    for (ts_num in 1:ncol(test_set)) {
-      
-      ## Schedule the job
-      last_obs <- test_set[current_end, ts_num]
-      predicted_mean[ts_num] <- do_prediction(last_obs, coeffs[ts_num], means[ts_num], vars[ts_num])$mu
-    }
-    predicted_result <- rbind(predicted_result, predicted_mean)
-    
-    ## Update current_end
-    current_end <- current_end + update_freq
-    if (test_percent != round((current_end - 1) / nrow(test_set), digits = 2)) {
-      print(paste("Testing", test_percent))
-      test_percent <- round((current_end - 1) / nrow(test_set), digits = 2)
-    }
-  }
-  
-  ## Change column and row names, N by M
-  colnames(predicted_result) <- colnames(test_set)
-  rownames(predicted_result) <- rownames(test_set)[-1]
-  
-  return(predicted_result)
-}
-
-parser_for_logistic_model <- function(train_set_avg, train_set_max, cpu_required) {
-  ts_logistic_input <- list()
-  for (ts_num in 1:ncol(train_set_avg)) {
-    train_avg <- train_set_avg[,ts_num]
-    train_max <- train_set_max[,ts_num]
-    df <- data.frame("avg"=train_avg, "max"=train_max)
-    df$survived <- ifelse(df$max <= (100 - cpu_required[ts_num]), 1, 0)
-    ts_logistic_input[[ts_num]] <- df
-  }
-  return(ts_logistic_input)
-}
-
-build_conditional_variation <- function(train_set_avg, train_set_max, precision=1, method) {
-  if (method == "lm") {
-    new_parsed_dat <- data.frame(row.names = 1)
-    for (obs in 1:length(train_set_avg)) {
-      new_parsed_dat <- rbind(new_parsed_dat, c(train_set_max[obs], round(train_set_avg[obs], precision)))
-    }
-    colnames(new_parsed_dat) <- c('max', 'avg')
-    new_parsed_dat <- new_parsed_dat %>% 
-      group_by(avg) %>% 
-      summarise(sd=sqrt(var(max))) %>%
-      filter(!is.na(sd))
-    
-    sd.lm <- NULL
-    if (nrow(new_parsed_dat) >= 3) {
-      sd.lm <- lm(sd~avg+I(avg^2), data = new_parsed_dat)
-    } else if (nrow(new_parsed_dat) == 2) {
-      sd.lm <- lm(sd~avg, data = new_parsed_dat)
-    } else {
-      sd.lm <- new_parsed_dat$sd^2
-    }
-    
-    return(sd.lm)
-  } else {
-    clustering_result <- list()
-    avg_silhouette <- c()
-    avg_silhouette[1] <- -Inf
-    for (cluster_num in 2:10) {
-      clustering_result[[cluster_num]] <- kmeans(train_set_avg, centers = cluster_num, iter.max = 20, nstart = 25)
-      avg_silhouette[cluster_num] <- mean(silhouette(clustering_result[[cluster_num]]$cluster, dist = dist(train_set_avg))[,3])
-    }
-    best_cluster_num <- which(avg_silhouette == max(avg_silhouette))
-    best_cluster_result <- clustering_result[[best_cluster_num]]
-    new_parsed_dat <- data.frame("cluster"=best_cluster_result$cluster, "max"=train_set_max)
-    new_parsed_dat <- new_parsed_dat %>% 
-      group_by(cluster) %>% 
-      summarise(vars=var(max)) %>%
-      filter(!is.na(vars))
-    new_parsed_dat$cluster_mean <- best_cluster_result$centers[new_parsed_dat$cluster]
-    return(new_parsed_dat)
-  }
-}
 
 kmeans_find_var <- function(expected_avg, kmeans_model_df) {
   kmeans_model_df <- kmeans_model_df %>%
@@ -207,6 +36,7 @@ kmeans_find_var <- function(expected_avg, kmeans_model_df) {
   cluster_var <- kmeans_model_df$vars[kmeans_model_df$cluster == closest_cluster]
   return(cluster_var)
 }
+
 
 generate_expected_conditional_var <- function(expected_avgs, mode, variance_model) {
   expected_var <- c()
@@ -236,6 +66,7 @@ compute_pi_up <- function(expected_max, expected_var, prob_cut_off, granularity)
   }
   return(pi_up)
 }
+
 
 logistic_model <- function(train_set_avg, train_set_max, predicted_avgs, update_freq=1, cpu_required, cond.var) {
   
@@ -273,6 +104,190 @@ logistic_model <- function(train_set_avg, train_set_max, predicted_avgs, update_
   return(result)
 }
 
+
+scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, job_length, prob_cut_off, cpu_required, granularity, schedule_policy) {
+  scheduled_num <- 0
+  unscheduled_num <- 0
+  correct_scheduled_num <- 0
+  correct_unscheduled_num <- 0
+  
+  seek_length <- window_size * job_length
+  last_time_schedule <- nrow(test_dataset) - window_size * job_length + 1
+
+  update_policy = ifelse(schedule_policy == "disjoint", window_size, 1)
+  current_end <- window_size + 1
+  while (current_end <= last_time_schedule) {
+  
+    ## Predict current avgs using AR1
+    last_obs <- convert_frequency_dataset(test_dataset_avg[(current_end-window_size):(current_end-1), ts_num], window_size, mode = 'avg')
+    
+    expected_avgs <- do_prediction(last_obs, phi, mean, variance)$mu
+    
+    logistic_model <- logistic_models[[ts_num]]
+    
+    prediction_prob <- 1 - predict(logistic_model, newdata = data.frame("avg"=expected_avgs), type = "response")
+    
+    prediction <- ifelse(prediction_prob <= prob_cut_off, 1, 0)
+    scheduled_num <- ifelse(prediction == 1, scheduled_num + 1, scheduled_num)
+    unscheduled_num <- ifelse(prediction == 1, unscheduled_num, unscheduled_num + 1)
+    
+    ## Evalute schedulings based on prediction
+    start_time <- current_end
+    end_time <- current_end + seek_length - 1
+    position_vec <- convert_frequency_dataset(test_dataset[start_time:end_time, ts_num], window_size, mode = mode)
+    actual <- ifelse(all(position_vec <= (100 - cpu_required[ts_num])), 1, 0)
+    correct_scheduled_num <- ifelse(prediction == 1 & actual == 1, correct_scheduled_num + 1, correct_scheduled_num)
+    correct_unscheduled_num <- ifelse(prediction == 0 & actual == 0, correct_unscheduled_num + 1, correct_unscheduled_num)
+    
+    if (schedule_policy == "dynamic") {
+      if (prediction == 1) {
+        update_policy = ifelse(actual == 1, window_size * job_length, 1)
+      } else {
+        update_policy = 1
+      }
+    }
+    current_end <- current_end + update_policy
+  }
+  
+  return(list("scheduled_num"=scheduled_num, "unscheduled_num"=unscheduled_num, "correct_scheduled_num"=correct_scheduled_num, "correct_unscheduled_num"=correct_unscheduled_num))
+}
+
+
+scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, cond_var_models, cond.var, window_size, prob_cut_off, granularity, schedule_policy) {
+  utilization <- c()
+  survival <- c()
+  runs <- rep(0, 5)
+  run_counter <- 0
+  run_switch <- FALSE
+  
+  seek_length <- window_size
+  last_time_schedule <- nrow(test_dataset_max) - window_size + 1
+  
+  logistic_model <- logistic_models[[ts_num]]
+  cond_var_model <- cond_var_models[[ts_num]]
+  
+  current_end <- window_size + 1
+  update_policy <- ifelse(schedule_policy == "disjoint", window_size, 1)
+  while (current_end <= last_time_schedule) {
+    ## Schedule based on model predictions
+    last_obs <- convert_frequency_dataset(test_dataset_avg[(current_end-window_size):(current_end-1), ts_num], window_size, mode = 'avg')
+    
+    expected_avgs <- do_prediction(last_obs, phi, mean, variance)$mu
+    
+    expected_vars <- generate_expected_conditional_var(expected_avgs, mode = cond.var, variance_model = cond_var_model)
+    
+    prob <- 1 - predict(logistic_model, newdata = data.frame("avg"=expected_avgs), type = "response")
+    
+    expected_max <- find_expected_max(prob, expected_vars, cpu_required[ts_num])
+    
+    pi_up <- compute_pi_up(mu=expected_max, varcov=expeted_vars, predict_size=1, prob_cutoff=prob_cut_off, granularity=granularity)
+    
+    ## Evalute schedulings based on prediction
+    start_time <- current_end
+    end_time <- current_end + seek_length - 1
+    position_vec <- convert_frequency_dataset(test_dataset_max[start_time:end_time, ts_num], window_size, "max")
+    evalulation <- find_evaluation(pi_up=pi_up, actual_obs=position_vec, granularity=granularity)
+    utilization <- c(utilization, evalulation$usage)
+    survival <- c(survival, evalulation$survival)
+    
+    if (schedule_policy == "dynamic") {
+      if (!is.na(evalulation$survival) & evalulation$survival == 1) {
+        update_policy <- window_size
+        if (run_switch) {
+          idx <- ifelse(run_counter > 5, 5, run_counter)
+          runs[idx] <- runs[idx] + 1
+          run_counter <- 0
+          run_switch <- FALSE
+        }
+      } else if (!is.na(evalulation$survival) & evalulation$survival == 0) {
+        update_policy <- 1
+        if (!run_switch) {
+          run_switch <- TRUE
+        }
+        run_counter <- run_counter + 1
+      }
+    }
+    current_end <- current_end + update_policy
+  }
+  
+  overall_rate <- find_overall_evaluation(utilization, survival)
+  return(list("utilization"=overall_rate$utilization_rate, "survival"=overall_rate$survival_rate, "one"=runs[1], "two"=runs[2], "thr"=runs[3], "fou"=runs[4], "fiv"=runs[5]))
+}
+
+
+train_ar1_model <- function(ts_num, train_dataset) {
+  ts_model <- tryCatch({
+    arima(x=train_dataset[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000))
+  }, error = function(cond) {
+    return(arima(x=train_dataset[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "ML", optim.control = list(maxit=2000)))
+  })
+  return(list("coeffs"=as.numeric(ts_model$coef[1]), "means"= as.numeric(ts_model$coef[2]), "vars"=ts_model$sigma2))
+}
+
+
+parser_for_logistic_model <- function(train_set_max, train_set_avg, cpu_required) {
+  df <- data.frame("avg"=train_set_avg, "max"=train_set_max)
+  df$survived <- ifelse(df$max <= (100 - cpu_required), 1, 0)
+  return(df)
+}
+
+
+train_logistic_model <- function(ts_num, train_dataset_max, train_dataset_avg, cpu_required) {
+  logistic_input <- parser_for_logistic_model(train_dataset_max[,ts_num], train_dataset_avg[,ts_num], cpu_required[ts_num])
+  log.lm <- glm(survived~avg, data = logistic_input, family = "binomial", control=glm.control(maxit=50))
+  return(log.lm) 
+}
+
+
+find_bin_obs <- function(avg, bin_num) {
+  bin_size = 100 / bin_num
+  return(ifelse(avg % bin_size == 0, (avg / bin_size)-1, floor(avg / bin_size)))
+}
+
+
+train_cond_var_model <- function(train_set_avg, train_set_max, bin_num=100, method) {
+  if (method == "lm") {
+    new_parsed_dat <- data.frame(matrix(nrow=length(train_set_avg), ncol=3))
+    bin <- sapply(train_set_avg, find_bin_obs, bin_num)
+    for (i in 1:nrow(train_set_avg)) {
+      new_parsed_dat[i,] = c(train_set_avg[i,], train_set_max[i,], bin[i])
+    }
+    colnames(new_parsed_dat) <- c('max', 'avg', 'bin')
+    new_parsed_dat <- new_parsed_dat %>% 
+      group_by(bin) %>% 
+      summarise(sd=sqrt(var(max))) %>%
+      filter(!is.na(sd))
+     
+    sd.lm <- NULL
+    if (nrow(new_parsed_dat) >= 3) {
+      sd.lm <- lm(sd~avg+I(avg^2), data = new_parsed_dat)
+    } else if (nrow(new_parsed_dat) == 2) {
+      sd.lm <- lm(sd~avg, data = new_parsed_dat)
+    } else {
+      sd.lm <- new_parsed_dat$sd^2
+    }
+    return(sd.lm)
+  } else {
+    clustering_result <- list()
+    avg_silhouette <- c()
+    avg_silhouette[1] <- -Inf
+    for (cluster_num in 2:10) {
+      clustering_result[[cluster_num]] <- kmeans(train_set_avg, centers = cluster_num, iter.max = 20, nstart = 25)
+      avg_silhouette[cluster_num] <- mean(silhouette(clustering_result[[cluster_num]]$cluster, dist = dist(train_set_avg))[,3])
+    }
+    best_cluster_num <- which(avg_silhouette == max(avg_silhouette))
+    best_cluster_result <- clustering_result[[best_cluster_num]]
+    new_parsed_dat <- data.frame("cluster"=best_cluster_result$cluster, "max"=train_set_max)
+    new_parsed_dat <- new_parsed_dat %>% 
+      group_by(cluster) %>% 
+      summarise(vars=var(max)) %>%
+      filter(!is.na(vars))
+    new_parsed_dat$cluster_mean <- best_cluster_result$centers[new_parsed_dat$cluster]
+    return(new_parsed_dat)
+  }
+}
+
+
 ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob_cut_off, update_freq, job_length, cpu_required, cond.var, granularity) {
   #### input dataset_avg, dataset_max: N by M matrix, N being number of observations, M being number of time series
   #### input initial_train_size: The number of first observations used to train the model
@@ -287,38 +302,55 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
     cpu_required <- sapply(cpu_required, round_to_nearest, granularity, FALSE)
   }
   
-  ## Convert Frequency
-  train_set_avg <- matrix(nrow = floor(initial_train_size / window_size), ncol = 0)
-  train_set_max <- matrix(nrow = floor(initial_train_size / window_size), ncol = 0)
-  for (ts_num in 1:ncol(dataset_avg)) {
-    converted_data <- convert_frequency_dataset(dataset_avg[1:initial_train_size, ts_num], window_size, 'avg')
-    train_set_avg <- cbind(train_set_avg, converted_data)
-    converted_data <- convert_frequency_dataset(dataset_max[1:initial_train_size, ts_num], window_size, 'max')
-    train_set_max <- cbind(train_set_max, converted_data)
+  scheduled_num <- data.frame(matrix(nrow=ncol(dataset_max), ncol=0))
+  unscheduled_num <- data.frame(matrix(nrow=ncol(dataset_max), ncol=0))
+  correct_scheduled_num <- data.frame(matrix(nrow=ncol(dataset_max), ncol=0))
+  correct_unscheduled_num <- data.frame(matrix(nrow=ncol(dataset_max), ncol=0))
+  
+  avg_usage <- data.frame(matrix(nrow=ncol(dataset_max), ncol=0))
+  job_survival <- data.frame(matrix(nrow=ncol(dataset_max), ncol=0))
+  overall_runs <- data.frame(matrix(nrow=ncol(dataset_max), ncol = 0))
+  
+  ## Dictionaries
+  logistic_models <- dict()
+  var_lm_models <- dict()
+  
+  ## Split the dataset into training and testing sets
+  train_dataset <- dataset[1:initial_train_size, 1:ncol(dataset)]
+  test_dataset <- dataset[(initial_train_size+1):nrow(dataset), 1:ncol(dataset)]
+  
+  ## Convert Frequency for trainning set
+  new_trainset_max <- apply(train_dataset_max, 2, convert_frequency_dataset, new_freq=window_size, mode="max")
+  rownames(new_trainset_max) <- seq(1, 1 + window_size * (nrow(new_trainset_max) - 1), window_size)
+  colnames(new_trainset_max) <- colnames(train_dataset_max)
+  
+  new_trainset_avg <- apply(train_dataset_avg, 2, convert_frequency_dataset, new_freq=window_size, mode="avg")
+  rownames(new_trainset_avg) <- seq(1, 1 + window_size * (nrow(new_trainset_avg) - 1), window_size)
+  colnames(new_trainset_avg) <- colnames(train_dataset_avg)
+  
+  ## Training AR1 Model
+  print("Training: AR1.")
+  train_result <- sapply(1:ncol(new_trainset_avg), train_ar1_model, new_trainset_avg)
+  coeffs <- unlist(train_result[1,])
+  means <- unlist(train_result[2,])
+  vars <- unlist(train_result[3,])
+  
+  ## Training Logistic Model
+  print("Training: Logistic.")
+  logistic_result <- sapply(1:ncol(new_trainset_avg), train_logistic_model, new_trainset_max, new_trainset_avg, cpu_required, simplify=FALSE)
+  for (ts_num in 1:ncol(new_trainset_avg)) {
+    logistic_models[[ts_num]] <- logistic_result[,ts_num]
   }
-  rownames(train_set_avg) <- seq(1, 1 + window_size * (nrow(train_set_avg) - 1), window_size)
-  colnames(train_set_avg) <- colnames(dataset_avg)
-  rownames(train_set_max) <- seq(1, 1 + window_size * (nrow(train_set_max) - 1), window_size)
-  colnames(train_set_max) <- colnames(dataset_max)
   
-  test_set_avg <- matrix(nrow = floor((nrow(dataset_avg) - initial_train_size) / window_size), ncol = 0)
-  test_set_max <- matrix(nrow = floor((nrow(dataset_max) - initial_train_size) / window_size), ncol = 0)
-  for (ts_num in 1:ncol(dataset_avg)) {
-    converted_data <- convert_frequency_dataset(dataset_avg[(initial_train_size+1):nrow(dataset_avg), ts_num], window_size, 'max')
-    test_set_avg <- cbind(test_set_avg, converted_data)
-    converted_data <- convert_frequency_dataset(dataset_max[(initial_train_size+1):nrow(dataset_max), ts_num], window_size, 'avg')
-    test_set_max <- cbind(test_set_max, converted_data)
+  ## Training Polynomial Regression Model
+  print("Training: Polynomial Regression.")
+  var_lm_result <- sapply(1:ncol(new_trainset_avg), train_cond_var_model, bin_num, cond.var, simplify=FALSE)
+  for (ts_num in 1:ncol(new_trainset_avg)) {
+    var_lm_models[[ts_num]] <- var_lm_result[,ts_num]
   }
-  rownames(test_set_avg) <- seq(initial_train_size + 1, initial_train_size + 1 + window_size * (nrow(test_set_avg) - 1), window_size)
-  colnames(test_set_avg) <- colnames(dataset_avg)
-  rownames(test_set_max) <- seq(initial_train_size + 1, initial_train_size + 1 + window_size * (nrow(test_set_max) - 1), window_size)
-  colnames(test_set_max) <- colnames(dataset_max)
   
-  print("First layer: AR1.")
-  test_avgs <- ar1_model(train_set_avg, test_set_avg, update_freq=1)
+  ## Test Model
   
-  print("Second layer: Logistic Regression.")
-  logistic_output <- logistic_model(train_set_avg, train_set_max, test_avgs, update_freq=1, cpu_required, cond.var = cond.var)
   
   ## N by M dataframe
   probability <- data.frame(matrix(nrow = (nrow(test_set_max) - 1), ncol = ncol(test_set_max)))
@@ -401,102 +433,6 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   return(result)
 }
 
-update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num, sample_size, window_size, granularity,utilization, survival, correct_scheduled_rate, correct_unscheduled_rate) {
-  if (is.na(state_num)) {
-    xlsx_file <- xlsx_file %>%
-      mutate(Avg.Cycle.Usage = ifelse(Model == model_name & 
-                                        Probability.Cut.Off == prob_cut_off & 
-                                        Sample.Size == sample_size &
-                                        Window.Size == window_size &
-                                        Granularity == granularity, 
-                                      utilization, Avg.Cycle.Usage)) %>%
-      mutate(Survival.Rate = ifelse(Model == model_name & 
-                                      Probability.Cut.Off == prob_cut_off & 
-                                      Sample.Size == sample_size &
-                                      Window.Size == window_size &
-                                      Granularity == granularity, 
-                                    survival, Survival.Rate)) %>%
-      mutate(Correctly.Scheduled = ifelse(Model == model_name & 
-                                            Probability.Cut.Off == prob_cut_off & 
-                                            Sample.Size == sample_size &
-                                            Window.Size == window_size &
-                                            Granularity == granularity, 
-                                          correct_scheduled_rate, Correctly.Scheduled)) %>%
-      mutate(Correctly.Unscheduled = ifelse(Model == model_name & 
-                                              Probability.Cut.Off == prob_cut_off & 
-                                              Sample.Size == sample_size &
-                                              Window.Size == window_size &
-                                              Granularity == granularity, 
-                                            correct_unscheduled_rate, Correctly.Unscheduled))
-  } else {
-    xlsx_file <- xlsx_file %>%
-      mutate(Avg.Cycle.Usage = ifelse(Model == model_name & 
-                                        Probability.Cut.Off == prob_cut_off & 
-                                        Sample.Size == sample_size &
-                                        StateNum == state_num & 
-                                        Window.Size == window_size &
-                                        Granularity == granularity, 
-                                      utilization, Avg.Cycle.Usage)) %>%
-      mutate(Survival.Rate = ifelse(Model == model_name & 
-                                      Probability.Cut.Off == prob_cut_off & 
-                                      Sample.Size == sample_size &
-                                      StateNum == state_num & 
-                                      Window.Size == window_size &
-                                      Granularity == granularity, 
-                                    survival, Survival.Rate)) %>%
-      mutate(Correctly.Scheduled = ifelse(Model == model_name & 
-                                            Probability.Cut.Off == prob_cut_off & 
-                                            Sample.Size == sample_size &
-                                            StateNum == state_num & 
-                                            Window.Size == window_size &
-                                            Granularity == granularity, 
-                                          correct_scheduled_rate, Correctly.Scheduled)) %>%
-      mutate(Correctly.Unscheduled = ifelse(Model == model_name & 
-                                              Probability.Cut.Off == prob_cut_off & 
-                                              Sample.Size == sample_size &
-                                              StateNum == state_num & 
-                                              Window.Size == window_size &
-                                              Granularity == granularity, 
-                                            correct_unscheduled_rate, Correctly.Unscheduled))
-  }
-  return(xlsx_file)
-}
-
-bad_seq_adjustment <- function(survivals) {
-  if (length(survivals) >= 2) {
-    result <- survivals[1]
-    schedule <- 0
-    i <- 2
-    while (i <= length(survivals)) {
-      if (schedule < 2) {
-        if (!is.na(survivals[i-1]) & survivals[i-1] == 0) {
-          schedule <- schedule + 1
-        } else if (!is.na(survivals[i-1]) & survivals[i-1] == 1) {
-          schedule <- 0
-        }
-        result[i] <- survivals[i]
-      } else {
-        if (!is.na(survivals[i-1]) & survivals[i-1] == 1) {
-          schedule <- 0
-        }
-        result[i] <- NA
-      }
-      i <- i + 1
-    }
-    return(result)
-  } else {
-    return(survivals)
-  }
-}
-
-find_overall_evaluation <- function(avg_usages, survivals, bad.seq.adj) {
-  if (bad.seq.adj) {
-    survivals <- apply(survivals, 2, bad_seq_adjustment)
-  }
-  avg_utilization <- mean(as.matrix(avg_usages), na.rm = TRUE)
-  survival <- sum(as.matrix(survivals), na.rm = TRUE) / (length(as.matrix(survivals)[!is.na(as.matrix(survivals))]))
-  return(list("avg_utilization"=avg_utilization, "survival"=survival))
-}
 
 wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, initial_train_size, update_freq, cond.var, bad.seq.adj, output_dp) {
   
@@ -595,6 +531,6 @@ if (bad.seq.adj) {
 
 parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity)
 colnames(parameter.df) <- c("job_length", "prob_cut_off", "granularity")
-parameter.df <- parameter.df %>%
+parameter.df <- parameter.df %>% 
   arrange(job_length)
 slt <- apply(parameter.df, 1, wrapper.epoche, dataset_avg=data_matrix_avg, dataset_max=data_matrix_max, cpu_required=(100-cpu_required), initial_train_size=initial_train_size, update_freq=1, cond.var=cond.var, bad.seq.adj=bad.seq.adj, output_dp=output_dp)

@@ -6,6 +6,9 @@ library("arules")
 library("cluster")
 library("xlsx")
 
+source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//helper_functions.R")
+
+
 convert_frequency_dataset <- function(dataset, new_freq, mode) {
   new_avg_cpu <- c()
   window_num <- NULL

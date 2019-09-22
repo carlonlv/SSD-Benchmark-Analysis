@@ -8,8 +8,8 @@ Granularity <- c(10, 100/32, 100/64, 100/128, 0)
 Window.Size <- c(12, 36)
 Sample.Size <- c(100, 3000)
 
-result.dp1 <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows,granularity).xlsx"
-result.dp2 <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows,granularity) post adj.xlsx"
+result.dp1 <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary improved (windows,granularity).xlsx"
+result.dp2 <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary improved (windows,granularity) post adj.xlsx"
 result.df <- expand.grid(Model, StateNum, Probability.Cut.Off, Granularity, Window.Size, Sample.Size, KEEP.OUT.ATTRS=FALSE, stringsAsFactors=FALSE)
 colnames(result.df) <- c("Model", "StateNum", "Probability.Cut.Off", "Granularity", "Window.Size", "Sample.Size")
 
