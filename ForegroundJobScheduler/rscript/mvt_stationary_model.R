@@ -202,7 +202,7 @@ scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, ts
 scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, ts_models, window_size, prob_cut_off, granularity, schedule_policy) {
   utilization <- c()
   survival <- c()
-  runs <- rep(0, 5)
+  runs <- rep(0, 20)
   run_counter <- 0
   run_switch <- FALSE
   
@@ -237,7 +237,7 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, ts_mode
       if (!is.na(evalulation$survival) & evalulation$survival == 1) {
         update_policy <- window_size
         if (run_switch) {
-          idx <- ifelse(run_counter > 5, 5, run_counter)
+          idx <- ifelse(run_counter > 20, 20, run_counter)
           runs[idx] <- runs[idx] + 1
           run_counter <- 0
           run_switch <- FALSE
@@ -254,21 +254,21 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, ts_mode
   }
   
   overall_rate <- find_overall_evaluation(utilization, survival)
-  return(list("utilization"=overall_rate$utilization_rate, "survival"=overall_rate$survival_rate, "one"=runs[1], "two"=runs[2], "thr"=runs[3], "fou"=runs[4], "fiv"=runs[5]))
+  return(list("utilization"=overall_rate$utilization_rate, "survival"=overall_rate$survival_rate, "runs"=runs))
 }
 
 
-train_mvt_model <- function(ts_num, train_dataset_max, train_dataset_avg) {
-  uni_data_max <- new_trainset_max[, ts_num]
-  uni_data_avg <- new_trainset_avg[, ts_num]
-  uni_data_matrix <- matrix(nrow = nrow(new_trainset_max), ncol = 2)
+train_mvt_model <- function(ts_num, train_dataset_max, train_dataset_avg, p, q) {
+  uni_data_max <- train_dataset_max[, ts_num]
+  uni_data_avg <- train_dataset_avg[, ts_num]
+  uni_data_matrix <- matrix(nrow = nrow(train_dataset_max), ncol = 2)
   uni_data_matrix[,1] <- uni_data_max
   uni_data_matrix[,2] <- uni_data_avg
-  return(VARMACpp(uni_data_matrix, p=p, q=0, include.mean = TRUE))
+  return(VARMACpp(uni_data_matrix, p=p, q=q, include.mean = TRUE))
 }
 
 
-mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p, q, job_length, window_size, cpu_required, prob_cut_off, update_freq, granularity, schedule_policy) {
+mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p, q, job_length, window_size, cpu_required, prob_cut_off, granularity, schedule_policy) {
   #### input dataset_avg: N by M matrix, N being number of observations, M being number of time series
   #### input dataset_max: N by M matrix, N being number of observations, M being number of time series
   #### input initial_train_size: The number of first observations used to train the model'
@@ -277,20 +277,21 @@ mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p
   #### input job_length: The time that the foreground job will be runing
   #### input cpu_required: A vector, the cpu that the foreground job requires in percentage
   #### input prob_cut_off: If the probability of background job exceeding 100-cpu_required is smaller than prob_cut_off, then schedule it. Otherwise, don't.
-  #### input update_freq: The number of observations for each update of the model, and do the prediction
-  
+
   if (granularity > 0) {
     cpu_required <- sapply(cpu_required, round_to_nearest, granularity, FALSE)
   }
   
-  scheduled_num <- data.frame(matrix(nrow=ncol(dataset_max), ncol=0))
-  unscheduled_num <- data.frame(matrix(nrow=ncol(dataset_max), ncol=0))
-  correct_scheduled_num <- data.frame(matrix(nrow=ncol(dataset_max), ncol=0))
-  correct_unscheduled_num <- data.frame(matrix(nrow=ncol(dataset_max), ncol=0))
+  ts_names <- colnames(dataset_avg)
   
-  avg_usage <- data.frame(matrix(nrow=ncol(dataset_max), ncol=0))
-  job_survival <- data.frame(matrix(nrow=ncol(dataset_max), ncol=0))
-  overall_runs <- data.frame(matrix(nrow=ncol(dataset_max), ncol = 0))
+  scheduled_num <- data.frame(matrix(nrow=length(ts_names), ncol=0))
+  unscheduled_num <- data.frame(matrix(nrow=length(ts_names), ncol=0))
+  correct_scheduled_num <- data.frame(matrix(nrow=length(ts_names), ncol=0))
+  correct_unscheduled_num <- data.frame(matrix(nrow=length(ts_names), ncol=0))
+  
+  avg_usage <- data.frame(matrix(nrow=length(ts_names), ncol=0))
+  job_survival <- data.frame(matrix(nrow=length(ts_names), ncol=0))
+  overall_runs <- data.frame(matrix(nrow=length(ts_names), ncol = 0))
   
   ## Dictionaries
   ts_models <- dict()
@@ -304,72 +305,66 @@ mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p
   ## Convert Frequency for training set
   new_trainset_max <- apply(train_dataset_max, 2, convert_frequency_dataset, new_freq=window_size, mode="max")
   rownames(new_trainset_max) <- seq(1, 1 + window_size * (nrow(new_trainset_max) - 1), window_size)
-  colnames(new_trainset_max) <- colnames(train_dataset_max)
+  colnames(new_trainset_max) <- ts_names
   
   new_trainset_avg <- apply(train_dataset_avg, 2, convert_frequency_dataset, new_freq=window_size, mode="avg")
   rownames(new_trainset_avg) <- seq(1, 1 + window_size * (nrow(new_trainset_avg) - 1), window_size)
-  colnames(new_trainset_avg) <- colnames(train_dataset_avg)
+  colnames(new_trainset_avg) <- ts_names
   
   ## Training Model
-  trained_ts_models <- sapply(1:ncol(new_trainset_max), train_mvt_model, new_trainset_max, new_trainset_avg, simplify=TRUE)
-  for (ts_num in 1:ncol(new_trainset_max)) {
-    ts_models[[ts_num]] <- trained_ts_models[,ts_num]
-  }
+  ts_models <- sapply(1:length(ts_names), train_mvt_model, new_trainset_max, new_trainset_avg, p, q, simplify=FALSE)
   
   ## Test Model
   print("Testing on Foreground job:")
-  result_foreground <- sapply(1:ncol(dataset_max), scheduling_foreground, test_dataset_max=test_dataset_max, test_dataset_avg=test_dataset_avg, ts_models=ts_models, window_size=window_size, job_length=job_length, prob_cut_off=prob_cut_off, cpu_required=cpu_required, granularity=granularity, schedule_policy=schedule_policy)
-  
+  result_foreground <- sapply(1:length(ts_names), scheduling_foreground, test_dataset_max, test_dataset_avg, ts_models, window_size, job_length, prob_cut_off, cpu_required, granularity, schedule_policy)
   print("Testing on Model:")
-  result_model <- sapply(1:ncol(dataset_max), scheduling_model, test_dataset_max=test_dataset_max, test_dataset_avg=test_dataset_avg, ts_models=ts_models, window_size=window_size, prob_cut_off=prob_cut_off, granularity=granularity, schedule_policy=schedule_policy)
+  result_model <- sapply(1:length(ts_names), scheduling_model, test_dataset_max, test_dataset_avg, ts_models, window_size, prob_cut_off, granularity, schedule_policy, simplify = FALSE)
   
-  if (schedule_policy == "dynamic") {
-    for (i in 1:5) {
-      overall_runs <- cbind(overall_runs, unlist(result_model[2+i,]))
-    }
-  } 
   scheduled_num <- cbind(scheduled_num, unlist(result_foreground[1,]))
   unscheduled_num <- cbind(unscheduled_num, unlist(result_foreground[2,]))
   correct_scheduled_num <- cbind(correct_scheduled_num, unlist(result_foreground[3,]))
   correct_unscheduled_num <- cbind(correct_unscheduled_num, unlist(result_foreground[4,]))
   
-  avg_usage <- cbind(avg_usage, unlist(result_model[1,]))
-  job_survival <- cbind(job_survival, unlist(result_model[2,]))
-  
+  for (ts_num in 1:length(ts_names)) {
+    avg_usage <- rbind(avg_usage, result_model[[ts_num]]$utilization)
+    job_survival <- rbind(job_survival, result_model[[ts_num]]$survival)
+    if (schedule_policy == "dynamic") {
+      overall_runs <- rbind(overall_runs, result_model[[ts_num]]$runs)
+    }
+  }
   
   ## Change column and row names, N by M
-  rownames(scheduled_num) <- colnames(dataset_max)
+  rownames(scheduled_num) <- ts_names
   colnames(scheduled_num) <- "scheduled_num"
-  rownames(unscheduled_num) <- colnames(dataset_max)
+  rownames(unscheduled_num) <- ts_names
   colnames(unscheduled_num) <- "unscheduled_num"
-  rownames(correct_scheduled_num) <- colnames(dataset_max)
+  rownames(correct_scheduled_num) <- ts_names
   colnames(correct_scheduled_num) <- "correct_scheduled_num"
-  rownames(correct_unscheduled_num) <- colnames(dataset_max)
+  rownames(correct_unscheduled_num) <- ts_names
   colnames(correct_unscheduled_num) <- "correct_unscheduled_num"
-  rownames(avg_usage) <- colnames(dataset_max)
+  rownames(avg_usage) <- ts_names
   colnames(avg_usage) <- "avg_usage"
-  rownames(job_survival) <- colnames(dataset_max)
+  rownames(job_survival) <- ts_names
   colnames(job_survival) <- "survival"
   if (schedule_policy == "dynamic") {
-    rownames(overall_runs) <- colnames(dataset_max)
-    colnames(overall_runs) <- sapply(1:5, function(i) as.character(i))
+    rownames(overall_runs) <- ts_names
+    colnames(overall_runs) <- sapply(1:20, function(i) as.character(i))
     result <- list('avg_usage'=avg_usage, 'job_survival'=job_survival, 'scheduled_num'=scheduled_num, "unscheduled_num"=unscheduled_num, "correct_scheduled_num"=correct_scheduled_num, "correct_unscheduled_num"=correct_unscheduled_num, "overall_runs"=overall_runs)
     return(result)  
   } else {
     result <- list('avg_usage'=avg_usage, 'job_survival'=job_survival, 'scheduled_num'=scheduled_num, "unscheduled_num"=unscheduled_num, "correct_scheduled_num"=correct_scheduled_num, "correct_unscheduled_num"=correct_unscheduled_num)
     return(result)
   }
-  return(result)
 }
 
 
-wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, initial_train_size, update_freq, output_dp, schedule_policy) {
+wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, initial_train_size, output_dp, schedule_policy) {
   
   window_size <- as.numeric(parameter[1])
   prob_cut_off <- as.numeric(parameter[2])
   granularity <- as.numeric(parameter[3])
   
-  output <- mvt_stationary_model(dataset_avg=dataset_avg, dataset_max=dataset_max, p=1, q=0, job_length=1, window_size=window_size, cpu_required=cpu_required, prob_cut_off=prob_cut_off, initial_train_size=initial_train_size, update_freq=1, granularity=granularity, schedule_policy=schedule_policy)
+  output <- mvt_stationary_model(dataset_avg=dataset_avg, dataset_max=dataset_max, p=1, q=0, job_length=1, window_size=window_size, cpu_required=cpu_required, prob_cut_off=prob_cut_off, initial_train_size=initial_train_size, granularity=granularity, schedule_policy=schedule_policy)
   overall_evaluation <- find_overall_evaluation(output$avg_usage, output$job_survival)
   
   utilization_rate <- overall_evaluation$utilization_rate
@@ -388,8 +383,11 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
   print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
   
   result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
-  result_path.xlsx <- update.xlsx.df(result_path.xlsx, "VAR1", prob_cut_off, NA, sample_size, window_size, granularity, avg_utilization, survival, correct_scheduled_rate, correct_unscheduled_rate)
-  write.xlsx(result_path.xlsx, showNA = FALSE, file = output_dp, row.names = FALSE)
+  if (schedule_policy == "dynamic") {
+    write.csv(output$overall_runs, paste("Overall Runs", "VAR1", sample_size, window_size, prob_cut_off, granularity, ".csv"))
+  }
+  result_path.xlsx <- update.xlsx.df(result_path.xlsx, "VAR1", prob_cut_off, NA, sample_size, window_size, granularity, utilization_rate, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
+  write.xlsx(result_path.xlsx, showNA = FALSE, file = output_dp, row.names = FALSE) 
 }
 
 ## Read back ground job pool
@@ -446,4 +444,4 @@ parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity)
 colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity")
 parameter.df <- parameter.df %>%
   arrange(window_size)
-apply(parameter.df, 1, wrapper.epoche, dataset_avg=data_matrix_avg, dataset_max=data_matrix_max, cpu_required=(100-cpu_required), initial_train_size=initial_train_size, update_freq=1, output_dp=output_dp, schedule_policy=schedule_policy)
+slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, output_dp, schedule_policy)

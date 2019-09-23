@@ -156,7 +156,7 @@ scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, co
 scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, cond_var_models, cond.var, window_size, prob_cut_off, granularity, schedule_policy) {
   utilization <- c()
   survival <- c()
-  runs <- rep(0, 5)
+  runs <- rep(0, 20)
   run_counter <- 0
   run_switch <- FALSE
   
@@ -194,7 +194,7 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs,
       if (!is.na(evalulation$survival) & evalulation$survival == 1) {
         update_policy <- window_size
         if (run_switch) {
-          idx <- ifelse(run_counter > 5, 5, run_counter)
+          idx <- ifelse(run_counter > 20, 20, run_counter)
           runs[idx] <- runs[idx] + 1
           run_counter <- 0
           run_switch <- FALSE
@@ -211,7 +211,7 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs,
   }
   
   overall_rate <- find_overall_evaluation(utilization, survival)
-  return(list("utilization"=overall_rate$utilization_rate, "survival"=overall_rate$survival_rate, "one"=runs[1], "two"=runs[2], "thr"=runs[3], "fou"=runs[4], "fiv"=runs[5]))
+  return(list("utilization"=overall_rate$utilization_rate, "survival"=overall_rate$survival_rate, "run"=runs))
 }
 
 
@@ -239,16 +239,22 @@ train_logistic_model <- function(ts_num, train_dataset_max, train_dataset_avg, c
 }
 
 
-find_bin_obs <- function(avg, bin_num) {
-  bin_size = 100 / bin_num
-  return(ifelse(avg % bin_size == 0, (avg / bin_size)-1, floor(avg / bin_size)))
+find_bin_obs <- function(avg, binsize) {
+  if (avg == 0) {
+    return(0)
+  } else {
+    num <- ifelse(avg % bin_size == 0, (avg / bin_size)-1, floor(avg / bin_size))
+    return(num)
+  }
 }
 
 
 train_cond_var_model <- function(train_set_avg, train_set_max, bin_num=100, method) {
   if (method == "lm") {
     new_parsed_dat <- data.frame(matrix(nrow=length(train_set_avg), ncol=3))
-    bin <- sapply(train_set_avg, find_bin_obs, bin_num)
+    binsize <- 100 / bin_num
+    bin <- sapply(train_set_avg, find_bin_obs, binsize)
+    bin <- (bin + 1/2) * binsize
     for (i in 1:nrow(train_set_avg)) {
       new_parsed_dat[i,] = c(train_set_avg[i,], train_set_max[i,], bin[i])
     }
@@ -260,9 +266,9 @@ train_cond_var_model <- function(train_set_avg, train_set_max, bin_num=100, meth
      
     sd.lm <- NULL
     if (nrow(new_parsed_dat) >= 3) {
-      sd.lm <- lm(sd~avg+I(avg^2), data = new_parsed_dat)
+      sd.lm <- lm(sd~bin+I(bin^2), data = new_parsed_dat)
     } else if (nrow(new_parsed_dat) == 2) {
-      sd.lm <- lm(sd~avg, data = new_parsed_dat)
+      sd.lm <- lm(sd~bin, data = new_parsed_dat)
     } else {
       sd.lm <- new_parsed_dat$sd^2
     }

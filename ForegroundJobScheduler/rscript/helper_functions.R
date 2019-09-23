@@ -151,34 +151,6 @@ update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num, sampl
 }
 
 
-bad_seq_adjustment <- function(survivals) {
-  if (length(survivals) >= 2) {
-    result <- survivals[1]
-    schedule <- 0
-    i <- 2
-    while (i <= length(survivals)) {
-      if (schedule < 2) {
-        if (!is.na(survivals[i-1]) & survivals[i-1] == 0) {
-          schedule <- schedule + 1
-        } else if (!is.na(survivals[i-1]) & survivals[i-1] == 1) {
-          schedule <- 0
-        }
-        result[i] <- survivals[i]
-      } else {
-        if (survivals[i-1] == 1) {
-          schedule <- 0
-        }
-        result[i] <- NA
-      }
-      i <- i + 1
-    }
-    return(result)
-  } else {
-    return(survivals)
-  }
-}
-
-
 find_overall_evaluation <- function(avg_usages, survivals) {
   avg_utilization <- mean(as.matrix(avg_usages), na.rm = TRUE)
   survival <- sum(as.matrix(survivals), na.rm = TRUE) / (length(as.matrix(survivals)[!is.na(as.matrix(survivals))]))
