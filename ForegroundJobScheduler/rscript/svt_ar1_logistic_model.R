@@ -24,7 +24,7 @@ generate_expected_conditional_var <- function(expected_avgs, mode, variance_mode
     if (is.numeric(variance_model)) {
       expected_var <- rep(variance_model, length(expected_avgs))
     } else {
-      expected_var <- predict(variance_model, newdata=data.frame("avg"=expected_avgs), type = "response")^2
+      expected_var <- predict(variance_model, newdata=data.frame("bin"=expected_avgs), type = "response")^2
     }
   } else {
     expected_var <- sapply(expected_avgs, kmeans_find_var, variance_model)
@@ -138,14 +138,14 @@ scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, co
   correct_unscheduled_num <- 0
   
   seek_length <- window_size
-  last_time_schedule <- nrow(test_dataset) - window_size + 1
+  last_time_schedule <- nrow(test_dataset_avg) - window_size + 1
 
   update_policy = ifelse(schedule_policy == "disjoint", window_size, 1)
   current_end <- window_size + 1
   while (current_end <= last_time_schedule) {
   
     ## Predict current avgs using AR1
-    last_obs <- convert_frequency_dataset(test_dataset_avg[(current_end-window_size):(current_end-1), ts_num], window_size, mode = 'avg')
+    last_obs <- convert_frequency_dataset(test_dataset_avg[(current_end-window_size):(current_end-1), ts_num], window_size, mode = "avg")
     
     expected_avgs <- do_prediction(last_obs, coeffs[ts_num], means[ts_num], vars[ts_num])$mu
     
@@ -160,7 +160,7 @@ scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, co
     ## Evalute schedulings based on prediction
     start_time <- current_end
     end_time <- current_end + seek_length - 1
-    position_vec <- convert_frequency_dataset(test_dataset[start_time:end_time, ts_num], window_size, mode = mode)
+    position_vec <- convert_frequency_dataset(test_dataset_max[start_time:end_time, ts_num], window_size, mode = "max")
     actual <- ifelse(all(position_vec <= (100 - cpu_required[ts_num])), 1, 0)
     correct_scheduled_num <- ifelse(prediction == 1 & actual == 1, correct_scheduled_num + 1, correct_scheduled_num)
     correct_unscheduled_num <- ifelse(prediction == 0 & actual == 0, correct_unscheduled_num + 1, correct_unscheduled_num)
@@ -184,16 +184,6 @@ find_expected_max <- function(probability, variance, cpu_required) {
 }
 
 
-compute_pi_up <- function(expected_max, expected_var, prob_cut_off, granularity) {
-  pi_up <- min(expected_max + qnorm(p=(1-prob_cut_off)) * sqrt(expected_var), 100)
-  if (granularity > 0) {
-    scheduled_size <- sapply(100 - pi_up, round_to_nearest, granularity, TRUE)
-    pi_up <- 100 - scheduled_size
-  }
-  return(pi_up)
-}
-
-
 scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, cond_var_models, cond.var, window_size, prob_cut_off, granularity, schedule_policy) {
   utilization <- c()
   survival <- c()
@@ -213,7 +203,7 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs,
     ## Schedule based on model predictions
     last_obs <- convert_frequency_dataset(test_dataset_avg[(current_end-window_size):(current_end-1), ts_num], window_size, mode = 'avg')
     
-    expected_avgs <- do_prediction(last_obs, phi, mean, variance)$mu
+    expected_avgs <- do_prediction(last_obs, coeffs[ts_num], means[ts_num], vars[ts_num])$mu
     
     expected_vars <- generate_expected_conditional_var(expected_avgs, mode = cond.var, variance_model = cond_var_model)
     
@@ -221,7 +211,7 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs,
     
     expected_max <- find_expected_max(prob, expected_vars, cpu_required[ts_num])
     
-    pi_up <- compute_pi_up(mu=expected_max, varcov=expeted_vars, predict_size=1, prob_cutoff=prob_cut_off, granularity=granularity)
+    pi_up <- compute_pi_up(mu=expected_max, varcov=as.matrix(expected_vars), predict_size=1, prob_cutoff=prob_cut_off, granularity=granularity)
     
     ## Evalute schedulings based on prediction
     start_time <- current_end
@@ -315,7 +305,7 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   
   ## Test Model
   print("Testing on Foreground job:")
-  result_foreground <- sapply(1:length(ts_names), scheduling_foreground, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, cpu_required, granularity, schedule_policy, simplify=FALSE)
+  result_foreground <- sapply(1:length(ts_names), scheduling_foreground, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, cpu_required, granularity, schedule_policy)
   
   print("Testing on Model:")
   result_model <- sapply(1:length(ts_names), scheduling_model, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, cond_var_models, cond.var, window_size, prob_cut_off, granularity, schedule_policy, simplify=FALSE)
@@ -329,7 +319,7 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
     avg_usage <- rbind(avg_usage, result_model[[ts_num]]$utilization)
     job_survival <- rbind(job_survival, result_model[[ts_num]]$survival)
     if (schedule_policy == "dynamic") {
-      overall_runs <- rbind(overall_runs, result_model[[ts_num]]$runs)
+      overall_runs <- rbind(overall_runs, result_model[[ts_num]]$run)
     }
   }
   
@@ -415,6 +405,8 @@ cond.var <- "lm"
 window_sizes <- c(12, 36)
 prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1, 0.125, 0.15, 0.175, 0.2, 0.25)
 granularity <- c(10, 100/32, 100/64, 100/128, 0)
+
+schedule_policy <- "dynamic"
 
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
 bg_job_pool <- NULL
