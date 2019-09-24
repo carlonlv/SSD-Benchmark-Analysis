@@ -43,7 +43,7 @@ train_ar1_model <- function(ts_num, train_dataset) {
 }
 
 
-scheduling_foreground <- function(ts_num, test_dataset, coeffs, means, vars, window_size, job_length, prob_cut_off, cpu_required, granularity, mode, schedule_policy) {
+scheduling_foreground <- function(ts_num, test_dataset, coeffs, means, vars, window_size, job_length, prob_cut_off, cpu_required, granularity, schedule_policy, mode) {
   scheduled_num <- 0
   unscheduled_num <- 0
   correct_scheduled_num <- 0
@@ -84,7 +84,7 @@ scheduling_foreground <- function(ts_num, test_dataset, coeffs, means, vars, win
 }
 
 
-scheduling_model <- function(ts_num, test_dataset, coeffs, means, vars, window_size, prob_cut_off, granularity, mode, schedule_policy) {
+scheduling_model <- function(ts_num, test_dataset, coeffs, means, vars, window_size, prob_cut_off, granularity, schedule_policy, mode) {
   utilization <- c()
   survival <- c()
   runs <- rep(0, 20)
@@ -142,7 +142,7 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
   #### input job_length: The number of windows that the foreground job will be runing
   #### input cpu_required: A vector, the cpu that the foreground job requires in percentage
   #### input prob_cut_off: If the probability of background job exceeding 100-cpu_required is smaller than prob_cut_off, then schedule it. Otherwise, don't.
-  #### input mode:
+  #### input mode: max or avg
   #### input granularity:
   #### input schedule_policy: dynamic, disjoint, overlap
   
@@ -179,9 +179,9 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
   
   ## Test Model
   print("Testing on Foreground job:")
-  result_foreground <- sapply(1:length(ts_names), scheduling_foreground, test_dataset=test_dataset, coeffs=coeffs, means=means, vars=vars, window_size=window_size, job_length=job_length, prob_cut_off=prob_cut_off, cpu_required=cpu_required, granularity=granularity, mode=mode, schedule_policy=schedule_policy)
+  result_foreground <- sapply(1:length(ts_names), scheduling_foreground, test_dataset, coeffs, means, vars, window_size, job_length, prob_cut_off, cpu_required, granularity, schedule_policy, mode)
   print("Testing on Model:")
-  result_model <- sapply(1:length(ts_names), scheduling_model, test_dataset=test_dataset, coeffs=coeffs, means=means, vars=vars, window_size=window_size, prob_cut_off=prob_cut_off, granularity=granularity, mode=mode, schedule_policy=schedule_policy, simplify = FALSE)
+  result_model <- sapply(1:length(ts_names), scheduling_model, test_dataset, coeffs, means, vars, window_size, prob_cut_off, granularity, schedule_policy, mode, simplify = FALSE)
   
   scheduled_num <- cbind(scheduled_num, unlist(result_foreground[1,]))
   unscheduled_num <- cbind(unscheduled_num, unlist(result_foreground[2,]))
@@ -197,7 +197,6 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, job_l
     }
   }
   
-  ## Change column and row names, N by M
   rownames(scheduled_num) <- ts_names
   colnames(scheduled_num) <- "scheduled_num"
   rownames(unscheduled_num) <- ts_names

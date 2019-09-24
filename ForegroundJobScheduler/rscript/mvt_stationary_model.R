@@ -333,7 +333,6 @@ mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p
     }
   }
   
-  ## Change column and row names, N by M
   rownames(scheduled_num) <- ts_names
   colnames(scheduled_num) <- "scheduled_num"
   rownames(unscheduled_num) <- ts_names
