@@ -368,14 +368,14 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
   correct_scheduled_rate <- correct_scheduled_num / scheduled_num
   correct_unscheduled_rate <- correct_unscheduled_num / unscheduled_num
   
-  print(paste("Avg cycle used:", "job length", job_length, avg_utilization))
-  print(paste("Job survival rate:", "job length", job_length, survival))
+  print(paste("Avg cycle used:", "job length", job_length, utilization_rate))
+  print(paste("Job survival rate:", "job length", job_length, survival_rate))
   print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
   
   if (cond.var == "lm") {
     
     if (schedule_policy == "dynamic") {
-     write.csv(output$overall_runs, paste("Overall Runs", "AR1_logistic_lm", sample_size, window_size, prob_cut_off, granularity, ".csv"))
+     write.csv(output$overall_runs, paste("Overall Runs", "AR1_logistic_lm", sample_size, job_length, prob_cut_off, granularity, ".csv"))
     }
     result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
     result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1_logistic_lm", prob_cut_off, NA, sample_size, job_length, granularity, utilization_rate, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
@@ -384,7 +384,7 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
   } else {
     
     if (schedule_policy == "dynamic") {
-     write.csv(output$overall_runs, paste("Overall Runs", "AR1_logistic_kmeans", sample_size, window_size, prob_cut_off, granularity, ".csv"))
+     write.csv(output$overall_runs, paste("Overall Runs", "AR1_logistic_kmeans", sample_size, job_length, prob_cut_off, granularity, ".csv"))
     }
     result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
     result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1_logistic_kmeans", prob_cut_off, NA, sample_size, job_length, granularity, utilization_rate, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
