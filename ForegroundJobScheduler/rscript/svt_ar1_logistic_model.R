@@ -24,7 +24,7 @@ generate_expected_conditional_var <- function(expected_avgs, mode, variance_mode
     if (is.numeric(variance_model)) {
       expected_var <- rep(variance_model, length(expected_avgs))
     } else {
-      expected_var <- predict(variance_model, newdata=data.frame("bin"=expected_avgs), type = "response")^2
+      expected_var <- predict(variance_model, newdata=data.frame("bin"=expected_avgs), type = "response")
     }
   } else {
     expected_var <- sapply(expected_avgs, kmeans_find_var, variance_model)
@@ -88,7 +88,7 @@ train_cond_var_model <- function(ts_num, train_set_max, train_set_avg, bin_num, 
     for (i in 1:bin_num) {
       bin_mean <- (i - 1/2) * binsize
       new_parsed_dat <- rbind(new_parsed_dat, c(bin_mean, bin_mean, bin_mean))
-      new_parsed_dat <- rbind(new_parsed_dat, c(bin_mean, 100, bin_mean))
+      #new_parsed_dat <- rbind(new_parsed_dat, c(bin_mean, 100, bin_mean))
     }
     colnames(new_parsed_dat) <- c('avg', 'max', 'bin')
     selected_bins <- new_parsed_dat %>%
@@ -99,17 +99,17 @@ train_cond_var_model <- function(ts_num, train_set_max, train_set_avg, bin_num, 
     new_parsed_dat <- new_parsed_dat %>%
       filter(bin %in% selected_bins) %>%
       group_by(bin) %>% 
-      summarise(sd=sqrt(var(max))) %>%
-      filter(!is.na(sd))
-    sd.lm <- NULL
+      summarise(var=var(max)) %>%
+      filter(!is.na(var))
+    var.lm <- NULL
     if (nrow(new_parsed_dat) >= 3) {
-      sd.lm <- lm(sd~bin+I(bin^2), data = new_parsed_dat)
+      var.lm <- lm(var~bin+I(bin^2), data = new_parsed_dat)
     } else if (nrow(new_parsed_dat) == 2) {
-      sd.lm <- lm(sd~bin, data = new_parsed_dat)
+      var.lm <- lm(var~bin, data = new_parsed_dat)
     } else {
-      sd.lm <- new_parsed_dat$sd^2
+      var.lm <- new_parsed_dat$var
     }
-    return(sd.lm)
+    return(var.lm)
   } else {
     clustering_result <- list()
     avg_silhouette <- c()
@@ -406,7 +406,7 @@ window_sizes <- c(12, 36)
 prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1, 0.125, 0.15, 0.175, 0.2, 0.25)
 granularity <- c(10, 100/32, 100/64, 100/128, 0)
 
-schedule_policy <- "dynamic"
+schedule_policy <- "disjoint"
 
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
 bg_job_pool <- NULL
@@ -458,5 +458,6 @@ parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity)
 colnames(parameter.df) <- c("job_length", "prob_cut_off", "granularity")
 parameter.df <- parameter.df %>% 
   arrange(job_length)
+parameter.df <- parameter.df[9:nrow(parameter.df),]
 
 slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, 1, cond.var, 100, bad.seq.adj, output_dp)
