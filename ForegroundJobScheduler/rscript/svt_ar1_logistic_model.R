@@ -29,7 +29,7 @@ generate_expected_conditional_var <- function(expected_avgs, mode, variance_mode
   } else {
     expected_var <- sapply(expected_avgs, kmeans_find_var, variance_model)
   }
-  return(expected_var)
+  return(max(expected_var, 0))
 }
 
 
@@ -71,7 +71,7 @@ find_bin_obs <- function(avg, binsize) {
   if (avg == 0) {
     return(0)
   }  else {
-    return(ifelse(avg %% binsize == 0, (avg/binsize)-1, avg%/%binsize))
+    return(ifelse(avg %% binsize == 0, (avg/binsize)-1, ceiling(avg / binsize)))
   }
 }
 
@@ -101,6 +101,8 @@ train_cond_var_model <- function(ts_num, train_set_max, train_set_avg, bin_num, 
       group_by(bin) %>% 
       summarise(var=var(max)) %>%
       filter(!is.na(var))
+    new_parsed_dat <- rbind(new_parsed_dat, c(0, 0))
+    new_parsed_dat <- rbind(new_parsed_dat, c(100, 0))
     var.lm <- NULL
     if (nrow(new_parsed_dat) >= 3) {
       var.lm <- lm(var~bin+I(bin^2), data = new_parsed_dat)
@@ -139,9 +141,9 @@ scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, co
   
   seek_length <- window_size
   last_time_schedule <- nrow(test_dataset_avg) - window_size + 1
-
-  update_policy = ifelse(schedule_policy == "disjoint", window_size, 1)
+  
   current_end <- window_size + 1
+  update_policy = ifelse(schedule_policy == "disjoint", window_size, 1)
   while (current_end <= last_time_schedule) {
   
     ## Predict current avgs using AR1
@@ -179,8 +181,14 @@ scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, co
 }
 
 
-find_expected_max <- function(probability, variance, cpu_required) {
-  return(max((100 - cpu_required) - qnorm(p=(1-probability)) * sqrt(variance), 0))
+find_expected_max <- function(probability, variance, cpu_required, expected_avgs) {
+  if (probability == 1) {
+    return(100)
+  } else if (probability == 0) {
+    return(expected_avgs)
+  } else {
+    return(max((100 - cpu_required) - qnorm(p=(1-probability)) * sqrt(variance), expected_avgs))
+  }
 }
 
 
@@ -209,10 +217,17 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs,
     
     prob <- 1 - predict(logistic_model, newdata = data.frame("avg"=expected_avgs), type = "response")
     
-    expected_max <- find_expected_max(prob, expected_vars, cpu_required[ts_num])
+    expected_max <- find_expected_max(prob, expected_vars, cpu_required[ts_num], expected_avgs)
     
     pi_up <- compute_pi_up(mu=expected_max, varcov=as.matrix(expected_vars), predict_size=1, prob_cutoff=prob_cut_off, granularity=granularity)
-    
+    if (is.na(pi_up)) {
+      print(ts_num)
+      print(current_end)
+      print(prob)
+      print(expected_avgs)
+      print(expected_vars)
+      print(cond_var_model)
+    }
     ## Evalute schedulings based on prediction
     start_time <- current_end
     end_time <- current_end + seek_length - 1
@@ -246,7 +261,7 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs,
 }
 
 
-ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob_cut_off, update_freq, window_size, cpu_required, cond.var, granularity, bin_num) {
+ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob_cut_off, update_freq, window_size, cpu_required, cond.var, granularity, bin_num=NULL) {
   #### input dataset_avg, dataset_max: N by M matrix, N being number of observations, M being number of time series
   #### input initial_train_size: The number of first observations used to train the model
   #### input window_size: The number of observations used to train and predict as one sample
@@ -352,6 +367,7 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
   job_length <- as.numeric(parameter[1])
   prob_cut_off <- as.numeric(parameter[2])
   granularity <- as.numeric(parameter[3])
+  bin_num <- as.numeric(parameter[4])
   
   output <- ar_logistic_model(dataset_avg, dataset_max, initial_train_size, prob_cut_off, 1, job_length, cpu_required, cond.var, granularity, bin_num)
   
@@ -405,8 +421,9 @@ cond.var <- "lm"
 window_sizes <- c(12, 36)
 prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1, 0.125, 0.15, 0.175, 0.2, 0.25)
 granularity <- c(10, 100/32, 100/64, 100/128, 0)
+num_of_bins <- c(50, 100, 200)
 
-schedule_policy <- "disjoint"
+schedule_policy <- "dynamic"
 
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
 bg_job_pool <- NULL
@@ -454,10 +471,9 @@ if (bad.seq.adj) {
   }
 }
 
-parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity)
-colnames(parameter.df) <- c("job_length", "prob_cut_off", "granularity")
+parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity, num_of_bins)
+colnames(parameter.df) <- c("job_length", "prob_cut_off", "granularity", "num_of_bins")
 parameter.df <- parameter.df %>% 
   arrange(job_length)
-parameter.df <- parameter.df[9:nrow(parameter.df),]
 
 slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, 1, cond.var, 100, bad.seq.adj, output_dp)

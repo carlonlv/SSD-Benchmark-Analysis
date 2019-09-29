@@ -3,17 +3,18 @@ library("xlsx")
 
 models <- c("AR1", "VAR1", "AR1_logistic_kmeans", "AR1_logistic_lm", "AR1_state_based_logistic")
 statenum <- c(5, 8, 10, 16, 20, 30, 50)
-prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1, 0.125, 0.15, 0.175, 0.2, 0.25)
+prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1, 0.125, 0.15, 0.175, 0.2, 0.25, 0.5, 0.7)
 granularity <- c(10, 100/32, 100/64, 100/128, 0)
 window_size <- c(12, 36)
 sample_size <- c(100, 3000)
+bin_num <- c(50, 100, 200)
 
 prob_ban_pool <- c(0.125, 0.15, 0.175, 0.2, 0.25)
 
 result.dp1 <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity).xlsx"
 result.dp2 <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity) post adj.xlsx"
-result.df <- expand.grid(models, statenum, prob_cut_offs, granularity, window_size, sample_size, KEEP.OUT.ATTRS=FALSE, stringsAsFactors=FALSE)
-colnames(result.df) <- c("Model", "StateNum", "Probability.Cut.Off", "Granularity", "Window.Size", "Sample.Size")
+result.df <- expand.grid(models, statenum, prob_cut_offs, granularity, window_size, sample_size, bin_num, KEEP.OUT.ATTRS=FALSE, stringsAsFactors=FALSE)
+colnames(result.df) <- c("Model", "StateNum", "Probability.Cut.Off", "Granularity", "Window.Size", "Sample.Size", "BinNum")
 result.df$Avg.Cycle.Usage <- NA
 result.df$Survival.Rate <- NA
 result.df$Correctly.Scheduled <- NA
@@ -21,6 +22,7 @@ result.df$Correctly.Unscheduled <- NA
 
 result.df <- result.df %>%
   mutate(StateNum=ifelse(Model=="AR1_state_based_logistic", StateNum, 0)) %>%
+  mutate(BinNum=ifelse(Model=="AR1_logistic_lm", BinNum, 0)) %>%
   mutate(Probability.Cut.Off=ifelse(Model!="AR1_logistic_kmeans" & Model!="AR1_logistic_lm" & Probability.Cut.Off%in%prob_ban_pool, NA, Probability.Cut.Off)) %>%
   filter(!is.na(Probability.Cut.Off)) %>%
   distinct() %>%

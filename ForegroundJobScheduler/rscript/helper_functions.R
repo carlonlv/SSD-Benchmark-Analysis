@@ -89,64 +89,96 @@ find_evaluation <- function(pi_up, actual_obs, granularity=0) {
 }
 
 
-update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num, sample_size, window_size, granularity,utilization, survival, correct_scheduled_rate, correct_unscheduled_rate) {
-  if (is.na(state_num)) {
-    xlsx_file <- xlsx_file %>%
-      mutate(Avg.Cycle.Usage = ifelse(Model == model_name & 
-                                        Probability.Cut.Off == prob_cut_off & 
-                                        Sample.Size == sample_size &
-                                        Window.Size == window_size &
-                                        Granularity == granularity, 
-                                      utilization, Avg.Cycle.Usage)) %>%
-      mutate(Survival.Rate = ifelse(Model == model_name & 
+update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num, sample_size, window_size, granularity, bin_num, utilization, survival, correct_scheduled_rate, correct_unscheduled_rate) {
+  #if (is.na(state_num)) {
+    #xlsx_file <- xlsx_file %>%
+      #mutate(Avg.Cycle.Usage = ifelse(Model == model_name & 
+                                        #Probability.Cut.Off == prob_cut_off & 
+                                        #Sample.Size == sample_size &
+                                        #Window.Size == window_size &
+                                        #Granularity == granularity, 
+                                      #utilization, Avg.Cycle.Usage)) %>%
+      #mutate(Survival.Rate = ifelse(Model == model_name & 
+                                      #Probability.Cut.Off == prob_cut_off & 
+                                      #Sample.Size == sample_size &
+                                      #Window.Size == window_size &
+                                      #Granularity == granularity, 
+                                    #survival, Survival.Rate)) %>%
+      #mutate(Correctly.Scheduled = ifelse(Model == model_name & 
+                                            #Probability.Cut.Off == prob_cut_off & 
+                                            #Sample.Size == sample_size &
+                                            #Window.Size == window_size &
+                                            #Granularity == granularity, 
+                                          #correct_scheduled_rate, Correctly.Scheduled)) %>%
+      #mutate(Correctly.Unscheduled = ifelse(Model == model_name & 
+                                              #Probability.Cut.Off == prob_cut_off & 
+                                              #Sample.Size == sample_size &
+                                              #Window.Size == window_size &
+                                              #Granularity == granularity, 
+                                            #correct_unscheduled_rate, Correctly.Unscheduled))
+  #} else {
+    #xlsx_file <- xlsx_file %>%
+      #mutate(Avg.Cycle.Usage = ifelse(Model == model_name & 
+                                        #Probability.Cut.Off == prob_cut_off & 
+                                        #Sample.Size == sample_size &
+                                        #StateNum == state_num & 
+                                        #Window.Size == window_size &
+                                        #Granularity == granularity, 
+                                      #utilization, Avg.Cycle.Usage)) %>%
+      #mutate(Survival.Rate = ifelse(Model == model_name & 
+                                      #Probability.Cut.Off == prob_cut_off & 
+                                      #Sample.Size == sample_size &
+                                      #StateNum == state_num & 
+                                      #Window.Size == window_size &
+                                      #Granularity == granularity, 
+                                    #survival, Survival.Rate)) %>%
+      #mutate(Correctly.Scheduled = ifelse(Model == model_name & 
+                                            #Probability.Cut.Off == prob_cut_off & 
+                                            #Sample.Size == sample_size &
+                                            #StateNum == state_num & 
+                                            #Window.Size == window_size &
+                                            #Granularity == granularity, 
+                                          #correct_scheduled_rate, Correctly.Scheduled)) %>%
+      #mutate(Correctly.Unscheduled = ifelse(Model == model_name & 
+                                              #Probability.Cut.Off == prob_cut_off & 
+                                              #Sample.Size == sample_size &
+                                              #StateNum == state_num & 
+                                              #Window.Size == window_size &
+                                              #Granularity == granularity, 
+                                            #correct_unscheduled_rate, Correctly.Unscheduled))
+  #}
+  xlsx_file <- xlsx_file %>%
+    mutate(Avg.Cycle.Usage = ifelse(Model == model_name & 
                                       Probability.Cut.Off == prob_cut_off & 
                                       Sample.Size == sample_size &
                                       Window.Size == window_size &
-                                      Granularity == granularity, 
-                                    survival, Survival.Rate)) %>%
-      mutate(Correctly.Scheduled = ifelse(Model == model_name & 
+                                      Granularity == granularity &
+                                      ifelse(is.na(state_num), TRUE, StateNum == state_num), 
+                                    utilization, Avg.Cycle.Usage)) %>%
+    mutate(Survival.Rate = ifelse(Model == model_name & 
+                                    Probability.Cut.Off == prob_cut_off & 
+                                    Sample.Size == sample_size &
+                                    Window.Size == window_size &
+                                    Granularity == granularity &
+                                    ifelse(is.na(state_num), TRUE, StateNum == state_num) &
+                                    ifelse(is.na(bin_num), TRUE, BinNum == bin_num),
+                                  survival, Survival.Rate)) %>%
+    mutate(Correctly.Scheduled = ifelse(Model == model_name & 
+                                          Probability.Cut.Off == prob_cut_off & 
+                                          Sample.Size == sample_size &
+                                          Window.Size == window_size &
+                                          Granularity == granularity &
+                                          ifelse(is.na(state_num), TRUE, StateNum == state_num) &
+                                          ifelse(is.na(bin_num), TRUE, BinNum == bin_num),
+                                        correct_scheduled_rate, Correctly.Scheduled)) %>%
+    mutate(Correctly.Unscheduled = ifelse(Model == model_name & 
                                             Probability.Cut.Off == prob_cut_off & 
                                             Sample.Size == sample_size &
                                             Window.Size == window_size &
-                                            Granularity == granularity, 
-                                          correct_scheduled_rate, Correctly.Scheduled)) %>%
-      mutate(Correctly.Unscheduled = ifelse(Model == model_name & 
-                                              Probability.Cut.Off == prob_cut_off & 
-                                              Sample.Size == sample_size &
-                                              Window.Size == window_size &
-                                              Granularity == granularity, 
-                                            correct_unscheduled_rate, Correctly.Unscheduled))
-  } else {
-    xlsx_file <- xlsx_file %>%
-      mutate(Avg.Cycle.Usage = ifelse(Model == model_name & 
-                                        Probability.Cut.Off == prob_cut_off & 
-                                        Sample.Size == sample_size &
-                                        StateNum == state_num & 
-                                        Window.Size == window_size &
-                                        Granularity == granularity, 
-                                      utilization, Avg.Cycle.Usage)) %>%
-      mutate(Survival.Rate = ifelse(Model == model_name & 
-                                      Probability.Cut.Off == prob_cut_off & 
-                                      Sample.Size == sample_size &
-                                      StateNum == state_num & 
-                                      Window.Size == window_size &
-                                      Granularity == granularity, 
-                                    survival, Survival.Rate)) %>%
-      mutate(Correctly.Scheduled = ifelse(Model == model_name & 
-                                            Probability.Cut.Off == prob_cut_off & 
-                                            Sample.Size == sample_size &
-                                            StateNum == state_num & 
-                                            Window.Size == window_size &
-                                            Granularity == granularity, 
-                                          correct_scheduled_rate, Correctly.Scheduled)) %>%
-      mutate(Correctly.Unscheduled = ifelse(Model == model_name & 
-                                              Probability.Cut.Off == prob_cut_off & 
-                                              Sample.Size == sample_size &
-                                              StateNum == state_num & 
-                                              Window.Size == window_size &
-                                              Granularity == granularity, 
-                                            correct_unscheduled_rate, Correctly.Unscheduled))
-  }
+                                            Granularity == granularity &
+                                            ifelse(is.na(state_num), TRUE, StateNum == state_num) &
+                                            ifelse(is.na(bin_num), TRUE, BinNum == bin_num),
+                                          correct_unscheduled_rate, Correctly.Unscheduled))
   return(xlsx_file)
 }
 
