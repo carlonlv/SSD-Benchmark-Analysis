@@ -3,13 +3,13 @@ library("xlsx")
 
 models <- c("AR1", "VAR1", "AR1_logistic_kmeans", "AR1_logistic_lm", "AR1_state_based_logistic")
 statenum <- c(5, 8, 10, 16, 20, 30, 50)
-prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1, 0.125, 0.15, 0.175, 0.2, 0.25, 0.5, 0.7)
+prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1, 0.5, 0.75)
 granularity <- c(10, 100/32, 100/64, 100/128, 0)
 window_size <- c(12, 36)
 sample_size <- c(100, 3000)
-bin_num <- c(50, 100, 200)
+bin_num <- c(100, 200)
 
-prob_ban_pool <- c(0.125, 0.15, 0.175, 0.2, 0.25)
+prob_ban_pool <- c(0.5, 0.75)
 
 result.dp1 <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity).xlsx"
 result.dp2 <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity) post adj.xlsx"

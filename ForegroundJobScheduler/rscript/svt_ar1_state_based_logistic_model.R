@@ -80,7 +80,7 @@ calculate_probability_foreground <- function(probability, cpu_required, num_of_s
   if (cpu_required == 0) {
     state <- 1
   } else {
-    state <- ifelse(cpu_required % binsize == 0, cpu_required %/% binsize - 1, ceiling(cpu_required / binsize))
+    state <- ifelse(cpu_required %% binsize == 0, cpu_required %/% binsize - 1, ceiling(cpu_required / binsize))
   }
   return(probability[state])
 }

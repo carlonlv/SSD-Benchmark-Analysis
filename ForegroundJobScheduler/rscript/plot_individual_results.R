@@ -15,17 +15,67 @@ make_plot <- function(info_df, sample_size, window_size) {
 }
 
 
-read_runs <- function(result_folder_path, model_name, window_size, sample_size, variable_name, variable_range, other_param) {
+read_runs <- function(result_folder_path, variable_name, param_list) {
   
+  sample_size <- param_list[["Sample.Size"]]
+  window_size <- param_list[["Window.Size"]]
+  model_name <- param_list[["Model"]]
+  
+  response <- param_list[[variable_name]]
   if (variable_name == "prob_cut_off") {
+    
+    granularity <- param_list[["Granularity"]]
+    state_num <- param_list[["StateNum"]]
+    bin_num <- param_list[["BinNum"]]
+    
   } else if (variable_name == "granularity") {
+    
+    state_num <- param_list[["StateNum"]]
+    bin_num <- param_list[["BinNum"]]
+    prob_cutoff <- param_list[["Probability.Cut.Off"]]
   } else if (variable_name == "state_num") {
+    
+    granularity <- param_list[["Granularity"]]
+    bin_num <- param_list[["BinNum"]]
+    prob_cutoff <- param_list[["Probability.Cut.Off"]]
   } else if (variable_name == "bin_num") {
+    
+    granularity <- param_list[["Granularity"]]
+    state_num <- param_list[["StateNum"]]
+    prob_cutoff <- param_list[["Probability.Cut.Off"]]
   }
+  
+  if (model_name != "AR1_state_based_logistic") {
+    state_num <- NA
+  }
+  
+  if (model_name != "AR1_logistic_lm") {
+    bin_num <- NA
+  }
+  
+  
+  total_runs <- data.frame()
+  for (i in response) {
+    filename <- NULL
+    if (variable_name == "prob_cut_off") {
+      filename <- paste("Overall Runs", "AR1_logistic_lm", sample_size, window_size, i, granularity, state_num, bin_num, ".csv")
+    } else if (variable_name == "granularity") {
+      filename <- paste("Overall Runs", "AR1_logistic_lm", sample_size, window_size, prob_cutoff, i, state_num, bin_num, ".csv")
+    } else if (variable_name == "state_num") {
+      filename <- paste("Overall Runs", "AR1_logistic_lm", sample_size, window_size, prob_cutoff, granularity, i, bin_num, ".csv")
+    } else if (variable_name == "bin_num") {
+      filename <- paste("Overall Runs", "AR1_logistic_lm", sample_size, window_size, prob_cutoff, granularity, state_num, i, ".csv")
+    }
+    runs <- read.csv(paste(result_folder_path, filename, sep=""))
+    runs <- colSums(runs)
+    
+    total_runs <- rbind(runs)
+  }
+  rownames(total_runs) <- response
+  colnames(total_runs) <- 1:20
+  
+  return(total_runs)
 }
-
-
-generate_info_df <- function()
 
 
 result_folder_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//maxes//"

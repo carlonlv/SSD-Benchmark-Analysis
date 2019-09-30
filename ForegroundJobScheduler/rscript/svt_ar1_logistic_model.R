@@ -85,11 +85,11 @@ train_cond_var_model <- function(ts_num, train_set_max, train_set_avg, bin_num, 
     for (i in 1:nrow(train_set_avg)) {
       new_parsed_dat[i,] = c(train_set_avg[i, ts_num], train_set_max[i, ts_num], bin[i])
     }
-    for (i in 1:bin_num) {
-      bin_mean <- (i - 1/2) * binsize
-      new_parsed_dat <- rbind(new_parsed_dat, c(bin_mean, bin_mean, bin_mean))
+    #for (i in 1:bin_num) {
+      #bin_mean <- (i - 1/2) * binsize
+      #new_parsed_dat <- rbind(new_parsed_dat, c(bin_mean, bin_mean, bin_mean))
       #new_parsed_dat <- rbind(new_parsed_dat, c(bin_mean, 100, bin_mean))
-    }
+    #}
     colnames(new_parsed_dat) <- c('avg', 'max', 'bin')
     selected_bins <- new_parsed_dat %>%
       group_by(bin) %>%
@@ -220,14 +220,7 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs,
     expected_max <- find_expected_max(prob, expected_vars, cpu_required[ts_num], expected_avgs)
     
     pi_up <- compute_pi_up(mu=expected_max, varcov=as.matrix(expected_vars), predict_size=1, prob_cutoff=prob_cut_off, granularity=granularity)
-    if (is.na(pi_up)) {
-      print(ts_num)
-      print(current_end)
-      print(prob)
-      print(expected_avgs)
-      print(expected_vars)
-      print(cond_var_model)
-    }
+
     ## Evalute schedulings based on prediction
     start_time <- current_end
     end_time <- current_end + seek_length - 1
@@ -362,12 +355,17 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
 }
 
 
-wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, initial_train_size, update_freq, cond.var, bin_num, bad.seq.adj, output_dp) {
+wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, initial_train_size, update_freq, cond.var, bin_num, adjustment, output_dp) {
   
   job_length <- as.numeric(parameter[1])
   prob_cut_off <- as.numeric(parameter[2])
   granularity <- as.numeric(parameter[3])
   bin_num <- as.numeric(parameter[4])
+  
+  print(paste("Job len:", job_length))
+  print(paste("Cut off prob:", prob_cut_off))
+  print(paste("Granularity:", granularity))
+  print(paste("BinNum:", bin_num))
   
   output <- ar_logistic_model(dataset_avg, dataset_max, initial_train_size, prob_cut_off, 1, job_length, cpu_required, cond.var, granularity, bin_num)
   
@@ -391,7 +389,7 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
   if (cond.var == "lm") {
     
     if (schedule_policy == "dynamic") {
-     write.csv(output$overall_runs, paste("Overall Runs", "AR1_logistic_lm", sample_size, job_length, prob_cut_off, granularity, ".csv"))
+     write.csv(output$overall_runs, paste("Overall Runs", "AR1_logistic_lm", sample_size, job_length, prob_cut_off, granularity, bin_num, ".csv"))
     }
     result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
     result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1_logistic_lm", prob_cut_off, 0, sample_size, job_length, granularity, bin_num, utilization_rate, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
@@ -415,13 +413,13 @@ sample_size <- 100
 cpu_usage <- 3
 total_trace_length <- 8000
 initial_train_size <- 6000
-bad.seq.adj <- FALSE
+adjustment <- FALSE
 cond.var <- "lm"
 
 window_sizes <- c(12, 36)
-prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1, 0.125, 0.15, 0.175, 0.2, 0.25)
-granularity <- c(10, 100/32, 100/64, 100/128, 0)
-num_of_bins <- c(50, 100, 200)
+prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1, 0.5, 0.75)
+granularity <- c(10, 100/32, 100/128, 0)
+num_of_bins <- c(100, 200)
 
 schedule_policy <- "dynamic"
 
@@ -453,7 +451,7 @@ for (j in 1:ncol(data_matrix_max)) {
 }
 
 output_dp <- NULL
-if (bad.seq.adj) {
+if (adjustment) {
   #output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max post adj.xlsx"
   
   if (schedule_policy == "dynamic") {
@@ -476,4 +474,4 @@ colnames(parameter.df) <- c("job_length", "prob_cut_off", "granularity", "num_of
 parameter.df <- parameter.df %>% 
   arrange(job_length)
 
-slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, 1, cond.var, 100, bad.seq.adj, output_dp)
+slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, 1, cond.var, 100, adjustment, output_dp)
