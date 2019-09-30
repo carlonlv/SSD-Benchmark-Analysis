@@ -385,7 +385,7 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
   if (schedule_policy == "dynamic") {
     write.csv(output$overall_runs, paste("Overall Runs", "VAR1", sample_size, window_size, prob_cut_off, granularity, ".csv"))
   }
-  result_path.xlsx <- update.xlsx.df(result_path.xlsx, "VAR1", prob_cut_off, NA, sample_size, window_size, granularity, utilization_rate, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
+  result_path.xlsx <- update.xlsx.df(result_path.xlsx, "VAR1", prob_cut_off, 0, sample_size, window_size, granularity, 0, utilization_rate, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
   write.xlsx(result_path.xlsx, showNA = FALSE, file = output_dp, row.names = FALSE) 
 }
 

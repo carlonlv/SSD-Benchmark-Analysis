@@ -394,7 +394,7 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
      write.csv(output$overall_runs, paste("Overall Runs", "AR1_logistic_lm", sample_size, job_length, prob_cut_off, granularity, ".csv"))
     }
     result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
-    result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1_logistic_lm", prob_cut_off, NA, sample_size, job_length, granularity, utilization_rate, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
+    result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1_logistic_lm", prob_cut_off, 0, sample_size, job_length, granularity, bin_num, utilization_rate, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
     write.xlsx(result_path.xlsx, showNA = FALSE, file = output_dp, row.names = FALSE)
     
   } else {
@@ -403,7 +403,7 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
      write.csv(output$overall_runs, paste("Overall Runs", "AR1_logistic_kmeans", sample_size, job_length, prob_cut_off, granularity, ".csv"))
     }
     result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
-    result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1_logistic_kmeans", prob_cut_off, NA, sample_size, job_length, granularity, utilization_rate, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
+    result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1_logistic_kmeans", prob_cut_off, 0, sample_size, job_length, granularity, bin_num, utilization_rate, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
     write.xlsx(result_path.xlsx, showNA = FALSE, file = output_dp, row.names = FALSE)
   }
 }
