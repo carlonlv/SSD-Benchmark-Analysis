@@ -22,9 +22,9 @@ generate_expected_conditional_var <- function(expected_avgs, mode, variance_mode
   expected_var <- c()
   if (mode == "lm") {
     if (is.numeric(variance_model)) {
-      expected_var <- rep(variance_model, length(expected_avgs))
+      expected_var <- rep(variance_model^2, length(expected_avgs))
     } else {
-      expected_var <- predict(variance_model, newdata=data.frame("bin"=expected_avgs), type = "response")
+      expected_var <- predict(variance_model, newdata=data.frame("bin"=expected_avgs), type = "response")^2
     }
   } else {
     expected_var <- sapply(expected_avgs, kmeans_find_var, variance_model)
@@ -68,50 +68,43 @@ do_prediction <- function(last_obs, phi, mean, variance) {
 
 
 find_bin_obs <- function(avg, binsize) {
-  if (avg == 0) {
-    return(0)
-  }  else {
-    return(ifelse(avg %% binsize == 0, (avg/binsize)-1, ceiling(avg / binsize)))
-  }
+  return(floor(avg / binsize))
 }
 
 
 train_cond_var_model <- function(ts_num, train_set_max, train_set_avg, bin_num, method) {
   if (method == "lm") {
+    
     new_parsed_dat <- data.frame(matrix(nrow=nrow(train_set_avg), ncol=3))
     binsize <- 100 / bin_num
     bin <- as.numeric(sapply(train_set_avg[,ts_num], find_bin_obs, binsize))
-    bin <- (bin + 1/2) * binsize
+    bin <- bin * binsize
     for (i in 1:nrow(train_set_avg)) {
       new_parsed_dat[i,] = c(train_set_avg[i, ts_num], train_set_max[i, ts_num], bin[i])
     }
-    #for (i in 1:bin_num) {
-      #bin_mean <- (i - 1/2) * binsize
-      #new_parsed_dat <- rbind(new_parsed_dat, c(bin_mean, bin_mean, bin_mean))
-      #new_parsed_dat <- rbind(new_parsed_dat, c(bin_mean, 100, bin_mean))
-    #}
+    
     colnames(new_parsed_dat) <- c('avg', 'max', 'bin')
     selected_bins <- new_parsed_dat %>%
       group_by(bin) %>%
       count()
     
-    selected_bins <- subset(selected_bins, selected_bins$n >= 5)$bin
+    selected_bins <- subset(selected_bins, selected_bins$n >= 3)$bin
+    selected_bins <- new_parsed_dat$bin
     new_parsed_dat <- new_parsed_dat %>%
       filter(bin %in% selected_bins) %>%
       group_by(bin) %>% 
-      summarise(var=var(max)) %>%
-      filter(!is.na(var))
-    new_parsed_dat <- rbind(new_parsed_dat, c(0, 0))
-    new_parsed_dat <- rbind(new_parsed_dat, c(100, 0))
-    var.lm <- NULL
+      summarise(sd=sqrt(var(max))) %>%
+      filter(!is.na(sd))
+    
+    sd.lm <- NULL
     if (nrow(new_parsed_dat) >= 3) {
-      var.lm <- lm(var~bin+I(bin^2), data = new_parsed_dat)
+      sd.lm <- lm(sd~bin+I(bin^2), data = new_parsed_dat)
     } else if (nrow(new_parsed_dat) == 2) {
-      var.lm <- lm(var~bin, data = new_parsed_dat)
+      sd.lm <- lm(sd~bin, data = new_parsed_dat)
     } else {
-      var.lm <- new_parsed_dat$var
+      sd.lm <- new_parsed_dat$sd
     }
-    return(var.lm)
+    return(sd.lm)
   } else {
     clustering_result <- list()
     avg_silhouette <- c()
@@ -192,7 +185,7 @@ find_expected_max <- function(probability, variance, cpu_required, expected_avgs
 }
 
 
-scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, cond_var_models, cond.var, window_size, prob_cut_off, granularity, schedule_policy) {
+scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, cond_var_models, cond.var, window_size, prob_cut_off, cpu_required, granularity, schedule_policy) {
   utilization <- c()
   survival <- c()
   runs <- rep(0, 20)
@@ -207,6 +200,13 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs,
   
   current_end <- window_size + 1
   update_policy <- ifelse(schedule_policy == "disjoint", window_size, 1)
+  
+  avgs <- c()
+  vars <- c()
+  probs <- c()
+  maxes <- c()
+  pi_ups <- c()
+  
   while (current_end <= last_time_schedule) {
     ## Schedule based on model predictions
     last_obs <- convert_frequency_dataset(test_dataset_avg[(current_end-window_size):(current_end-1), ts_num], window_size, mode = 'avg')
@@ -246,6 +246,13 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs,
         run_counter <- run_counter + 1
       }
     }
+    avgs <- c(avgs, expected_avgs)
+    vars <- c(vars, expected_vars)
+    probs <- c(probs, prob)
+    maxes <- c(maxes, expected_max)
+    pi_ups <- c(pi_ups, pi_up)
+    
+    
     current_end <- current_end + update_policy
   }
   
@@ -316,7 +323,7 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   result_foreground <- sapply(1:length(ts_names), scheduling_foreground, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, cpu_required, granularity, schedule_policy)
   
   print("Testing on Model:")
-  result_model <- sapply(1:length(ts_names), scheduling_model, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, cond_var_models, cond.var, window_size, prob_cut_off, granularity, schedule_policy, simplify=FALSE)
+  result_model <- sapply(1:length(ts_names), scheduling_model, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, cond_var_models, cond.var, window_size, prob_cut_off, cpu_required, granularity, schedule_policy, simplify=FALSE)
   
   scheduled_num <- cbind(scheduled_num, unlist(result_foreground[1,]))
   unscheduled_num <- cbind(unscheduled_num, unlist(result_foreground[2,]))
@@ -419,7 +426,7 @@ cond.var <- "lm"
 window_sizes <- c(12, 36)
 prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1, 0.5, 0.75)
 granularity <- c(10, 100/32, 100/128, 0)
-num_of_bins <- c(100, 200)
+num_of_bins <- c(1000)
 
 schedule_policy <- "dynamic"
 

@@ -36,7 +36,7 @@ round_to_nearest <- function(data, divisor, lower) {
 compute_pi_up <- function(mu, varcov, predict_size, prob_cutoff, granularity) {
   upper_bounds <- rep(NA, predict_size)
   for (i in 1:predict_size) {
-    upper_bounds[i] <- min(mu[i] + qnorm((1-prob_cutoff), 0, 1) * sqrt(varcov[i,i]), 100)
+    upper_bounds[i] <- min(mu[i] + qnorm((1-prob_cutoff)) * sqrt(varcov[i,i]), 100)
   }
   if (granularity > 0) {
     scheduled_size <- sapply(100 - upper_bounds, round_to_nearest, granularity, TRUE)

@@ -7,7 +7,7 @@ prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1, 0.5, 0.75)
 granularity <- c(10, 100/32, 100/64, 100/128, 0)
 window_size <- c(12, 36)
 sample_size <- c(100, 3000)
-bin_num <- c(100, 200)
+bin_num <- c(1000, 500)
 
 prob_ban_pool <- c(0.5, 0.75)
 
