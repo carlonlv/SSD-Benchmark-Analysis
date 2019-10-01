@@ -423,10 +423,10 @@ initial_train_size <- 6000
 adjustment <- FALSE
 cond.var <- "lm"
 
-window_sizes <- c(12, 36)
+window_sizes <- c(12)
 prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1, 0.5, 0.75)
 granularity <- c(10, 100/32, 100/128, 0)
-num_of_bins <- c(1000)
+num_of_bins <- c(1000, 500)
 
 schedule_policy <- "dynamic"
 

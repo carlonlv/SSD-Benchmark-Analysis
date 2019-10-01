@@ -26,11 +26,11 @@ plot_results <- function(model_results, sample_size, window_size, model_name="NU
   }
 }
 
-ar_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows,granularity).xlsx"
+ar_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity).xlsx"
 #ar_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows,granularity) post adj.xlsx"
 #mc_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//mc summary granularity.csv"
-sample_size <- 3000
-window_size <- 36
+sample_size <- 100
+window_size <- 12
 
 ar_xlsx <- read.xlsx(ar_data_path, sheetIndex = 1)
 #mc_xlsx <- read.csv(mc_data_path)
@@ -39,6 +39,6 @@ ar_xlsx <- read.xlsx(ar_data_path, sheetIndex = 1)
 plot_results(ar_xlsx, sample_size, window_size)
 #plot_results(mc_xlsx, sample_size, window_size)
 
-ar_logistic_lm_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary AR1_logistic_lm.xlsx"
-ar_logistic_lm_xlsx <- read.xlsx(ar_logistic_lm_data_path, sheetIndex = 1)
-plot_results(ar_logistic_lm_xlsx, sample_size, window_size, "ar_logistic_lm")
+#ar_logistic_lm_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary AR1_logistic_lm.xlsx"
+#ar_logistic_lm_xlsx <- read.xlsx(ar_logistic_lm_data_path, sheetIndex = 1)
+#plot_results(ar_logistic_lm_xlsx, sample_size, window_size, "ar_logistic_lm")
