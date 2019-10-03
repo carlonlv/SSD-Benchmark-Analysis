@@ -362,7 +362,7 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
 }
 
 
-wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, initial_train_size, update_freq, cond.var, bin_num, adjustment, output_dp) {
+wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, initial_train_size, update_freq, cond.var, bin_num, adjustment, output_dp, schedule_policy) {
   
   job_length <- as.numeric(parameter[1])
   prob_cut_off <- as.numeric(parameter[2])
@@ -423,9 +423,9 @@ initial_train_size <- 6000
 adjustment <- FALSE
 cond.var <- "lm"
 
-window_sizes <- c(12)
+window_sizes <- c(12, 36)
 prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1, 0.5, 0.75)
-granularity <- c(10, 100/32, 100/128, 0)
+granularity <- c(10, 100/32, 100/64, 100/128, 0)
 num_of_bins <- c(1000, 500)
 
 schedule_policy <- "dynamic"
@@ -481,4 +481,4 @@ colnames(parameter.df) <- c("job_length", "prob_cut_off", "granularity", "num_of
 parameter.df <- parameter.df %>% 
   arrange(job_length)
 
-slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, 1, cond.var, 100, adjustment, output_dp)
+slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, 1, cond.var, 100, adjustment, output_dp, schedule_policy)
