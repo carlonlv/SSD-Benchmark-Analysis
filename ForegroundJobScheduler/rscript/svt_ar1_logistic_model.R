@@ -415,7 +415,6 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
 
 
 ## Read back ground job pool
-
 sample_size <- 100
 cpu_usage <- 3
 total_trace_length <- 8000
