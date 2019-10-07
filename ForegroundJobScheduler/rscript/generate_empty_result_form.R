@@ -2,9 +2,9 @@ library("dplyr")
 library("xlsx")
 
 models <- c("AR1", "VAR1", "AR1_logistic_kmeans", "AR1_logistic_lm", "AR1_state_based_logistic")
-statenum <- c(5, 8, 10, 16, 20, 30, 50)
-prob_cut_offs <- c(0.005, 0.01, 0.02, 0.1, 0.5, 0.75)
-granularity <- c(10, 100/32, 100/64, 100/128, 0)
+statenum <- c(10, 20, 50)
+prob_cut_offs <- c(0.005, 0.01, 0.1, 0.75)
+granularity <- c(100/32, 100/64, 100/128, 0)
 window_size <- c(12, 36)
 sample_size <- c(100, 3000)
 bin_num <- c(1000, 500)
@@ -15,7 +15,8 @@ result.dp1 <- "C://Users//carlo//Documents//GitHub//Research-Projects//Foregroun
 result.dp2 <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity) post adj.xlsx"
 result.df <- expand.grid(models, statenum, prob_cut_offs, granularity, window_size, sample_size, bin_num, KEEP.OUT.ATTRS=FALSE, stringsAsFactors=FALSE)
 colnames(result.df) <- c("Model", "StateNum", "Probability.Cut.Off", "Granularity", "Window.Size", "Sample.Size", "BinNum")
-result.df$Avg.Cycle.Usage <- NA
+result.df$Avg.Cycle.Usage1 <- NA
+result.df$Avg.Cycle.Usage2 <- NA
 result.df$Survival.Rate <- NA
 result.df$Correctly.Scheduled <- NA
 result.df$Correctly.Unscheduled <- NA

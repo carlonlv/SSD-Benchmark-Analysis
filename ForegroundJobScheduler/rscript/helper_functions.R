@@ -7,7 +7,6 @@ library("xlsx")
 
 convert_frequency_dataset <- function(dataset, new_freq, mode) {
   new_avg_cpu <- c()
-  window_num <- NULL
   window_num <- floor(length(dataset) / new_freq)
   for (i in 1:window_num) {
     from <- (i - 1) * new_freq + 1
@@ -46,59 +45,118 @@ compute_pi_up <- function(mu, varcov, predict_size, prob_cutoff, granularity) {
 }
 
 
-find_evaluation <- function(pi_up, actual_obs, granularity=0) {
+check_utilization <- function(pi_up, granularity=0) {
+  utilization <- round_to_nearest(100-pi_up, granularity, TRUE)
+  return(utilization)
+}
+
+
+check_survival <- function(pi_up, actual_obs, granularity=0) {
   if (granularity != 0) {
-    actual_available <- round_to_nearest(100 - actual_obs, granularity, TRUE)
+    actual_available <- round_to_nearest(100-actual_obs, granularity, TRUE)
     actual_obs <- 100 - actual_available
   }
-  usage <- c()
   survival <- c()
   for (i in 1:length(pi_up)) {
     if (granularity == 0) {
-      if ((100 - pi_up[i]) == 0 & (100 - actual_obs[i]) == 0) {
+      if ((100 - pi_up[i]) == 0) {
         survival[i] <- NA
-        usage[i] <- NA
       } else {
         survival[i] <- ifelse(actual_obs[i] <= pi_up[i], 1, 0)
-        usage[i] <- ifelse(survival[i] == 0, NA, ifelse(actual_obs[i] == pi_up[i], NA, (100 - pi_up[i]) / (100 - actual_obs[i])))
       }
     } else {
       if ((100 - pi_up[i]) < granularity) {
-        if ((100 - actual_obs[i]) < granularity) {
-          survival[i] <- NA
-          usage[i] <- NA
-        } else {
-          survival[i] <- 1
-          usage[i] <- 0
-        }
+        survival[i] <- NA
       } else {
         if ((100 - actual_obs[i]) < granularity) {
           survival[i] <- 0
-          usage[i] <- NA
         } else {
           survival[i] <- ifelse(actual_obs[i] <= pi_up[i], 1, 0)
-          usage[i] <- ifelse(survival[i] == 0, NA, ifelse(actual_obs[i] == pi_up[i], NA, (100 - pi_up[i]) / (100 - actual_obs[i])))
         }
       }
     }
   }
-  avg_usage <- mean(usage, na.rm=TRUE)
-  overall_survival <- ifelse(any(is.na(survival)), NA, ifelse(any(survival == 0), 0, 1))
-  result <- list('usage' = avg_usage, 'survival'= overall_survival)
-  return(result)
+  return(survival)
 }
 
 
-update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num=0, sample_size, window_size, granularity, bin_num=0, utilization, survival, correct_scheduled_rate, correct_unscheduled_rate) {
+overlapping_total_utilization <- function(idx, actual_obs, window_size, mode) {
+  position_vec <- actual_obs[idx:(idx+window_size-1)]
+  total_available <- NULL
+  if (mode == 1) {
+    newmax <- convert_frequency_dataset(position_vec, window_size, 'max')
+    total_available <- 100 - newmax
+  } else {
+    total_available <- 100 - position_vec
+  }
+  return(total_available)
+}
+
+
+dynamic_total_utilization <- function(actual_obs, survivals, window_size) {
+  current <- 1
+  idx <- 1
+  total_utilization <- 0
+  while(current <= (length(actual_obs) - window_size + 1)) {
+    new_max <- convert_frequency_dataset(actual_obs[current:(current+window_size-1)], window_size, "max")
+    actual_utilization <- ifelse(is.na(survivals[current]) | survivals[current]==0, 100-actual_obs[current], (100-new_max)*window_size)
+    total_utilization <- total_utilization + actual_utilization
+    current <- ifelse(is.na(survivals[current]) | survivals[current]==0, current+1, current+window_size)
+    idx <- idx + 1
+  }
+  return(total_utilization)
+}
+
+
+compute_survival <- function(survival) {
+  return(sum(survival, na.rm = TRUE) / length(survival[!is.na(survival)]))
+}
+
+
+compute_utilization <- function(pi_ups, survivals, actual_obs, window_size, granularity, schedule_policy) {
+  if (granularity != 0) {
+    actual_available <- round_to_nearest(100 - actual_obs, granularity, TRUE)
+    actual_obs <- 100 - actual_available
+  }
+  total_available1 <- NULL
+  total_available2 <- NULL
+  
+  if (schedule_policy == "overlap"){
+    total_available1 <- sapply(1:(length(actual_obs)-window_size), overlapping_total_utilization, actual_obs, window_size, 1)
+    total_available1 <- sum(total_available1) * window_size
+    total_available2 <- sapply(1:(length(actual_obs)-window_size), overlapping_total_utilization, actual_obs, window_size, 2)
+    total_available1 <- sum(total_available2)
+  } else if (schedule_policy == "dynamic") {
+    total_available1 <- dynamic_total_utilization(actual_obs, survivals, window_size)
+    total_available2 <- sum(100 - actual_obs)
+  } else {
+    new_max <- convert_frequency_dataset(actual_obs, window_size, 'max')
+    total_available1 <- sum(100 - new_max) * window_size
+    total_available2 <- sum(100 - actual_obs)
+  }
+  actual_used <- ifelse(is.na(survivals) | survivals==0, 0, 100-pi_ups) * window_size
+  return(list("utilization1"=(sum(actual_used) / total_available1), "utilization2"=(sum(actual_used) / total_available2)))
+}
+
+
+update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num=0, sample_size, window_size, granularity, bin_num=0, utilization1, utilization2, survival, correct_scheduled_rate, correct_unscheduled_rate) {
   xlsx_file <- xlsx_file %>%
-    mutate(Avg.Cycle.Usage = ifelse(Model == model_name & 
+    mutate(Avg.Cycle.Usage1 = ifelse(Model == model_name & 
                                       Probability.Cut.Off == prob_cut_off & 
                                       Sample.Size == sample_size &
                                       Window.Size == window_size &
                                       Granularity == granularity &
                                       StateNum == state_num &
                                       BinNum == bin_num,
-                                    utilization, Avg.Cycle.Usage)) %>%
+                                    utilization1, Avg.Cycle.Usage1)) %>%
+    mutate(Avg.Cycle.Usage2 = ifelse(Model == model_name & 
+                                       Probability.Cut.Off == prob_cut_off & 
+                                       Sample.Size == sample_size &
+                                       Window.Size == window_size &
+                                       Granularity == granularity &
+                                       StateNum == state_num &
+                                       BinNum == bin_num,
+                                     utilization2, Avg.Cycle.Usage2)) %>%
     mutate(Survival.Rate = ifelse(Model == model_name & 
                                     Probability.Cut.Off == prob_cut_off & 
                                     Sample.Size == sample_size &
@@ -123,12 +181,15 @@ update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num=0, sam
                                             StateNum == state_num &
                                             BinNum == bin_num,
                                           correct_unscheduled_rate, Correctly.Unscheduled))
+  xlsx_file <- xlsx_file %>%
+    arrange(Model, Sample.Size, Window.Size, Granularity, Probability.Cut.Off, StateNum, BinNum)
   return(xlsx_file)
 }
 
 
-find_overall_evaluation <- function(avg_usages, survivals) {
-  avg_utilization <- mean(as.matrix(avg_usages), na.rm = TRUE)
+find_overall_evaluation <- function(avg_usages1, avg_usages2, survivals) {
+  avg_utilization1 <- mean(as.matrix(avg_usages1), na.rm = TRUE)
+  avg_utilization2 <- mean(as.matrix(avg_usages2), na.rm = TRUE)
   survival <- sum(as.matrix(survivals), na.rm = TRUE) / (length(as.matrix(survivals)[!is.na(as.matrix(survivals))]))
-  return(list("utilization_rate"=avg_utilization, "survival_rate"=survival))
+  return(list("utilization_rate1"=avg_utilization1, "utilization_rate2"=avg_utilization2, "survival_rate"=survival))
 }
