@@ -44,6 +44,12 @@ train_ar1_model <- function(ts_num, train_dataset) {
 
 
 scheduling_foreground <- function(ts_num, test_dataset, coeffs, means, vars, window_size, prob_cut_off, cpu_required, granularity, schedule_policy, mode) {
+  if (granularity > 0) {
+    cpu_required <- round_to_nearest(cpu_required[ts_num], granularity, FALSE)
+  } else {
+    cpu_required <- cpu_required[ts_num]
+  }
+  
   scheduled_num <- 0
   unscheduled_num <- 0
   correct_scheduled_num <- 0
@@ -56,7 +62,7 @@ scheduling_foreground <- function(ts_num, test_dataset, coeffs, means, vars, win
   while (current_end <= last_time_schedule) {
     ## Schedule based on model predictions
     last_obs <- convert_frequency_dataset(test_dataset[(current_end-window_size):(current_end-1), ts_num], window_size, mode = mode)
-    prediction_result <- do_prediction(last_obs=last_obs, phi=coeffs[ts_num], mean=means[ts_num], variance=vars[ts_num], predict_size=1, level=(100-cpu_required[ts_num]))
+    prediction_result <- do_prediction(last_obs, coeffs[ts_num], means[ts_num], vars[ts_num], 1, level=(100-cpu_required))
     prediction <- ifelse(prediction_result$prob <= prob_cut_off, 1, 0)
     scheduled_num <- ifelse(prediction == 1, scheduled_num + 1, scheduled_num)
     unscheduled_num <- ifelse(prediction == 1, unscheduled_num, unscheduled_num + 1)
@@ -65,7 +71,7 @@ scheduling_foreground <- function(ts_num, test_dataset, coeffs, means, vars, win
     start_time <- current_end
     end_time <- current_end + window_size - 1
     position_vec <- convert_frequency_dataset(test_dataset[start_time:end_time, ts_num], window_size, mode = mode)
-    actual <- ifelse(all(position_vec <= (100 - cpu_required[ts_num])), 1, 0)
+    actual <- ifelse(all(position_vec <= (100 - cpu_required)), 1, 0)
     correct_scheduled_num <- ifelse(prediction == 1 & actual == 1, correct_scheduled_num + 1, correct_scheduled_num)
     correct_unscheduled_num <- ifelse(prediction == 0 & actual == 0, correct_unscheduled_num + 1, correct_unscheduled_num)
     
@@ -84,8 +90,6 @@ scheduling_foreground <- function(ts_num, test_dataset, coeffs, means, vars, win
 
 
 scheduling_model <- function(ts_num, test_dataset, coeffs, means, vars, window_size, prob_cut_off, granularity, max_run_length=25, schedule_policy, mode) {
-  utilization <- c()
-  survival <- c()
   runs <- rep(0, max_run_length)
   run_counter <- 0
   run_switch <- FALSE
@@ -108,13 +112,12 @@ scheduling_model <- function(ts_num, test_dataset, coeffs, means, vars, window_s
     ## Evalute schedulings based on prediction
     start_time <- current_end
     end_time <- current_end + window_size - 1
-    position_vec <- convert_frequency_dataset(test_dataset[start_time:end_time, ts_num], window_size, mode = mode)
     
     utilization <- c(utilization, check_utilization(pi_up, granularity))
-    survival <- c(survival, check_survival(pi_up, position_vec, granularity))
+    survival <- c(survival, check_survival(pi_up, test_dataset[start_time:end_time, ts_num], granularity))
     
     if (schedule_policy == "dynamic") {
-      if (!is.na(survival[length(survival)]) & survival[length(survival)] == 1) {
+      if (!is.na(survival[length(survival)]) & survival[length(survival)] == 0) {
         update_policy <- window_size
         if (run_switch) {
           idx <- ifelse(run_counter > max_run_length, max_run_length, run_counter)
@@ -122,18 +125,24 @@ scheduling_model <- function(ts_num, test_dataset, coeffs, means, vars, window_s
           run_counter <- 0
           run_switch <- FALSE
         }
-      } else if (is.na(survival[length(survival)]) | survival[length(survival)] == 0) {
+      } else if (is.na(survival[length(survival)])) {
         update_policy <- 1
         if (!run_switch) {
           run_switch <- TRUE
         }
         run_counter <- run_counter + 1
+      } else {
+        update_policy <- survival[length(survival)]
+        if (!run_switch) {
+          run_switch <- TRUE
+        }
+        run_counter <- run_counter + update_policy
       }
     }
     current_end <- current_end + update_policy
   }
   
-  overall_survival <- compute_survival(survival)
+  overall_survival <- compute_survival(ifelse(is.na(survival), NA, ifelse(survival == 0, 1, 0)))
   overall_utilization <- compute_utilization(pi_ups, survival, test_dataset[(window_size+1):(current_end-update_policy+window_size-1), ts_num], window_size, granularity, schedule_policy)
   return(list("utilization1"=overall_utilization$utilization1, "utilization2"=overall_utilization$utilization2, "survival"=overall_survival, "run"=runs))
 }
@@ -148,10 +157,6 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, prob_
   #### input mode: max or avg
   #### input granularity:
   #### input schedule_policy: dynamic, disjoint, overlap
-  
-  if (granularity > 0) {
-    cpu_required <- sapply(cpu_required, round_to_nearest, granularity, FALSE)
-  }
   
   ts_names <- colnames(dataset)
   
@@ -307,7 +312,7 @@ if (bad.seq.adj) {
   if (schedule_policy == "dynamic") {
     output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity) post adj.xlsx"
   } else {
-    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows,granularity) post adj.xlsx"
+    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary disjoint (windows,granularity) post adj.xlsx"
   }
 } else {
   
@@ -315,7 +320,7 @@ if (bad.seq.adj) {
   if (schedule_policy == "dynamic") {
     output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity).xlsx"
   } else {
-    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows,granularity).xlsx"
+    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary disjoint (windows,granularity).xlsx"
   }
 }
 

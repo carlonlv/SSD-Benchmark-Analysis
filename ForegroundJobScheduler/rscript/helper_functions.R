@@ -46,33 +46,39 @@ compute_pi_up <- function(mu, varcov, predict_size, prob_cutoff, granularity) {
 
 
 check_utilization <- function(pi_up, granularity=0) {
-  utilization <- round_to_nearest(100-pi_up, granularity, TRUE)
+  utilization <- NULL
+  if (granularity > 0) {
+    utilization <- round_to_nearest(100-pi_up, granularity, TRUE)
+  } else {
+    utilization <- 100 - pi_up
+  }
   return(utilization)
 }
 
 
 check_survival <- function(pi_up, actual_obs, granularity=0) {
-  if (granularity != 0) {
-    actual_available <- round_to_nearest(100-actual_obs, granularity, TRUE)
-    actual_obs <- 100 - actual_available
+  position_vec <- convert_frequency_dataset(actual_obs, length(actual_obs), mode = "max")
+  actual_available <- position_vec
+  if (granularity > 0) {
+    actual_available <- 100 - round_to_nearest(100-position_vec, granularity, TRUE)
+    actual_obs <-  100 - round_to_nearest(100-actual_obs, granularity, TRUE)
   }
-  survival <- c()
-  for (i in 1:length(pi_up)) {
-    if (granularity == 0) {
-      if ((100 - pi_up[i]) == 0) {
-        survival[i] <- NA
-      } else {
-        survival[i] <- ifelse(actual_obs[i] <= pi_up[i], 1, 0)
-      }
+  
+  survival <- NULL
+  if (granularity == 0) {
+    if ((100 - pi_up) == 0) {
+      survival <- NA
     } else {
-      if ((100 - pi_up[i]) < granularity) {
-        survival[i] <- NA
+      survival <- ifelse(actual_available <= pi_up, 0, which(actual_obs > pi_up)[1])
+    }
+  } else {
+    if ((100 - pi_up) < granularity) {
+      survival <- NA
+    } else {
+      if ((100 - actual_available) < granularity) {
+        survival <- which(actual_obs > pi_up)[1]
       } else {
-        if ((100 - actual_obs[i]) < granularity) {
-          survival[i] <- 0
-        } else {
-          survival[i] <- ifelse(actual_obs[i] <= pi_up[i], 1, 0)
-        }
+        survival <- ifelse(actual_available <= pi_up, 0, which(actual_obs > pi_up)[1])
       }
     }
   }
@@ -99,9 +105,9 @@ dynamic_total_utilization <- function(actual_obs, survivals, window_size) {
   total_utilization <- 0
   while(current <= (length(actual_obs) - window_size + 1)) {
     new_max <- convert_frequency_dataset(actual_obs[current:(current+window_size-1)], window_size, "max")
-    actual_utilization <- ifelse(is.na(survivals[current]) | survivals[current]==0, 100-actual_obs[current], (100-new_max)*window_size)
+    actual_utilization <- ifelse(is.na(survivals[current]), 100-actual_obs[current], ifelse(survivals[current]!=0, sum(100-actual_obs[current:(current+survivals[current]-1)]), (100-new_max)*window_size))
     total_utilization <- total_utilization + actual_utilization
-    current <- ifelse(is.na(survivals[current]) | survivals[current]==0, current+1, current+window_size)
+    current <- ifelse(is.na(survivals[current]), current+1, ifelse(survivals[current]==0, current+window_size, current+survivals[current]))
     idx <- idx + 1
   }
   return(total_utilization)
@@ -114,7 +120,7 @@ compute_survival <- function(survival) {
 
 
 compute_utilization <- function(pi_ups, survivals, actual_obs, window_size, granularity, schedule_policy) {
-  if (granularity != 0) {
+  if (granularity > 0) {
     actual_available <- round_to_nearest(100 - actual_obs, granularity, TRUE)
     actual_obs <- 100 - actual_available
   }
@@ -134,7 +140,7 @@ compute_utilization <- function(pi_ups, survivals, actual_obs, window_size, gran
     total_available1 <- sum(100 - new_max) * window_size
     total_available2 <- sum(100 - actual_obs)
   }
-  actual_used <- ifelse(is.na(survivals) | survivals==0, 0, 100-pi_ups) * window_size
+  actual_used <- ifelse(is.na(survivals) | survivals!=0, 0, 100-pi_ups) * window_size
   return(list("utilization1"=(sum(actual_used) / total_available1), "utilization2"=(sum(actual_used) / total_available2)))
 }
 

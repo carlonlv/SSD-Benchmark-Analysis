@@ -127,6 +127,12 @@ train_cond_var_model <- function(ts_num, train_set_max, train_set_avg, bin_num, 
 
 
 scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, cpu_required, granularity, schedule_policy) {
+  if (granularity > 0) {
+    cpu_required <- round_to_nearest(cpu_required[ts_num], granularity, FALSE)
+  } else {
+    cpu_required <- cpu_required[ts_num]
+  }
+  
   scheduled_num <- 0
   unscheduled_num <- 0
   correct_scheduled_num <- 0
@@ -156,7 +162,7 @@ scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, co
     start_time <- current_end
     end_time <- current_end + seek_length - 1
     position_vec <- convert_frequency_dataset(test_dataset_max[start_time:end_time, ts_num], window_size, mode = "max")
-    actual <- ifelse(all(position_vec <= (100 - cpu_required[ts_num])), 1, 0)
+    actual <- ifelse(all(position_vec <= (100 - cpu_required)), 1, 0)
     correct_scheduled_num <- ifelse(prediction == 1 & actual == 1, correct_scheduled_num + 1, correct_scheduled_num)
     correct_unscheduled_num <- ifelse(prediction == 0 & actual == 0, correct_unscheduled_num + 1, correct_unscheduled_num)
     
@@ -186,8 +192,6 @@ find_expected_max <- function(probability, variance, cpu_required, expected_avgs
 
 
 scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, cond_var_models, cond.var, window_size, prob_cut_off, cpu_required, granularity, max_run_length=25, schedule_policy) {
-  utilization <- c()
-  survival <- c()
   runs <- rep(0, max_run_length)
   run_counter <- 0
   run_switch <- FALSE
@@ -223,14 +227,12 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs,
     ## Evalute schedulings based on prediction
     start_time <- current_end
     end_time <- current_end + window_size - 1
-    
-    position_vec <- convert_frequency_dataset(test_dataset_max[start_time:end_time, ts_num], window_size, "max")
-    
+
     utilization <- c(utilization, check_utilization(pi_up, granularity))
-    survival <- c(survival, check_survival(pi_up, position_vec, granularity))
+    survival <- c(survival, check_survival(pi_up, test_dataset_max[start_time:end_time, ts_num], granularity))
     
     if (schedule_policy == "dynamic") {
-      if (!is.na(survival[length(survival)]) & survival[length(survival)] == 1) {
+      if (!is.na(survival[length(survival)]) & survival[length(survival)] == 0) {
         update_policy <- window_size
         if (run_switch) {
           idx <- ifelse(run_counter > max_run_length, max_run_length, run_counter)
@@ -238,19 +240,25 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs,
           run_counter <- 0
           run_switch <- FALSE
         }
-      } else if (is.na(survival[length(survival)]) | survival[length(survival)] == 0) {
+      } else if (is.na(survival[length(survival)])) {
         update_policy <- 1
         if (!run_switch) {
           run_switch <- TRUE
         }
         run_counter <- run_counter + 1
+      } else {
+        update_policy <- survival[length(survival)]
+        if (!run_switch) {
+          run_switch <- TRUE
+        }
+        run_counter <- run_counter + update_policy
       }
     }
     
     current_end <- current_end + update_policy
   }
   
-  overall_survival <- compute_survival(survival)
+  overall_survival <- compute_survival(ifelse(is.na(survival), NA, ifelse(survival == 0, 1, 0)))
   overall_utilization <- compute_utilization(pi_ups, survival, test_dataset_max[(window_size+1):(current_end-update_policy+window_size-1), ts_num], window_size, granularity, schedule_policy)
   return(list("utilization1"=overall_utilization$utilization1, "utilization2"=overall_utilization$utilization2, "survival"=overall_survival, "run"=runs))
 }
@@ -261,10 +269,6 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   #### input initial_train_size: The number of first observations used to train the model
   #### input window_size: The number of observations used to train and predict as one sample
   #### input prob_cut_off: If the probability of background job exceeding 100-cpu_required is smaller than prob_cut_off, then schedule it. Otherwise, don't.
-
-  if (granularity > 0) {
-    cpu_required <- sapply(cpu_required, round_to_nearest, granularity, FALSE)
-  }
   
   ts_names <- colnames(dataset_avg)
   
@@ -459,7 +463,7 @@ if (adjustment) {
   if (schedule_policy == "dynamic") {
     output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity) post adj.xlsx"
   } else {
-    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows,granularity) post adj.xlsx"
+    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary disjoint (windows,granularity) post adj.xlsx"
   }
 } else {
   
@@ -467,7 +471,7 @@ if (adjustment) {
   if (schedule_policy == "dynamic") {
     output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity).xlsx"
   } else {
-    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows,granularity).xlsx"
+    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary disjoint (windows,granularity).xlsx"
   }
 }
 
