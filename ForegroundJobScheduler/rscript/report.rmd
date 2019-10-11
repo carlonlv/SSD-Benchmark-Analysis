@@ -182,13 +182,13 @@ plot_results <- function(model_results, sample_size, window_size, model_name="NU
   model_results <- model_results %>% 
     filter(Sample.Size== sample_size & Window.Size == window_size)
   plt1 <- ggplot(model_results, aes(x=Survival.Rate, y=Avg.Cycle.Usage1)) +
-      geom_point(na.rm=TRUE, aes(color=factor(Model), shape=factor(StateNum), alpha=factor(Granularity))) + 
+      geom_point(na.rm=TRUE, aes(color=factor(Model), size=factor(StateNum), alpha=factor(Granularity), shape=factor(BinNum))) + 
       geom_vline(xintercept=0.99, linetype="dashed", color="red") + 
       ylab("Utilization") +
       xlab("Survival Rate") + 
       ggtitle(paste("Model Performance With Sample Size", sample_size, "and Window Size", window_size))
   plt2 <- ggplot(model_results, aes(x=Survival.Rate, y=Avg.Cycle.Usage2)) +
-      geom_point(na.rm=TRUE, aes(color=factor(Model), shape=factor(StateNum), alpha=factor(Granularity))) + 
+      geom_point(na.rm=TRUE, aes(color=factor(Model), size=factor(StateNum), alpha=factor(Granularity), shape=factor(BinNum))) + 
       geom_vline(xintercept=0.99, linetype="dashed", color="red") + 
       ylab("Utilization") +
       xlab("Survival Rate") + 
@@ -217,6 +217,16 @@ plot_conditional_hist <- function(dataset) {
 
 
 ## Overall Performance
+
+```{r echo=FALSE}
+sample_size <- 100
+window_size <- 12
+
+ar_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary disjoint (windows,granularity).xlsx"
+
+ar_xlsx <- read.xlsx(ar_data_path, sheetIndex = 1)
+plot_results(ar_xlsx, sample_size, window_size)
+```
 
 ```{r echo=FALSE}
 sample_size <- 100
@@ -293,94 +303,4 @@ ggplot(runs.df, aes(x=x, y=y, size=z, color=z)) +
   xlab("length of runs") +
   ylab("Parameters") +
   ggtitle("Distribution of runs for AR1")
-```
-
-## Conditional Variance
-
-```{r, echo=FALSE}
-bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
-bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 background jobs.csv")[,1]
-bg_job_pool <- sample(bg_job_pool, 9)
-bg_job_pool <- sub(".pd", "", bg_job_pool)
-train_set_avg <- matrix(nrow = 6000, ncol = 0)
-train_set_max <- matrix(nrow = 6000, ncol = 0)
-for (job_num in bg_job_pool) {
-  bg_job <- read.csv(paste(bg_jobs_path, job_num, ".csv", sep = ""))
-  train_set_avg <- cbind(train_set_avg, bg_job$avg_cpu[1:6000])
-  train_set_max <- cbind(train_set_max, bg_job$max_cpu[1:6000])
-}
-rownames(train_set_avg) <- seq(1, nrow(train_set_avg) ,1)
-rownames(train_set_max) <- seq(1, nrow(train_set_max) ,1)
-colnames(train_set_avg) <- bg_job_pool
-colnames(train_set_max) <- bg_job_pool
-```
-
-
-```{r, echo=FALSE}
-cpu_required <- rep(0, ncol(train_set_max))
-for (j in 1:ncol(train_set_max)) {
-  cpu_required[j] <- as.numeric(quantile(train_set_max[,j], c(0.15, 0.5, 0.85), type = 4)[3])
-}
-
-window_size <- c(12)
-prob_cut_off <- c(0.1)
-granularity <- c(100/128)
-bin_num <- c(1000)
-
-new_trainset_max <- apply(train_set_max, 2, convert_frequency_dataset, new_freq=window_size, mode="max")
-rownames(new_trainset_max) <- seq(1, 1 + window_size * (nrow(new_trainset_max) - 1), window_size)
-colnames(new_trainset_max) <- colnames(train_set_max)
-
-new_trainset_avg <- apply(train_set_avg, 2, convert_frequency_dataset, new_freq=window_size, mode="avg")
-rownames(new_trainset_avg) <- seq(1, 1 + window_size * (nrow(new_trainset_avg) - 1), window_size)
-colnames(new_trainset_avg) <- colnames(train_set_max)
-```
-
-```{r, echo=FALSE}
-window_size <- c(12)
-prob_cut_off <- c(0.1)
-granularity <- c(100/128)
-bin_num <- c(1000)
-
-new_trainset_max <- apply(train_set_max, 2, convert_frequency_dataset, new_freq=window_size, mode="max")
-rownames(new_trainset_max) <- seq(1, 1 + window_size * (nrow(new_trainset_max) - 1), window_size)
-colnames(new_trainset_max) <- colnames(train_set_max)
-
-new_trainset_avg <- apply(train_set_avg, 2, convert_frequency_dataset, new_freq=window_size, mode="avg")
-rownames(new_trainset_avg) <- seq(1, 1 + window_size * (nrow(new_trainset_avg) - 1), window_size)
-colnames(new_trainset_avg) <- colnames(train_set_max)
-
-cond_var_models <- sapply(1:9, train_cond_var_model, new_trainset_max, new_trainset_avg, bin_num, simplify=FALSE)
-```
-
-```{r, echo=FALSE}
-p <- list()
-for (i in 1:9) {
-  p[[i]] <- make_fitted_model_plot(cond_var_models[[i]]$data, cond_var_models[[i]]$lm)
-}
-do.call(grid.arrange, p)
-```
-
-```{r, echo=FALSE}
-q <- list()
-for (i in 1:9) {
-  q[[i]] <- make_qqnorm_plot(cond_var_models[[i]]$data2)
-}
-do.call(grid.arrange, q)
-```
-
-```{r, echo=FALSE}
-r <- list()
-for (i in 1:9) {
-  r[[i]] <- make_hist(cond_var_models[[i]]$data2)
-}
-do.call(grid.arrange, r)
-```
-
-```{r, echo=FALSE}
-s <- list()
-for (i in 1:9) {
-  s[[i]] <- plot_conditional_hist(cond_var_models[[i]]$data2)
-}
-do.call(grid.arrange, s)
 ```
