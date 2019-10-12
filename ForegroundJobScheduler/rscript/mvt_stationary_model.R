@@ -204,7 +204,7 @@ scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, ts
 }
 
 
-scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, ts_models, window_size, prob_cut_off, granularity, max_run_length=25, schedule_policy) {
+scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, ts_models, window_size, prob_cut_off, granularity, max_run_length=25, schedule_policy, adjustment) {
 
   runs <- rep(0, max_run_length)
   run_counter <- 0
@@ -248,8 +248,8 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, ts_mode
           runs[idx] <- runs[idx] + 1
           run_counter <- 0
           run_switch <- FALSE
-        }
-      } else if (is.na(survival[length(survival)])) {
+        } 
+      } else if (is.na(survival[length(survival)])){
         update_policy <- 1
         if (!run_switch) {
           run_switch <- TRUE
@@ -259,8 +259,10 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, ts_mode
         update_policy <- survival[length(survival)]
         if (!run_switch) {
           run_switch <- TRUE
+        } else {
+          survival[length(survival)] <- ifelse(adjustment, NA, survival[length(survival)])
         }
-        run_counter <- run_counter + update_policy
+        run_counter <- run_counter + 1
       }
     }
     current_end <- current_end + update_policy
@@ -282,7 +284,7 @@ train_mvt_model <- function(ts_num, train_dataset_max, train_dataset_avg, p, q) 
 }
 
 
-mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p, q, window_size, cpu_required, prob_cut_off, max_run_length, granularity, schedule_policy) {
+mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p, q, window_size, cpu_required, prob_cut_off, max_run_length, granularity, schedule_policy, adjustment) {
   #### input dataset_avg: N by M matrix, N being number of observations, M being number of time series
   #### input dataset_max: N by M matrix, N being number of observations, M being number of time series
   #### input initial_train_size: The number of first observations used to train the model'
@@ -327,7 +329,7 @@ mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p
   print("Testing on Foreground job:")
   result_foreground <- sapply(1:length(ts_names), scheduling_foreground, test_dataset_max, test_dataset_avg, ts_models, window_size, prob_cut_off, cpu_required, granularity, schedule_policy)
   print("Testing on Model:")
-  result_model <- sapply(1:length(ts_names), scheduling_model, test_dataset_max, test_dataset_avg, ts_models, window_size, prob_cut_off, granularity, max_run_length, schedule_policy, simplify = FALSE)
+  result_model <- sapply(1:length(ts_names), scheduling_model, test_dataset_max, test_dataset_avg, ts_models, window_size, prob_cut_off, granularity, max_run_length, schedule_policy, adjustment, simplify = FALSE)
   
   scheduled_num <- cbind(scheduled_num, unlist(result_foreground[1,]))
   unscheduled_num <- cbind(unscheduled_num, unlist(result_foreground[2,]))
@@ -366,7 +368,7 @@ mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p
 }
 
 
-wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, initial_train_size, max_run_length, output_dp, schedule_policy) {
+wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, initial_train_size, max_run_length, output_dp, schedule_policy, adjustment) {
   
   window_size <- as.numeric(parameter[1])
   prob_cut_off <- as.numeric(parameter[2])
@@ -376,7 +378,7 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
   print(paste("Cut off prob:", prob_cut_off))
   print(paste("Granularity:", granularity))
   
-  output <- mvt_stationary_model(dataset_avg, dataset_max, initial_train_size, 1, 0, window_size, cpu_required, prob_cut_off, max_run_length, granularity, schedule_policy)
+  output <- mvt_stationary_model(dataset_avg, dataset_max, initial_train_size, 1, 0, window_size, cpu_required, prob_cut_off, max_run_length, granularity, schedule_policy, adjustment)
   overall_evaluation <- find_overall_evaluation(output$avg_usage[,1], output$avg_usage[,2], output$job_survival[,1])
   
   utilization_rate1 <- overall_evaluation$utilization_rate1
@@ -411,7 +413,7 @@ cpu_usage <- 3
 max_run_length <- 37
 total_trace_length <- 8000
 initial_train_size <- 6000
-bad.seq.adj <- FALSE
+adjustment <- TRUE
 
 window_sizes <- c(12, 36)
 prob_cut_offs <- c(0.005, 0.01, 0.1)
@@ -447,7 +449,7 @@ for (j in 1:ncol(data_matrix_max)) {
 }
 
 output_dp <- NULL
-if (bad.seq.adj) {
+if (adjustment) {
   if (schedule_policy == "dynamic") {
     output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity) post adj.xlsx"
   } else {
@@ -466,4 +468,4 @@ parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity)
 colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity")
 parameter.df <- parameter.df %>%
   arrange(window_size)
-slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy)
+slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment)

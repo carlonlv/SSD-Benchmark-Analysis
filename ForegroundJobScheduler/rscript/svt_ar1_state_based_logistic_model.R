@@ -157,7 +157,7 @@ compute_pi_up_states <- function(expected_avgs, probability, granularity, prob_c
 }
 
 
-scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, granularity, max_run_length=25, num_of_states, schedule_policy) {
+scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, granularity, max_run_length=25, num_of_states, schedule_policy, adjustment) {
   runs <- rep(0, max_run_length)
   run_counter <- 0
   run_switch <- FALSE
@@ -198,8 +198,8 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs,
           runs[idx] <- runs[idx] + 1
           run_counter <- 0
           run_switch <- FALSE
-        }
-      } else if (is.na(survival[length(survival)])) {
+        } 
+      } else if (is.na(survival[length(survival)])){
         update_policy <- 1
         if (!run_switch) {
           run_switch <- TRUE
@@ -209,8 +209,10 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs,
         update_policy <- survival[length(survival)]
         if (!run_switch) {
           run_switch <- TRUE
+        } else {
+          survival[length(survival)] <- ifelse(adjustment, NA, survival[length(survival)])
         }
-        run_counter <- run_counter + update_policy
+        run_counter <- run_counter + 1
       }
     }
     current_end <- current_end + update_policy
@@ -222,7 +224,7 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs,
 }
 
 
-ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob_cut_off, max_run_length, window_size, cpu_required, num_of_states, granularity) {
+ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob_cut_off, max_run_length, window_size, cpu_required, num_of_states, granularity, adjustment) {
   #### input dataset_avg, dataset_max: N by M matrix, N being number of observations, M being number of time series
   #### input initial_train_size: The number of first observations used to train the model
   #### input window_size: The number of observations used to train and predict as one sample
@@ -278,7 +280,7 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   result_foreground <- sapply(1:length(ts_names), scheduling_foreground, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, cpu_required, granularity, num_of_states, schedule_policy)
   
   print("Testing on Model:")
-  result_model <- sapply(1:length(ts_names), scheduling_model, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, granularity, max_run_length, num_of_states, schedule_policy, simplify=FALSE)
+  result_model <- sapply(1:length(ts_names), scheduling_model, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, granularity, max_run_length, num_of_states, schedule_policy, adjustment, simplify=FALSE)
   
   scheduled_num <- cbind(scheduled_num, unlist(result_foreground[1,]))
   unscheduled_num <- cbind(unscheduled_num, unlist(result_foreground[2,]))
@@ -318,7 +320,7 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
 }
 
 
-wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, initial_train_size, max_run_length, output_dp, schedule_policy) {
+wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, initial_train_size, max_run_length, output_dp, schedule_policy, adjustment) {
   
   window_size <- as.numeric(parameter[1])
   prob_cut_off <- as.numeric(parameter[2])
@@ -330,7 +332,7 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
   print(paste("Granularity:", granularity))
   print(paste("BinNum:", num_of_states))
   
-  output <- ar_logistic_model(dataset_avg, dataset_max, initial_train_size, prob_cut_off, max_run_length, window_size, cpu_required, num_of_states, granularity)
+  output <- ar_logistic_model(dataset_avg, dataset_max, initial_train_size, prob_cut_off, max_run_length, window_size, cpu_required, num_of_states, granularity, adjustment)
   
   overall_evaluation <- find_overall_evaluation(output$avg_usage[,1], output$avg_usage[,2], output$job_survival[,1])
   
@@ -366,14 +368,14 @@ cpu_usage <- 3
 max_run_length <- 37
 total_trace_length <- 8000
 initial_train_size <- 6000
-bad.seq.adj <- FALSE
+adjustment <- TRUE
 
 window_sizes <- c(12, 36)
 prob_cut_offs <- c(0.005, 0.01, 0.1)
 num_of_states_pool <- c(10, 20, 50)
 granularity <- c(100/32, 100/64, 100/128, 0)
 
-schedule_policy <- "disjoint"
+schedule_policy <- "dynamic"
 
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
 bg_job_pool <- NULL
@@ -403,7 +405,7 @@ for (j in 1:ncol(data_matrix_max)) {
 }
 
 output_dp <- NULL
-if (bad.seq.adj) {
+if (adjustment) {
   if (schedule_policy == "dynamic") {
     output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity) post adj.xlsx"
   } else {
@@ -421,5 +423,5 @@ if (bad.seq.adj) {
 parameter.df <- expand.grid(window_sizes, prob_cut_offs, num_of_states_pool, granularity)
 colnames(parameter.df) <- c("window_size", "prob_cut_off", "num_of_states", "granularity")
 parameter.df <- parameter.df %>%
-  arrange(window_size)
-slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy)
+  arrange(window_size, num_of_states)
+slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment)
