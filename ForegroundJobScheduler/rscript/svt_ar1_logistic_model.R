@@ -9,25 +9,12 @@ library("xlsx")
 source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//helper_functions.R")
 
 
-kmeans_find_var <- function(expected_avg, kmeans_model_df) {
-  kmeans_model_df <- kmeans_model_df %>%
-    arrange(cluster)
-  closest_cluster <- kmeans_model_df$cluster[which(abs(expected_avg - kmeans_model_df$cluster_mean) == min(abs(expected_avg - kmeans_model_df$cluster_mean)))]
-  cluster_var <- kmeans_model_df$vars[kmeans_model_df$cluster == closest_cluster]
-  return(cluster_var)
-}
-
-
-generate_expected_conditional_var <- function(expected_avgs, mode, variance_model) {
-  expected_var <- c()
-  if (mode == "lm") {
-    if (is.numeric(variance_model)) {
-      expected_var <- rep(variance_model^2, length(expected_avgs))
-    } else {
-      expected_var <- predict(variance_model, newdata=data.frame("bin"=expected_avgs), type = "response")^2
-    }
+generate_expected_conditional_var <- function(expected_avgs, variance_model) {
+  expected_var <- NULL
+  if (is.numeric(variance_model)) {
+    expected_var <- rep(variance_model^2, length(expected_avgs))
   } else {
-    expected_var <- sapply(expected_avgs, kmeans_find_var, variance_model)
+    expected_var <- predict(variance_model, newdata=data.frame("bin"=expected_avgs), type = "response")^2
   }
   return(max(expected_var, 0))
 }
@@ -73,56 +60,44 @@ find_bin_obs <- function(avg, binsize) {
 
 
 train_cond_var_model <- function(ts_num, train_set_max, train_set_avg, bin_num, method) {
-  if (method == "lm") {
-    
-    new_parsed_dat <- data.frame(matrix(nrow=nrow(train_set_avg), ncol=3))
-    binsize <- 100 / bin_num
-    bin <- as.numeric(sapply(train_set_avg[,ts_num], find_bin_obs, binsize))
-    bin <- bin * binsize
-    for (i in 1:nrow(train_set_avg)) {
-      new_parsed_dat[i,] = c(train_set_avg[i, ts_num], train_set_max[i, ts_num], bin[i])
-    }
-    
-    colnames(new_parsed_dat) <- c('avg', 'max', 'bin')
-    selected_bins <- new_parsed_dat %>%
-      group_by(bin) %>%
-      count()
-    
-    selected_bins <- subset(selected_bins, selected_bins$n >= 3)$bin
-    selected_bins <- new_parsed_dat$bin
-    new_parsed_dat <- new_parsed_dat %>%
-      filter(bin %in% selected_bins) %>%
-      group_by(bin) %>% 
-      summarise(sd=sqrt(var(max))) %>%
-      filter(!is.na(sd))
-    
-    sd.lm <- NULL
-    if (nrow(new_parsed_dat) >= 3) {
+  new_parsed_dat <- data.frame(matrix(nrow=nrow(train_set_avg), ncol=3))
+  binsize <- 100 / bin_num
+  bin <- as.numeric(sapply(train_set_avg[,ts_num], find_bin_obs, binsize))
+  bin <- bin * binsize
+  for (i in 1:nrow(train_set_avg)) {
+    new_parsed_dat[i,] = c(train_set_avg[i, ts_num], train_set_max[i, ts_num], bin[i])
+  }
+  
+  colnames(new_parsed_dat) <- c('avg', 'max', 'bin')
+  selected_bins <- new_parsed_dat %>%
+    group_by(bin) %>%
+    count()
+  
+  selected_bins <- subset(selected_bins, selected_bins$n >= 3)$bin
+  selected_bins <- new_parsed_dat$bin
+  new_parsed_dat <- new_parsed_dat %>%
+    filter(bin %in% selected_bins) %>%
+    group_by(bin) %>% 
+    summarise(sd=sqrt(var(max))) %>%
+    filter(!is.na(sd))
+  
+  sd.lm <- NULL
+  if (nrow(new_parsed_dat) >= 3) {
+    if (method == "lm") {
       sd.lm <- lm(sd~bin+I(bin^2), data = new_parsed_dat)
-    } else if (nrow(new_parsed_dat) == 2) {
+    } else {
+      sd.lm <- glm(sd~bin+I(bin^2), data = new_parsed_dat, family = Gamma(link="log"))
+    }
+  } else if (nrow(new_parsed_dat) == 2) {
+    if (method == "lm") {
       sd.lm <- lm(sd~bin, data = new_parsed_dat)
     } else {
-      sd.lm <- new_parsed_dat$sd
+      sd.lm <- glm(sd~bin, data = new_parsed_dat)
     }
-    return(sd.lm)
   } else {
-    clustering_result <- list()
-    avg_silhouette <- c()
-    avg_silhouette[1] <- -Inf
-    for (cluster_num in 2:10) {
-      clustering_result[[cluster_num]] <- kmeans(train_set_avg[, ts_num], centers = cluster_num, iter.max = 20, nstart = 25)
-      avg_silhouette[cluster_num] <- mean(silhouette(clustering_result[[cluster_num]]$cluster, dist = dist(train_set_avg[,ts_num]))[,3])
-    }
-    best_cluster_num <- which(avg_silhouette == max(avg_silhouette))
-    best_cluster_result <- clustering_result[[best_cluster_num]]
-    new_parsed_dat <- data.frame("cluster"=best_cluster_result$cluster, "max"=train_set_max)
-    new_parsed_dat <- new_parsed_dat %>% 
-      group_by(cluster) %>% 
-      summarise(vars=var(max)) %>%
-      filter(!is.na(vars))
-    new_parsed_dat$cluster_mean <- best_cluster_result$centers[new_parsed_dat$cluster]
-    return(new_parsed_dat)
+    sd.lm <- new_parsed_dat$sd
   }
+  return(sd.lm)
 }
 
 
@@ -215,7 +190,7 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs,
     
     expected_avgs <- do_prediction(last_obs, coeffs[ts_num], means[ts_num], vars[ts_num])$mu
     
-    expected_vars <- generate_expected_conditional_var(expected_avgs, mode = cond.var, variance_model = cond_var_model)
+    expected_vars <- generate_expected_conditional_var(expected_avgs, cond_var_model)
     
     prob <- 1 - predict(logistic_model, newdata = data.frame("avg"=expected_avgs), type = "response")
     
@@ -405,10 +380,10 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
   } else {
     
     if (schedule_policy == "dynamic") {
-     write.csv(output$overall_runs, paste("Overall Runs", "AR1_logistic_kmeans", sample_size, window_size, prob_cut_off, granularity, ".csv"))
+     write.csv(output$overall_runs, paste("Overall Runs", "AR1_logistic_glm", sample_size, window_size, prob_cut_off, granularity, ".csv"))
     }
     result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
-    result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1_logistic_kmeans", prob_cut_off, 0, sample_size, window_size, granularity, bin_num, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
+    result_path.xlsx <- update.xlsx.df(result_path.xlsx, "AR1_logistic_glm", prob_cut_off, 0, sample_size, window_size, granularity, bin_num, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
     write.xlsx(result_path.xlsx, showNA = FALSE, file = output_dp, row.names = FALSE)
   }
 }
@@ -421,7 +396,7 @@ max_run_length <- 37
 total_trace_length <- 8000
 initial_train_size <- 6000
 adjustment <- TRUE
-cond.var <- "lm"
+cond.var <- "glm"
 
 window_sizes <- c(12, 36)
 prob_cut_offs <- c(0.005, 0.01, 0.1, 0.75)
