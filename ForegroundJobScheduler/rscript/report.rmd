@@ -36,7 +36,7 @@ read_runs <- function(rownum, parameter.df, model_name, sample_size, result_fold
   granularity <- param_list[3]
   
   filename <- NULL
-  if (model_name == "AR1_logistic_lm") {
+  if (model_name == "AR1_logistic_lm" | model_name == "AR1_logistic_glm") {
     bin_num <- param_list[4]
     filename <- paste("Overall Runs", model_name, sample_size, window_size, prob_cut_off, granularity, bin_num, ".csv")
   } else if (model_name == "AR1_state_based_logistic") {
@@ -53,7 +53,6 @@ read_runs <- function(rownum, parameter.df, model_name, sample_size, result_fold
 
 
 build_2d_dataframe <- function(runs) {
-  
   y <- colnames(runs)
   x <- rownames(runs)
   result <- expand.grid(y, x)
@@ -238,69 +237,12 @@ ar_xlsx <- read.xlsx(ar_data_path, sheetIndex = 1)
 plot_results(ar_xlsx, sample_size, window_size)
 ```
 
-## Runs for Different Models
-
 ```{r echo=FALSE}
 sample_size <- 100
+window_size <- 12
 
-result_folder <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//maxes//"
+ar_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity) post adj.xlsx"
 
-window_size <- c(12)
-prob_cut_offs <- c(0.005, 0.01, 0.1, 0.75)
-granularity <- c(100/32, 100/64, 100/128, 0)
-num_of_bins <- c(1000, 500)
-
-param <- expand.grid(window_size, prob_cut_offs, granularity, num_of_bins)
-runs <- sapply(1:nrow(param), read_runs ,param, "AR1_logistic_lm", sample_size, result_folder)
-rownames(runs) <- 1:37
-colnames(runs) <- apply(param, 1, function(x) paste(x, collapse=" "))
-runs.df <- build_2d_dataframe(runs)
-ggplot(runs.df, aes(x=x, y=y, size=z, color=z)) + 
-  geom_point(alpha=0.5) +
-  xlab("length of runs") +
-  ylab("Parameters") +
-  ggtitle("Distribution of runs for AR1_logistic_lm")
-
-window_size <- c(36)
-
-param <- expand.grid(window_size, prob_cut_offs, granularity, num_of_bins)
-runs <- sapply(1:nrow(param), read_runs ,param, "AR1_logistic_lm", sample_size, result_folder)
-rownames(runs) <- 1:37
-colnames(runs) <- apply(param, 1, function(x) paste(x, collapse=" "))
-runs.df <- build_2d_dataframe(runs)
-ggplot(runs.df, aes(x=x, y=y, size=z, color=z)) + 
-  geom_point(alpha=0.5) +
-  xlab("length of runs") +
-  ylab("Parameters") +
-  ggtitle("Distribution of runs for AR1_logistic_lm")
-``` 
-
-```{r echo=FALSE}
-window_size <- c(12)
-prob_cut_offs <- c(0.005, 0.01, 0.1)
-granularity <- c(100/32, 100/64, 100/128, 0)
-
-param <- expand.grid(window_size, prob_cut_offs, granularity)
-runs <- sapply(1:nrow(param), read_runs ,param, "AR1", sample_size, result_folder)
-rownames(runs) <- 1:37
-colnames(runs) <- apply(param, 1, function(x) paste(x, collapse=" "))
-runs.df <- build_2d_dataframe(runs)
-ggplot(runs.df, aes(x=x, y=y, size=z, color=z)) + 
-  geom_point(alpha=0.5) +
-  xlab("length of runs") +
-  ylab("Parameters") +
-  ggtitle("Distribution of runs for AR1")
-
-window_size <- c(36)
-
-param <- expand.grid(window_size, prob_cut_offs, granularity)
-runs <- sapply(1:nrow(param), read_runs ,param, "AR1", sample_size, result_folder)
-rownames(runs) <- 1:37
-colnames(runs) <- apply(param, 1, function(x) paste(x, collapse=" "))
-runs.df <- build_2d_dataframe(runs)
-ggplot(runs.df, aes(x=x, y=y, size=z, color=z)) + 
-  geom_point(alpha=0.5) +
-  xlab("length of runs") +
-  ylab("Parameters") +
-  ggtitle("Distribution of runs for AR1")
+ar_xlsx <- read.xlsx(ar_data_path, sheetIndex = 1)
+plot_results(ar_xlsx, sample_size, window_size)
 ```

@@ -368,14 +368,14 @@ cpu_usage <- 3
 max_run_length <- 37
 total_trace_length <- 8000
 initial_train_size <- 6000
-adjustment <- TRUE
+adjustment <- FALSE
 
 window_sizes <- c(12, 36)
 prob_cut_offs <- c(0.005, 0.01, 0.1)
 num_of_states_pool <- c(10, 20, 50)
 granularity <- c(100/32, 100/64, 100/128, 0)
 
-schedule_policy <- "dynamic"
+schedule_policy <- "disjoint"
 
 bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
 bg_job_pool <- NULL

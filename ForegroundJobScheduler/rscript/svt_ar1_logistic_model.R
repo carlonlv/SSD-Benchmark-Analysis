@@ -79,14 +79,15 @@ train_cond_var_model <- function(ts_num, train_set_max, train_set_avg, bin_num, 
     filter(bin %in% selected_bins) %>%
     group_by(bin) %>% 
     summarise(sd=sqrt(var(max))) %>%
-    filter(!is.na(sd))
+    filter(!is.na(sd)) %>%
+    filter(sd != 0)
   
   sd.lm <- NULL
   if (nrow(new_parsed_dat) >= 3) {
     if (method == "lm") {
       sd.lm <- lm(sd~bin+I(bin^2), data = new_parsed_dat)
     } else {
-      sd.lm <- glm(sd~bin+I(bin^2), data = new_parsed_dat, family = Gamma(link="log"))
+      sd.lm <- glm(sd~bin, data = new_parsed_dat, family = Gamma(link="log"))
     }
   } else if (nrow(new_parsed_dat) == 2) {
     if (method == "lm") {
@@ -395,7 +396,7 @@ cpu_usage <- 3
 max_run_length <- 37
 total_trace_length <- 8000
 initial_train_size <- 6000
-adjustment <- TRUE
+adjustment <- FALSE
 cond.var <- "glm"
 
 window_sizes <- c(12, 36)
@@ -455,5 +456,6 @@ parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity, num_of_bin
 colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity", "num_of_bins")
 parameter.df <- parameter.df %>% 
   arrange(window_size)
+parameter.df <- parameter.df
 
 slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, cond.var, 100, output_dp, schedule_policy, adjustment)

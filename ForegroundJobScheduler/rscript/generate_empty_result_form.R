@@ -1,7 +1,7 @@
 library("dplyr")
 library("xlsx")
 
-models <- c("AR1", "VAR1", "AR1_logistic_kmeans", "AR1_logistic_lm", "AR1_state_based_logistic")
+models <- c("AR1", "VAR1", "AR1_logistic_glm", "AR1_logistic_lm", "AR1_state_based_logistic")
 statenum <- c(10, 20, 50)
 prob_cut_offs <- c(0.005, 0.01, 0.1, 0.75)
 granularity <- c(100/32, 100/64, 100/128, 0)
@@ -23,8 +23,8 @@ result.df$Correctly.Unscheduled <- NA
 
 result.df <- result.df %>%
   mutate(StateNum=ifelse(Model=="AR1_state_based_logistic", StateNum, 0)) %>%
-  mutate(BinNum=ifelse(Model=="AR1_logistic_lm", BinNum, 0)) %>%
-  mutate(Probability.Cut.Off=ifelse(Model!="AR1_logistic_kmeans" & Model!="AR1_logistic_lm" & Probability.Cut.Off%in%prob_ban_pool, NA, Probability.Cut.Off)) %>%
+  mutate(BinNum=ifelse(Model=="AR1_logistic_lm" | Model == "AR1_logistic_glm", BinNum, 0)) %>%
+  mutate(Probability.Cut.Off=ifelse(Model!="AR1_logistic_lm" & Model!="AR1_logistic_glm" & Probability.Cut.Off %in% prob_ban_pool, NA, Probability.Cut.Off)) %>%
   filter(!is.na(Probability.Cut.Off)) %>%
   distinct() %>%
   arrange(Model, StateNum, Probability.Cut.Off, Granularity, Window.Size, Sample.Size)
