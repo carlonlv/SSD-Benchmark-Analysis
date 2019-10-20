@@ -254,9 +254,9 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   correct_scheduled_num <- data.frame(matrix(nrow=length(ts_names), ncol=0))
   correct_unscheduled_num <- data.frame(matrix(nrow=length(ts_names), ncol=0))
   
-  avg_usage <- data.frame(matrix(nrow=length(ts_names), ncol=0))
-  job_survival <- data.frame(matrix(nrow=length(ts_names), ncol=0))
-  overall_runs <- data.frame(matrix(nrow=length(ts_names), ncol = 0))
+  avg_usage <- data.frame()
+  job_survival <- data.frame()
+  overall_runs <- data.frame()
   
   ## Lists
   logistic_models <- NULL
