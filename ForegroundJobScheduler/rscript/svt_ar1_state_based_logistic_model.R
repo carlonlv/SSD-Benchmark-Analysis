@@ -29,11 +29,6 @@ train_ar1_model <- function(ts_num, train_dataset) {
 }
 
 
-upper_state_num <- function(cpu_required ,num_of_states) {
-  return(floor((100 - cpu_required) / (100 / num_of_states)))
-}
-
-
 parser_logistic_model_state <- function(state_num, train_set_avg, train_set_max, breaks) {
   df <- data.frame("avg"=train_set_avg, "max"=train_set_max)
   df$survived <- factor(ifelse(train_set_max < breaks[state_num+1], 1, 0), levels=c(0, 1))
@@ -238,9 +233,9 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   correct_scheduled_num <- data.frame(matrix(nrow=length(ts_names), ncol=0))
   correct_unscheduled_num <- data.frame(matrix(nrow=length(ts_names), ncol=0))
   
-  avg_usage <- data.frame(matrix(nrow=length(ts_names), ncol=0))
-  job_survival <- data.frame(matrix(nrow=length(ts_names), ncol=0))
-  overall_runs <- data.frame(matrix(nrow=length(ts_names), ncol = 0))
+  avg_usage <- data.frame()
+  job_survival <- data.frame()
+  overall_runs <- data.frame()
   
   ## Two Level Lists
   logistic_inputs <- NULL
