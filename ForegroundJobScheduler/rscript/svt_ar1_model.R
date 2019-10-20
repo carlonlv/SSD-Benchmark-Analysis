@@ -169,7 +169,7 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, prob_
   
   avg_usage <- data.frame()
   job_survival <- data.frame()
-  overall_runs <- data.frame(matrix(nrow=0, ncol=20))
+  overall_runs <- data.frame()
   
   ## Split in Training and Testing Set
   train_dataset <- dataset[1:initial_train_size, 1:length(ts_names)]
