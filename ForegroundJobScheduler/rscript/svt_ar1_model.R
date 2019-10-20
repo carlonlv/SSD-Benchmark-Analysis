@@ -11,6 +11,7 @@ calculate_var_cov_matrix_ar1 <-function(var, l, phi) {
   #### input var: A vector from var(an+l) to var(an+1) of length l
   #### input l: number of prediction
   #### input phi: coeff of AR1 model
+  
   dm=abs(outer(1:l,1:l,"-"))
   var_cov <- matrix(var[outer(1:l,1:l,"pmin")],l,l)*phi^dm
   return(var_cov)
@@ -18,6 +19,7 @@ calculate_var_cov_matrix_ar1 <-function(var, l, phi) {
 
 
 do_prediction <- function(last_obs, phi, mean, variance, predict_size, level=NULL) {
+  
   # Construct mean
   mu <- rep(last_obs, predict_size)
   mu <- mu * phi^(1:predict_size) + (1 - phi^(1:predict_size)) * mean
@@ -34,6 +36,7 @@ do_prediction <- function(last_obs, phi, mean, variance, predict_size, level=NUL
 
 
 train_ar1_model <- function(ts_num, train_dataset) {
+  
   ts_model <- tryCatch({
     arima(x=train_dataset[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000))
   }, error = function(cond) {
@@ -44,6 +47,7 @@ train_ar1_model <- function(ts_num, train_dataset) {
 
 
 scheduling_foreground <- function(ts_num, test_dataset, coeffs, means, vars, window_size, prob_cut_off, cpu_required, granularity, schedule_policy, mode) {
+  
   if (granularity > 0) {
     cpu_required <- round_to_nearest(cpu_required[ts_num], granularity, FALSE)
   } else {
@@ -90,6 +94,7 @@ scheduling_foreground <- function(ts_num, test_dataset, coeffs, means, vars, win
 
 
 scheduling_model <- function(ts_num, test_dataset, coeffs, means, vars, window_size, prob_cut_off, granularity, max_run_length=25, schedule_policy, mode, adjustment) {
+  
   runs <- rep(0, max_run_length)
   run_counter <- 0
   run_switch <- FALSE
@@ -269,7 +274,7 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, initial_train_size,
   write.xlsx(result_path.xlsx, showNA = FALSE, file = output_dp, row.names = FALSE)
 }
 
-## Read back ground job pool
+## Read background job pool
 
 sample_size <- 100
 cpu_usage <- 3
@@ -310,14 +315,12 @@ for (j in 1:ncol(data_matrix)) {
 output_dp <- NULL
 if (adjustment) {
   #output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max post adj.xlsx"
-  
   if (schedule_policy == "dynamic") {
     output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity) post adj.xlsx"
   } else {
     output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary disjoint (windows,granularity) post adj.xlsx"
   }
 } else {
-  
   #output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max.xlsx"
   if (schedule_policy == "dynamic") {
     output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity).xlsx"

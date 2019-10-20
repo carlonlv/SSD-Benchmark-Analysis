@@ -6,6 +6,7 @@ library("xlsx")
 
 
 convert_frequency_dataset <- function(dataset, new_freq, mode) {
+  
   new_avg_cpu <- c()
   window_num <- floor(length(dataset) / new_freq)
   for (i in 1:window_num) {
@@ -24,6 +25,7 @@ convert_frequency_dataset <- function(dataset, new_freq, mode) {
 
 
 round_to_nearest <- function(data, divisor, lower) {
+  
   if (lower) {
     return(floor(data / divisor) * divisor)
   } else {
@@ -33,6 +35,7 @@ round_to_nearest <- function(data, divisor, lower) {
 
 
 compute_pi_up <- function(mu, varcov, predict_size, prob_cutoff, granularity) {
+  
   upper_bounds <- rep(NA, predict_size)
   for (i in 1:predict_size) {
     upper_bounds[i] <- min(mu[i] + qnorm((1-prob_cutoff)) * sqrt(varcov[i,i]), 100)
@@ -46,6 +49,7 @@ compute_pi_up <- function(mu, varcov, predict_size, prob_cutoff, granularity) {
 
 
 check_utilization <- function(pi_up, granularity=0) {
+  
   utilization <- NULL
   if (granularity > 0) {
     utilization <- round_to_nearest(100-pi_up, granularity, TRUE)
@@ -57,6 +61,7 @@ check_utilization <- function(pi_up, granularity=0) {
 
 
 check_survival <- function(pi_up, actual_obs, granularity=0) {
+  
   position_vec <- convert_frequency_dataset(actual_obs, length(actual_obs), mode = "max")
   actual_available <- position_vec
   if (granularity > 0) {
@@ -87,6 +92,7 @@ check_survival <- function(pi_up, actual_obs, granularity=0) {
 
 
 overlapping_total_utilization <- function(idx, actual_obs, window_size, mode) {
+  
   position_vec <- actual_obs[idx:(idx+window_size-1)]
   total_available <- NULL
   if (mode == 1) {
@@ -100,6 +106,7 @@ overlapping_total_utilization <- function(idx, actual_obs, window_size, mode) {
 
 
 dynamic_total_utilization <- function(actual_obs, survivals, window_size) {
+  
   current <- 1
   idx <- 1
   total_utilization <- 0
@@ -115,11 +122,13 @@ dynamic_total_utilization <- function(actual_obs, survivals, window_size) {
 
 
 compute_survival <- function(survival) {
+  
   return(sum(survival, na.rm = TRUE) / length(survival[!is.na(survival)]))
 }
 
 
 compute_utilization <- function(pi_ups, survivals, actual_obs, window_size, granularity, schedule_policy) {
+  
   if (granularity > 0) {
     actual_available <- round_to_nearest(100 - actual_obs, granularity, TRUE)
     actual_obs <- 100 - actual_available
@@ -146,6 +155,7 @@ compute_utilization <- function(pi_ups, survivals, actual_obs, window_size, gran
 
 
 update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num=0, sample_size, window_size, granularity, bin_num=0, utilization1, utilization2, survival, correct_scheduled_rate, correct_unscheduled_rate) {
+  
   xlsx_file <- xlsx_file %>%
     mutate(Avg.Cycle.Usage1 = ifelse(Model == model_name & 
                                       Probability.Cut.Off == prob_cut_off & 
@@ -194,6 +204,7 @@ update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num=0, sam
 
 
 find_overall_evaluation <- function(avg_usages1, avg_usages2, survivals) {
+  
   avg_utilization1 <- mean(as.matrix(avg_usages1), na.rm = TRUE)
   avg_utilization2 <- mean(as.matrix(avg_usages2), na.rm = TRUE)
   survival <- sum(as.matrix(survivals), na.rm = TRUE) / (length(as.matrix(survivals)[!is.na(as.matrix(survivals))]))

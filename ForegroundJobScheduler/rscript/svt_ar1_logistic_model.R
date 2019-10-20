@@ -10,6 +10,7 @@ source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobSch
 
 
 generate_expected_conditional_var <- function(expected_avgs, variance_model) {
+  
   expected_var <- NULL
   if (is.numeric(variance_model)) {
     expected_var <- rep(variance_model^2, length(expected_avgs))
@@ -21,6 +22,7 @@ generate_expected_conditional_var <- function(expected_avgs, variance_model) {
 
 
 train_ar1_model <- function(ts_num, train_dataset) {
+  
   ts_model <- tryCatch({
     arima(x=train_dataset[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000))
   }, error = function(cond) {
@@ -31,6 +33,7 @@ train_ar1_model <- function(ts_num, train_dataset) {
 
 
 parser_for_logistic_model <- function(train_set_max, train_set_avg, cpu_required) {
+  
   df <- data.frame("avg"=train_set_avg, "max"=train_set_max)
   df$survived <- ifelse(df$max <= (100 - cpu_required), 1, 0)
   return(df)
@@ -38,6 +41,7 @@ parser_for_logistic_model <- function(train_set_max, train_set_avg, cpu_required
 
 
 train_logistic_model <- function(ts_num, train_dataset_max, train_dataset_avg, cpu_required) {
+  
   logistic_input <- parser_for_logistic_model(train_dataset_max[,ts_num], train_dataset_avg[,ts_num], cpu_required[ts_num])
   log.lm <- glm(survived~avg, data = logistic_input, family = "binomial", control=glm.control(maxit=50))
   return(log.lm) 
@@ -45,6 +49,7 @@ train_logistic_model <- function(ts_num, train_dataset_max, train_dataset_avg, c
 
 
 do_prediction <- function(last_obs, phi, mean, variance) {
+  
   # Construct mean
   mu <- last_obs * phi + (1 - phi) * mean
   # Construct Var-cov matrix
@@ -55,11 +60,19 @@ do_prediction <- function(last_obs, phi, mean, variance) {
 
 
 find_bin_obs <- function(avg, binsize) {
-  return(floor(avg / binsize))
+  
+  bin <- NULL
+  if (avg == 0) {
+    bin <- 1
+  } else {
+    bin <- ifelse(avg %% binsize == 0, avg %/% binsize - 1, ceiling(avg / binsize))
+  }
+  return(bin)
 }
 
 
 train_cond_var_model <- function(ts_num, train_set_max, train_set_avg, bin_num, method) {
+  
   new_parsed_dat <- data.frame(matrix(nrow=nrow(train_set_avg), ncol=3))
   binsize <- 100 / bin_num
   bin <- as.numeric(sapply(train_set_avg[,ts_num], find_bin_obs, binsize))
@@ -103,6 +116,7 @@ train_cond_var_model <- function(ts_num, train_set_max, train_set_avg, bin_num, 
 
 
 scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, cpu_required, granularity, schedule_policy) {
+  
   if (granularity > 0) {
     cpu_required <- round_to_nearest(cpu_required[ts_num], granularity, FALSE)
   } else {
@@ -157,6 +171,7 @@ scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, co
 
 
 find_expected_max <- function(probability, variance, cpu_required, expected_avgs) {
+  
   if (probability == 1) {
     return(100)
   } else if (probability == 0) {
@@ -168,6 +183,7 @@ find_expected_max <- function(probability, variance, cpu_required, expected_avgs
 
 
 scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, cond_var_models, cond.var, window_size, prob_cut_off, cpu_required, granularity, max_run_length=25, schedule_policy, adjustment) {
+  
   runs <- rep(0, max_run_length)
   run_counter <- 0
   run_switch <- FALSE
@@ -390,7 +406,7 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
 }
 
 
-## Read back ground job pool
+## Read background job pool
 sample_size <- 100
 cpu_usage <- 3
 max_run_length <- 37
@@ -436,14 +452,12 @@ for (j in 1:ncol(data_matrix_max)) {
 output_dp <- NULL
 if (adjustment) {
   #output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max post adj.xlsx"
-  
   if (schedule_policy == "dynamic") {
     output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity) post adj.xlsx"
   } else {
     output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary disjoint (windows,granularity) post adj.xlsx"
   }
 } else {
-  
   #output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max.xlsx"
   if (schedule_policy == "dynamic") {
     output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity).xlsx"

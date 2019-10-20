@@ -8,6 +8,7 @@ source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobSch
 
 
 initialize_coefficient_matrix <- function(ma_coef, q, predict_size, current_err) {
+  
   initial <- matrix(0, nrow = 2, ncol = 2*(predict_size + q))
   pre_ma <- predict_size - current_err
   initial[1:2, (1+2*pre_ma):(2*(pre_ma+1))] <- diag(nrow = 2, ncol = 2)
@@ -19,6 +20,7 @@ initialize_coefficient_matrix <- function(ma_coef, q, predict_size, current_err)
 
 
 update_dict_matrices <- function(prev, ar_coef) {
+  
   num_small_matrices <- ncol(prev) / 2
   result <- matrix(0, nrow = 2, ncol = ncol(prev))
   for (i in 1:num_small_matrices) {
@@ -30,6 +32,7 @@ update_dict_matrices <- function(prev, ar_coef) {
 
 
 calculate_var_cov_matrix <-function(p, q, var, predict_size, ar_coef, ma_coef) {
+  
   forecast_var <- dict()
   forecast_var_max <- numvecdict()
   forecast_var_avg <- numvecdict()
@@ -75,6 +78,7 @@ calculate_var_cov_matrix <-function(p, q, var, predict_size, ar_coef, ma_coef) {
 
 
 calculate_estimates <- function(p, ar_coef, last_obs, predict_size, intercept) {
+  
   estimate <- matrix(nrow = 2, ncol = predict_size)
   if (p == 0) {
     estimate[1,] <- rep(intercept[1,1], predict_size)
@@ -110,6 +114,7 @@ calculate_estimates <- function(p, ar_coef, last_obs, predict_size, intercept) {
 
 
 do_prediction <- function(last_obs, ts_model, predict_size=1, level=NULL) {
+  
   p <- ts_model$ARorder
   q <- ts_model$MAorder
   intercept <- matrix(nrow = 2, ncol = 1)
@@ -151,6 +156,7 @@ do_prediction <- function(last_obs, ts_model, predict_size=1, level=NULL) {
 
 
 scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, ts_models, window_size, prob_cut_off, cpu_required, granularity, schedule_policy) {
+  
   if (granularity > 0) {
     cpu_required <- round_to_nearest(cpu_required[ts_num], granularity, FALSE)
   } else {
@@ -275,6 +281,7 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, ts_mode
 
 
 train_mvt_model <- function(ts_num, train_dataset_max, train_dataset_avg, p, q) {
+  
   uni_data_max <- train_dataset_max[, ts_num]
   uni_data_avg <- train_dataset_avg[, ts_num]
   uni_data_matrix <- matrix(nrow = nrow(train_dataset_max), ncol = 2)
@@ -300,9 +307,9 @@ mvt_stationary_model <- function(dataset_avg, dataset_max, initial_train_size, p
   correct_scheduled_num <- data.frame(matrix(nrow=length(ts_names), ncol=0))
   correct_unscheduled_num <- data.frame(matrix(nrow=length(ts_names), ncol=0))
   
-  avg_usage <- data.frame(matrix(nrow=length(ts_names), ncol=0))
-  job_survival <- data.frame(matrix(nrow=length(ts_names), ncol=0))
-  overall_runs <- data.frame(matrix(nrow=length(ts_names), ncol = 0))
+  avg_usage <- data.frame()
+  job_survival <- data.frame()
+  overall_runs <- data.frame()
   
   ## Dictionaries
   ts_models <- dict()
@@ -406,7 +413,7 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
   write.xlsx(result_path.xlsx, showNA = FALSE, file = output_dp, row.names = FALSE) 
 }
 
-## Read back ground job pool
+## Read background job pool
 
 sample_size <- 100
 cpu_usage <- 3

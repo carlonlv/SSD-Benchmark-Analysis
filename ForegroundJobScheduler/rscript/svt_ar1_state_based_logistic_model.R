@@ -10,6 +10,7 @@ source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobSch
 
 
 do_prediction <- function(last_obs, phi, mean, variance) {
+  
   # Construct mean
   mu <- last_obs * phi + (1 - phi) * mean
   # Construct Var-cov matrix
@@ -20,6 +21,7 @@ do_prediction <- function(last_obs, phi, mean, variance) {
 
 
 train_ar1_model <- function(ts_num, train_dataset) {
+  
   ts_model <- tryCatch({
     arima(x=train_dataset[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000))
   }, error = function(cond) {
@@ -30,6 +32,7 @@ train_ar1_model <- function(ts_num, train_dataset) {
 
 
 parser_logistic_model_state <- function(state_num, train_set_avg, train_set_max, breaks) {
+  
   df <- data.frame("avg"=train_set_avg, "max"=train_set_max)
   df$survived <- factor(ifelse(train_set_max < breaks[state_num+1], 1, 0), levels=c(0, 1))
   return(df)
@@ -37,12 +40,14 @@ parser_logistic_model_state <- function(state_num, train_set_avg, train_set_max,
 
 
 parser_logistic_model_states <- function(ts_num, train_set_avg, train_set_max, breaks) {
+  
   ts_logistic_input <- sapply(1:(length(breaks) - 1), parser_logistic_model_state, train_set_avg[,ts_num], train_set_max[,ts_num], breaks, simplify=FALSE)
   return(ts_logistic_input)
 }
 
 
 train_multi_state_logistic_model <- function(state_num, parsed_states_input) {
+  
   df <- parsed_states_input[[state_num]]
   log.lm <- glm(survived~avg, data=df, family="binomial", control=glm.control(maxit=200))
   return(log.lm)
@@ -50,18 +55,21 @@ train_multi_state_logistic_model <- function(state_num, parsed_states_input) {
 
 
 train_multi_state_logistic_models <- function(ts_num, parsed_states_input, num_of_states) {
+  
   multi_state_logistic <- sapply(1:num_of_states, train_multi_state_logistic_model, parsed_states_input[[ts_num]], simplify=FALSE)
   return(multi_state_logistic)
 }
 
 
 calculate_probability_table <- function(state_num, expected_avgs, trained_logistic_models) {
+  
   prob <- predict(trained_logistic_models[[state_num]], newdata = data.frame("avg"=expected_avgs), type = "response")
   return(prob)
 }
 
 
 adjust_probability <- function(prob) {
+  
   for (state_num in 2:length(prob)) {
     prob[state_num] <- ifelse(prob[state_num] < prob[state_num-1], 1, prob[state_num])
   }
@@ -70,6 +78,7 @@ adjust_probability <- function(prob) {
 
 
 calculate_probability_foreground <- function(probability, cpu_required, num_of_states) {
+  
   binsize <- 100 / num_of_states
   state <- NULL
   if (cpu_required == 0) {
@@ -82,6 +91,7 @@ calculate_probability_foreground <- function(probability, cpu_required, num_of_s
 
 
 scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, cpu_required, granularity, num_of_states, schedule_policy) {
+  
   if (granularity > 0) {
     cpu_required <- round_to_nearest(cpu_required[ts_num], granularity, FALSE)
   } else {
@@ -134,6 +144,7 @@ scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, co
 
 
 compute_pi_up_states <- function(expected_avgs, probability, granularity, prob_cutoff) {
+  
   current_state <- 1
   current_prob <- 0
   while (current_state <= length(probability)) {
@@ -153,6 +164,7 @@ compute_pi_up_states <- function(expected_avgs, probability, granularity, prob_c
 
 
 scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, granularity, max_run_length=25, num_of_states, schedule_policy, adjustment) {
+  
   runs <- rep(0, max_run_length)
   run_counter <- 0
   run_switch <- FALSE
@@ -356,7 +368,7 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
   write.xlsx(result_path.xlsx, showNA = FALSE, file = output_dp, row.names = FALSE)
 }
 
-## Read back ground job pool
+## Read background job pool
 
 sample_size <- 100
 cpu_usage <- 3
