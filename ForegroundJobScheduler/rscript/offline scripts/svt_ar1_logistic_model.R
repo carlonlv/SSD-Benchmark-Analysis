@@ -115,7 +115,7 @@ train_cond_var_model <- function(ts_num, train_set_max, train_set_avg, bin_num, 
 }
 
 
-scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, cpu_required, granularity, schedule_policy) {
+scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs, means, vars, transition, window_size, prob_cut_off, cpu_required, granularity, schedule_policy) {
   
   if (granularity > 0) {
     cpu_required <- round_to_nearest(cpu_required[ts_num], granularity, FALSE)
@@ -182,7 +182,7 @@ find_expected_max <- function(probability, variance, cpu_required, expected_avgs
 }
 
 
-scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, cond_var_models, cond.var, window_size, prob_cut_off, cpu_required, granularity, max_run_length=25, schedule_policy, adjustment) {
+scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs, means, vars, transition, window_size, prob_cut_off, cpu_required, granularity, max_run_length=25, schedule_policy, adjustment) {
   
   runs <- rep(0, max_run_length)
   run_counter <- 0
@@ -204,13 +204,10 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs,
   while (current_end <= last_time_schedule) {
     ## Schedule based on model predictions
     last_obs <- convert_frequency_dataset(test_dataset_avg[(current_end-window_size):(current_end-1), ts_num], window_size, mode = 'avg')
-    
     expected_avgs <- do_prediction(last_obs, coeffs[ts_num], means[ts_num], vars[ts_num])$mu
-    
     expected_vars <- generate_expected_conditional_var(expected_avgs, cond_var_model)
     
     prob <- 1 - predict(logistic_model, newdata = data.frame("avg"=expected_avgs), type = "response")
-    
     expected_max <- find_expected_max(prob, expected_vars, cpu_required[ts_num], expected_avgs)
     
     pi_up <- compute_pi_up(mu=expected_max, varcov=as.matrix(expected_vars), predict_size=1, prob_cutoff=prob_cut_off, granularity=granularity)
@@ -470,6 +467,5 @@ parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity, num_of_bin
 colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity", "num_of_bins")
 parameter.df <- parameter.df %>% 
   arrange(window_size)
-parameter.df <- parameter.df
 
 slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, cond.var, 100, output_dp, schedule_policy, adjustment)

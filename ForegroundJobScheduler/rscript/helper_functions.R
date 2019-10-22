@@ -210,3 +210,16 @@ find_overall_evaluation <- function(avg_usages1, avg_usages2, survivals) {
   survival <- sum(as.matrix(survivals), na.rm = TRUE) / (length(as.matrix(survivals)[!is.na(as.matrix(survivals))]))
   return(list("utilization_rate1"=avg_utilization1, "utilization_rate2"=avg_utilization2, "survival_rate"=survival))
 }
+
+
+find_state_num <- function(obs, num_of_states) {
+  
+  binsize <- 100 / num_of_states
+  state <- NULL
+  if (obs == 0) {
+    state <- 1
+  } else {
+    state <- ifelse(obs %% binsize == 0, obs %/% binsize - 1, ceiling(obs / binsize))
+  }
+  return(state)
+}

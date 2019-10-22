@@ -6,19 +6,8 @@ library("xlsx")
 source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//helper_functions.R")
 
 
-find_state_num <- function(obs, num_of_states) {
-	binsize <- 100 / num_of_states
-	state <- NULL
-	if (obs == 0) {
-		state <- 1
-	} else {
-		state <- ifelse(obs %% binsize == 0, obs %/% binsize - 1, ceiling(obs / binsize))
-	}
-	return(state)
-}
-
-
 train_markov_model <- function(dataset, num_of_states) {
+  
 	from_states <- sapply(dataset[-length(dataset)], find_state_num, num_of_states)
 	to_states <- sapply(dataset[-1], find_state_num, num_of_states)
 	transition <- matrix(0, nrow=num_of_states, ncol=num_of_states)
@@ -35,6 +24,7 @@ train_markov_model <- function(dataset, num_of_states) {
 
 
 do_prediction <- function(last_obs, transition, predict_size, level=NULL) {
+  
 	final_transition <- diag(x=1, nrow=nrow(transition), ncol=ncol(transition))
 	for (i in 1:predict_size) {
 		final_transition <- final_transition %*% transition
@@ -49,7 +39,8 @@ do_prediction <- function(last_obs, transition, predict_size, level=NULL) {
 
 
 scheduling_foreground <- function(ts_num, test_set, trainsition, window_size, prob_cut_off, cpu_required, granularity, schedule_policy, mode) {
-	if (granularity > 0) {
+	
+  if (granularity > 0) {
 		cpu_required <- round_to_nearest(cpu_required[ts_num], granularity, FALSE)
 	} else {
 		cpu_required <- cpu_required[ts_num]
@@ -95,6 +86,7 @@ scheduling_foreground <- function(ts_num, test_set, trainsition, window_size, pr
 
 
 compute_pi_up <- function(to_states, prob_cut_off, granularity) {
+  
 	current_state <- 1
 	current_prob <- 0
 	while (current_state <= length(to_states)) {
@@ -116,7 +108,8 @@ compute_pi_up <- function(to_states, prob_cut_off, granularity) {
 
 
 scheduling_model <- function(ts_num, test_set, transition, window_size, prob_cut_off, granularity, max_run_length=25, schedule_policy, adjustment) {
-	runs <- rep(0, max_run_length)
+	
+  runs <- rep(0, max_run_length)
 	run_counter <- 0
 	run_switch <- FALSE
 	
@@ -180,14 +173,14 @@ markov_model <- function(dataset, initial_train_size, window_size, prob_cut_off,
 	
 	ts_name <- colnames(dataset)
 	
-	scheduled_num <- data.frame(matrix(nrow=length(ts_names), ncol=0))
-	unscheduled_num <- data.frame(matrix(nrow=length(ts_names), ncol=0))
-	corrected_scheduled_num <- data.frame(matrix(nrow=length(ts_names), ncol=0))
-	corrected_unscheduled_num <- data.frame(matrix(nrow=length(ts_names), ncol=0))
+	scheduled_num <- data.frame()
+	unscheduled_num <- data.frame()
+	corrected_scheduled_num <- data.frame()
+	corrected_unscheduled_num <- data.frame()
 	
 	avg_usage <- data.frame(matrix(nrow=0, ncol=1))
 	job_survival <- data.frame(matrix(nrow=0, ncol=1))
-	overall_runs <- data.frame(matrix(nrow=0, ncol=max_run_length)))
+	overall_runs <- data.frame(matrix(nrow=0, ncol=max_run_length))
 	
 	## Split the dataset into training and testing sets
 	train_set <- dataset[1:initial_train_size,]
@@ -271,7 +264,7 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, initial_train_size,
 	
 	print(paste("Avg cycle used mode 1:", "job length", window_size, utilization_rate1))
 	print(paste("Avg cycle used mode 2:", "job length", window_size, utilization_rate2))
-	print(paste("Job survival rate:", job_length, window_size, survival_rate))
+	print(paste("Job survival rate:", "job length", window_size, survival_rate))
 	print(paste("Scheduling summary:", "Correct scheduled rate": correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
 	
 	result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
@@ -282,4 +275,68 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, initial_train_size,
 	write.xlsx(result_path.xlsx, showNA=FALSE, file=output_dp, row.names=FALSE)
 }
 
-## Read Background job pool
+## Read background job pool
+sample_size <- 100
+cpu_usage <- 3
+max_run_length <- 37
+total_trace_length <- 8000
+initial_train_size <- 6000
+adjustment <- FALSE
+
+window_sizes <- c(12, 36)
+prob_cut_offs <- c(0.005, 0.01, 0.1, 0.75)
+granularity <- c(100/32, 100/64, 100/128, 0)
+num_of_bins <- c(10, 50, 100)
+
+schedule_policy <- "dynamic"
+
+bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
+bg_job_pool <- NULL
+if (sample_size == 100 ) {
+  bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 background jobs.csv")[,1]
+  bg_job_pool <- sub(".pd", "", bg_job_pool)
+} else {
+  bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled background jobs.csv")[,1]
+  bg_job_pool <- sub(".pd", "", bg_job_pool)
+}
+
+data_matrix_avg <- matrix(nrow = total_trace_length, ncol = 0)
+data_matrix_max <- matrix(nrow = total_trace_length, ncol = 0)
+for (job_num in bg_job_pool) {
+  bg_job <- read.csv(paste(bg_jobs_path, job_num, ".csv", sep = ""))
+  data_matrix_avg <- cbind(data_matrix_avg, bg_job$avg_cpu[1:total_trace_length])
+  data_matrix_max <- cbind(data_matrix_max, bg_job$max_cpu[1:total_trace_length])
+}
+rownames(data_matrix_avg) <- seq(1, nrow(data_matrix_avg) ,1)
+rownames(data_matrix_max) <- seq(1, nrow(data_matrix_max) ,1)
+colnames(data_matrix_avg) <- bg_job_pool
+colnames(data_matrix_max) <- bg_job_pool
+
+cpu_required <- rep(0, ncol(data_matrix_max))
+for (j in 1:ncol(data_matrix_max)) {
+  cpu_required[j] <- as.numeric(quantile(data_matrix_max[,j], c(0.15, 0.5, 0.85), type = 4)[cpu_usage])
+}
+
+output_dp <- NULL
+if (adjustment) {
+  #output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max post adj.xlsx"
+  if (schedule_policy == "dynamic") {
+    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity) post adj.xlsx"
+  } else {
+    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary disjoint (windows,granularity) post adj.xlsx"
+  }
+} else {
+  #output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max.xlsx"
+  if (schedule_policy == "dynamic") {
+    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity).xlsx"
+  } else {
+    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary disjoint (windows,granularity).xlsx"
+  }
+}
+
+parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity, num_of_bins)
+colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity", "num_of_bins")
+parameter.df <- parameter.df %>% 
+  arrange(window_size)
+
+slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, cond.var, 100, output_dp, schedule_policy, adjustment)
