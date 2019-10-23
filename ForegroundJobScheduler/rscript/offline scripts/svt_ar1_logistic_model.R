@@ -132,7 +132,7 @@ scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, co
   last_time_schedule <- nrow(test_dataset_avg) - window_size + 1
   
   current_end <- window_size + 1
-  update_policy = ifelse(schedule_policy == "disjoint", window_size, 1)
+  update_policy <- ifelse(schedule_policy == "disjoint", window_size, 1)
   while (current_end <= last_time_schedule) {
   
     ## Predict current avgs using AR1
@@ -158,9 +158,9 @@ scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, co
     
     if (schedule_policy == "dynamic") {
       if (prediction == 1) {
-        update_policy = ifelse(actual == 1, window_size, 1)
+        update_policy <- ifelse(actual == 1, window_size, 1)
       } else {
-        update_policy = 1
+        update_policy <- 1
       }
     }
     current_end <- current_end + update_policy
@@ -349,7 +349,7 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
 }
 
 
-wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, initial_train_size, max_run_length, cond.var, bin_num, output_dp, schedule_policy, adjustment) {
+wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, initial_train_size, max_run_length, cond.var, output_dp, schedule_policy, adjustment) {
   
   window_size <- as.numeric(parameter[1])
   prob_cut_off <- as.numeric(parameter[2])
@@ -468,4 +468,4 @@ colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity", "num_o
 parameter.df <- parameter.df %>% 
   arrange(window_size)
 
-slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, cond.var, 100, output_dp, schedule_policy, adjustment)
+slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, cond.var, output_dp, schedule_policy, adjustment)

@@ -32,8 +32,12 @@ train_markov_model <- function(ts_num, train_dataset_avg, train_dataset_max, num
     to <- to_states[i]
     transition[from, to] <- transition[from, to] + 1
   }
-  for (col in 1:ncol(transition)) {
-    trasition[,col] <- transition[,col] / sum(transition[,col])
+  for (r in 1:ncol(transition)) {
+    if (sum(transition[r,]) == 0) {
+      transition[r,] <- rep(100 / num_of_states, num_of_states)
+    } else {
+      transition[r,] <- transition[r,] / sum(transition[r,])
+    }
   }
   return(transition)
 }
@@ -53,14 +57,27 @@ do_prediction_ar1 <- function(last_obs, phi, mean, variance) {
 do_prediction_markov <- function(predictor, transition, predict_size, level=NULL) {
   
   final_transition <- diag(x=1, nrow=nrow(transition), ncol=ncol(transition))
-  for (i in 1:predict_size) {
-    final_transition <- final_transition %*% transition
+  parsed_transition <- transition
+  if (!is.null(level)) {
+    level_state <- find_state_num(level, nrow(transition))
+    for (i in level_state:nrow(transition)) {
+      parsed_transition[i,] <- rep(0, nrow(transition))
+      parsed_transition[i, i] <- 1
+    }
   }
   from <- find_state_num(predictor, nrow(transition))
-  to_states <- final_transition[from,]
+  to_states <- data.frame()
+  for (i in 1:predict_size) {
+    final_transition <- final_transition %*% parsed_transition
+    to_states <- rbind(to_states, final_transition[from, ])
+  }
+  
   # calculate probability
-  to <- find_state_num(level, nrow(transition))
-  prob <- ifelse(is.null(level), NULL, sum(final_transition[from, to:(nrow(transition))]))
+  prob <- NULL
+  if (!is.null(level)) {
+    to <- find_state_num(level, nrow(transition))
+    prob <- sum(final_transition[from, to:(nrow(transition))])
+  }
   return(list("prob"=prob, "to_states"=to_states))
 }
 
@@ -82,14 +99,14 @@ scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, co
   last_time_schedule <- nrow(test_dataset_avg) - window_size + 1
   
   current_end <- window_size + 1
-  update_policy = ifelse(schedule_policy == "disjoint", window_size, 1)
+  update_policy <- ifelse(schedule_policy == "disjoint", window_size, 1)
   while (current_end <= last_time_schedule) {
     ## Predict current avgs using AR1
     last_obs <- convert_frequency_dataset(test_dataset_avg[(current_end-window_size):(current_end-1), ts_num], window_size, mode = "avg")
     expected_avgs <- do_prediction_ar1(last_obs, coeffs[ts_num], means[ts_num], vars[ts_num])$mu
     prediction_prob <- do_prediction_markov(expected_avgs, transition_matrix[[ts_num]], 1, 100-cpu_required)
     
-    prediction <- ifelse(prediction_prob <= prob_cut_off, 1, 0)
+    prediction <- ifelse(prediction_prob$prob <= prob_cut_off, 1, 0)
     scheduled_num <- ifelse(prediction == 1, scheduled_num + 1, scheduled_num)
     unscheduled_num <- ifelse(prediction == 1, unscheduled_num, unscheduled_num + 1)
     
@@ -103,9 +120,9 @@ scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, co
     
     if (schedule_policy == "dynamic") {
       if (prediction == 1) {
-        update_policy = ifelse(actual == 1, window_size, 1)
+        update_policy <- ifelse(actual == 1, window_size, 1)
       } else {
-        update_policy = 1
+        update_policy <- 1
       }
     }
     current_end <- current_end + update_policy
@@ -115,16 +132,42 @@ scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, co
 }
 
 
-scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, cond_var_models, cond.var, window_size, prob_cut_off, cpu_required, granularity, max_run_length=25, schedule_policy, adjustment) {
+compute_pi_up_markov_single <- function(to_states, prob_cut_off, granularity) {
+  
+  current_state <- 1
+  current_prob <- 0
+  while (current_state <= length(to_states)) {
+    if (current_prob < prob_cut_off) {
+      current_prob <- current_prob + to_states[current_state]
+      current_state <- current_state + 1
+    } else {
+      break
+    }
+  }
+  
+  pi_up <- current_state * (100 / length(to_states))
+  if (granularity > 0) {
+    scheduled_size <- round_to_nearest(100 - pi_up, granularity, TRUE)
+    pi_up <- 100 - scheduled_size
+  }
+  return(pi_up)
+}
+
+
+compute_pi_up_markov <- function(to_states, prob_cut_off, granularity) {
+  
+  pi_ups <- apply(to_states, 2, compute_pi_up_markov_single, prob_cut_off, granularity)
+  return(max(pi_ups))
+}
+
+
+scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs, means, vars, transition, window_size, prob_cut_off, cpu_required, granularity, max_run_length=25, schedule_policy, adjustment) {
   
   runs <- rep(0, max_run_length)
   run_counter <- 0
   run_switch <- FALSE
   
   last_time_schedule <- nrow(test_dataset_max) - window_size + 1
-  
-  logistic_model <- logistic_models[[ts_num]]
-  cond_var_model <- cond_var_models[[ts_num]]
   
   current_end <- window_size + 1
   update_policy <- ifelse(schedule_policy == "disjoint", window_size, 1)
@@ -133,14 +176,13 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs,
   
   utilization <- c()
   survival <- c()
-  
   while (current_end <= last_time_schedule) {
     ## Schedule based on model predictions
     last_obs <- convert_frequency_dataset(test_dataset_avg[(current_end-window_size):(current_end-1), ts_num], window_size, mode = 'avg')
     expected_avgs <- do_prediction_ar1(last_obs, coeffs[ts_num], means[ts_num], vars[ts_num])$mu
     prediction_result <- do_prediction_markov(expected_avgs, transition[[ts_num]], 1, NULL)
     
-    pi_up <- compute_pi_up(prediction_result$to_states, 1, prob_cut_off, granularity)
+    pi_up <- compute_pi_up_markov(prediction_result$to_states, prob_cut_off, granularity)
     pi_ups <- c(pi_ups, pi_up)
     
     ## Evalute schedulings based on prediction
@@ -223,9 +265,9 @@ ar1_markov_model <- function(dataset_avg, dataset_max, initial_train_size, prob_
   ## Training AR1 Model
   print("Training: AR1.")
   train_result_ar1 <- sapply(1:length(ts_names), train_ar1_model, new_trainset_avg)
-  coeffs <- unlist(train_result[1,])
-  means <- unlist(train_result[2,])
-  vars <- unlist(train_result[3,])
+  coeffs <- unlist(train_result_ar1[1,])
+  means <- unlist(train_result_ar1[2,])
+  vars <- unlist(train_result_ar1[3,])
   
   ## Training Markov Model
   print("Training: Markov.")
@@ -275,7 +317,7 @@ ar1_markov_model <- function(dataset_avg, dataset_max, initial_train_size, prob_
 }
 
 
-wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, initial_train_size, max_run_length, num_of_states, output_dp, schedule_policy, adjustment) {
+wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, initial_train_size, max_run_length, output_dp, schedule_policy, adjustment) {
   
   window_size <- as.numeric(parameter[1])
   prob_cut_off <- as.numeric(parameter[2])
@@ -285,7 +327,7 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
   print(paste("Job len:", window_size))
   print(paste("Cut off prob:", prob_cut_off))
   print(paste("Granularity:", granularity))
-  print(paste("BinNum:", bin_num))
+  print(paste("Num of States:", num_of_states))
   
   output <- ar1_markov_model(dataset_avg, dataset_max, initial_train_size, prob_cut_off, max_run_length, window_size, cpu_required, num_of_states, granularity, adjustment)
   
@@ -381,4 +423,4 @@ colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity", "num_o
 parameter.df <- parameter.df %>% 
   arrange(window_size)
 
-slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, cond.var, 100, output_dp, schedule_policy, adjustment)
+slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment)

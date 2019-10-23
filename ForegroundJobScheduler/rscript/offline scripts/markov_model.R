@@ -6,35 +6,54 @@ library("xlsx")
 source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//helper_functions.R")
 
 
-train_markov_model <- function(dataset, num_of_states) {
+train_markov_model <- function(ts_num, train_dataset_avg, train_dataset_max, num_of_states) {
   
-	from_states <- sapply(dataset[-length(dataset)], find_state_num, num_of_states)
-	to_states <- sapply(dataset[-1], find_state_num, num_of_states)
-	transition <- matrix(0, nrow=num_of_states, ncol=num_of_states)
-	for (i in 1:length(from_states)) {
-		from <- from_states[i]
-		to <- to_states[i]
-		transition[from, to] <- transition[from, to] + 1
-	}
-	for (col in 1:ncol(transition)) {
-		trasition[,col] <- transition[,col] / sum(transition[,col])
-	}
-	return(transition)
+  dataset_avg <- train_dataset_avg[, ts_num]
+  dataset_max <- train_dataset_max[, ts_num]
+  from_states <- sapply(dataset_avg, find_state_num, num_of_states)
+  to_states <- sapply(dataset_max, find_state_num, num_of_states)
+  transition <- matrix(0, nrow=num_of_states, ncol=num_of_states)
+  for (i in 1:length(from_states)) {
+    from <- from_states[i]
+    to <- to_states[i]
+    transition[from, to] <- transition[from, to] + 1
+  }
+  for (r in 1:ncol(transition)) {
+    if (sum(transition[r,]) == 0) {
+      transition[r,] <- rep(100 / num_of_states, num_of_states)
+    } else {
+      transition[r,] <- transition[r,] / sum(transition[r,])
+    }
+  }
+  return(transition)
 }
 
 
-do_prediction <- function(last_obs, transition, predict_size, level=NULL) {
+do_prediction_markov <- function(predictor, transition, predict_size, level=NULL) {
   
-	final_transition <- diag(x=1, nrow=nrow(transition), ncol=ncol(transition))
-	for (i in 1:predict_size) {
-		final_transition <- final_transition %*% transition
-	}
-	from <- find_state_num(last_obs, nrow(transition))
-	to_states <- final_transition[from,]
-	# calculate probability
-	to <- find_state_num(level, nrow(transition))
-	prob <- ifelse(is.null(level), NULL, final_transition[from, to])
-	return(list("prob"=prob, "to_states"=to_states))
+  final_transition <- diag(x=1, nrow=nrow(transition), ncol=ncol(transition))
+  parsed_transition <- transition
+  if (!is.null(level)) {
+    level_state <- find_state_num(level, nrow(transition))
+    for (i in level_state:nrow(transition)) {
+      parsed_transition[i,] <- rep(0, nrow(transition))
+      parsed_transition[i, i] <- 1
+    }
+  }
+  from <- find_state_num(predictor, nrow(transition))
+  to_states <- data.frame()
+  for (i in 1:predict_size) {
+    final_transition <- final_transition %*% parsed_transition
+    to_states <- rbind(to_states, final_transition[from, ])
+  }
+  
+  # calculate probability
+  prob <- NULL
+  if (!is.null(level)) {
+    to <- find_state_num(level, nrow(transition))
+    prob <- sum(final_transition[from, to:(nrow(transition))])
+  }
+  return(list("prob"=prob, "to_states"=to_states))
 }
 
 
@@ -58,7 +77,7 @@ scheduling_foreground <- function(ts_num, test_set, trainsition, window_size, pr
 	while (current_end <= last_time_schedule) {
 		## Schedule based on model predictions
 		last_obs <- convert_frequency_dataset(test_set[(current_end-window_size):(current_end-1), ts_num], window_size, mode="max")
-		prediction_result <- do_prediction(last_obs, transition[[ts_num]], 1, 100-cpu_required)
+		prediction_result <- do_prediction_markov(last_obs, transition[[ts_num]], 1, 100-cpu_required)
 		prediction <- ifelse(prediction_result$prob <= prob_cut_off, 1, 0)
 		scheduled_num <- ifelse(prediction == 1, scheduled_num + 1, scheduled_num)
 		unscheduled_num <- ifelse(prediction == 1, unscheduled_num, unscheduled_num + 1)
@@ -85,25 +104,32 @@ scheduling_foreground <- function(ts_num, test_set, trainsition, window_size, pr
 }
 
 
-compute_pi_up <- function(to_states, prob_cut_off, granularity) {
+compute_pi_up_markov_single <- function(to_states, prob_cut_off, granularity) {
   
-	current_state <- 1
-	current_prob <- 0
-	while (current_state <= length(to_states)) {
-		if (current_prob < prob_cut_off) {
-			current_prob <- current_prob + to_states[current_state]
-			current_state <- current_state + 1
-		} else {
-			break
-		}
-	}
-	
-	pi_up <- current_state * (100 / length(to_states))
-	if (granularity > 0) {
-		scheduled_size <- round_to_nearest(100 - upper_bounds, granularity, TRUE)
-		pi_up <- 100 - scheduled_size
-	}
-	return(pi_up)
+  current_state <- 1
+  current_prob <- 0
+  while (current_state <= length(to_states)) {
+    if (current_prob < prob_cut_off) {
+      current_prob <- current_prob + to_states[current_state]
+      current_state <- current_state + 1
+    } else {
+      break
+    }
+  }
+  
+  pi_up <- current_state * (100 / length(to_states))
+  if (granularity > 0) {
+    scheduled_size <- round_to_nearest(100 - pi_up, granularity, TRUE)
+    pi_up <- 100 - scheduled_size
+  }
+  return(pi_up)
+}
+
+
+compute_pi_up_markov <- function(to_states, prob_cut_off, granularity) {
+  
+  pi_ups <- apply(to_states, 2, compute_pi_up_markov_single, prob_cut_off, granularity)
+  return(max(pi_ups))
 }
 
 
@@ -125,8 +151,8 @@ scheduling_model <- function(ts_num, test_set, transition, window_size, prob_cut
 	while (current_end <= last_time_schedule) {
 		## Schedule based on model predictions
 		last_obs <- convert_frequency_dataset(test_set[(current_end-window_size):(current_end-1), ts_num], window_size, mode="max")
-		prediction_result <- do_prediction(last_obs, transition[[ts_num]], 1, NULL)
-		pi_up <- compute_pi_up(prediction_result$to_states, 1, prob_cut_off, granularity)
+		prediction_result <- do_prediction_markov(last_obs, transition[[ts_num]], 1, NULL)
+		pi_up <- compute_pi_up_markov(prediction_result$to_states, prob_cut_off, granularity)
 		pi_ups <- c(pi_ups, pi_up)
 		## Evaluate schedulings based on prediction
 		start_time <- current_end
@@ -246,6 +272,7 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, initial_train_size,
 	print(paste("Job len:", window_size))
 	print(paste("Cut off prob:", prob_cut_off))
 	print(paste("Granularity:", granularity))
+	print(paste("Num of States:", num_of_states))
 	
 	output <- markov_model(dataset, initial_train_size, window_size, prob_cut_off, max_run_length, cpu_required, granularity, num_of_states, schedule_policy, adjustment)
 	overall_evaluation <- find_overall_evaluation(output$avg_usage[,1], output$avg_usage[,2], output$job_survival[,1])
@@ -339,4 +366,4 @@ colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity", "num_o
 parameter.df <- parameter.df %>% 
   arrange(window_size)
 
-slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, cond.var, 100, output_dp, schedule_policy, adjustment)
+slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment)
