@@ -137,8 +137,8 @@ compute_pi_up_markov_single <- function(to_states, prob_cut_off, granularity) {
   current_state <- 1
   current_prob <- 0
   while (current_state <= length(to_states)) {
-    if (current_prob < prob_cut_off) {
-      current_prob <- current_prob + to_states[current_state]
+    current_prob <- current_prob + to_states[current_state]
+    if (current_prob < 1-prob_cut_off) {
       current_state <- current_state + 1
     } else {
       break
@@ -156,7 +156,7 @@ compute_pi_up_markov_single <- function(to_states, prob_cut_off, granularity) {
 
 compute_pi_up_markov <- function(to_states, prob_cut_off, granularity) {
   
-  pi_ups <- apply(to_states, 2, compute_pi_up_markov_single, prob_cut_off, granularity)
+  pi_ups <- apply(to_states, 1, compute_pi_up_markov_single, prob_cut_off, granularity)
   return(max(pi_ups))
 }
 
@@ -242,10 +242,6 @@ ar1_markov_model <- function(dataset_avg, dataset_max, initial_train_size, prob_
   avg_usage <- data.frame()
   job_survival <- data.frame()
   overall_runs <- data.frame()
-  
-  ## Lists
-  logistic_models <- NULL
-  cond_var_models <- NULL
   
   ## Split the dataset into training and testing sets
   train_dataset_max <- dataset_max[1:initial_train_size,]
