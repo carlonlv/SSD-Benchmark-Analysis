@@ -59,7 +59,7 @@ do_prediction_markov <- function(predictor, transition, predict_size, level=NULL
 }
 
 
-scheduling_foreground <- function(ts_num, test_set, transition, window_size, prob_cut_off, cpu_required, granularity, schedule_policy, mode) {
+scheduling_foreground <- function(ts_num, test_set, transition, window_size, prob_cut_off, cpu_required, granularity, schedule_policy) {
 	
   if (granularity > 0) {
 		cpu_required <- round_to_nearest(cpu_required[ts_num], granularity, FALSE)
@@ -219,16 +219,19 @@ markov_model <- function(dataset, initial_train_size, window_size, prob_cut_off,
 	rownames(new_trainset) <- seq(1, 1 + window_size * (nrow(new_trainset) - 1), window_size)
 	colnames(new_trainset) <- ts_names
 	
+	new_trainset_overlap <- apply(train_set, 2, convert_frequency_dataset_overlapping, new_freq=window_size, mode="max")
+	rownames(new_trainset_overlap) <- 1:nrow(new_trainset_overlap)
+	colnames(new_trainset_overlap) <- ts_names
+	
 	## Train Model
 	print("Training")
-	train_result <- sapply(1:length(ts_names), train_markov_model, new_trainset, num_of_states, simplify=FALSE)
+	train_result <- sapply(1:length(ts_names), train_markov_model, new_trainset_overlap, num_of_states, simplify=FALSE)
 	
 	## Test Model
 	print("Testing on Foreground job:")
 	result_foreground <- sapply(1:length(ts_names), scheduling_foreground, test_set, train_result, window_size, prob_cut_off, cpu_required, granularity, schedule_policy)
 	print("Testing on Model:")
-	result_model <- sapply(1:length(ts_names), scheduling_model, test_set, train_result, window_size, prob_cut_off, cpu_required, granularity, schedule_policy, adjustment, simplify=FALSE)
-	
+	result_model <- sapply(1:length(ts_names), scheduling_model, test_set, train_result, window_size, prob_cut_off, granularity, max_run_length, schedule_policy, adjustment, simplify=FALSE)
 	scheduled_num <- cbind(scheduled_num, unlist(result_foreground[1,]))
 	unscheduled_num <- cbind(unscheduled_num, unlist(result_foreground[2,]))
 	correct_scheduled_num <- cbind(correct_scheduled_num, unlist(result_foreground[3,]))

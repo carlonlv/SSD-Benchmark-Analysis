@@ -1,8 +1,8 @@
 library("dplyr")
 library("xlsx")
 
-models <- c("AR1", "VAR1", "AR1_logistic_glm", "AR1_logistic_lm", "AR1_state_based_logistic")
-statenum <- c(10, 20, 50)
+models <- c("AR1", "VAR1", "AR1_logistic_glm", "AR1_logistic_lm", "AR1_state_based_logistic", "AR1_Markov", "Markov")
+statenum <- c(32, 64, 128)
 prob_cut_offs <- c(0.005, 0.01, 0.1, 0.75)
 granularity <- c(100/32, 100/64, 100/128, 0)
 window_size <- c(12, 36)
