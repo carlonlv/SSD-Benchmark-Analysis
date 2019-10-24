@@ -6,7 +6,11 @@ library("dict")
 library("cluster")
 library("xlsx")
 
-source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//helper_functions.R")
+if (Sys.info()["sysname"] == "Windows") {
+  source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//helper_functions.R")
+} else {
+  source("/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/rscript/helper_functions.R")
+}
 
 
 generate_expected_conditional_var <- function(expected_avgs, variance_model) {
@@ -43,7 +47,7 @@ parser_for_logistic_model <- function(train_set_max, train_set_avg, cpu_required
 train_logistic_model <- function(ts_num, train_dataset_max, train_dataset_avg, cpu_required) {
   
   logistic_input <- parser_for_logistic_model(train_dataset_max[,ts_num], train_dataset_avg[,ts_num], cpu_required[ts_num])
-  log.lm <- glm(survived~avg, data = logistic_input, family = "binomial", control=glm.control(maxit=50))
+  log.lm <- glm(survived~avg, data = logistic_input, family = "binomial", control=glm.control(maxit=2000))
   return(log.lm) 
 }
 
@@ -421,13 +425,27 @@ num_of_bins <- c(1000, 500)
 
 schedule_policy <- "dynamic"
 
-bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
+bg_jobs_path <- NULL
+if (Sys.info()["sysname"] == "Windows") {
+  bg_jobs_path <- "C://Users//carlo//Documents//sample background jobs//"
+} else {
+  bg_jobs_path <- "/Users/carlonlv/Documents/microsoft traces/"
+}
+
 bg_job_pool <- NULL
 if (sample_size == 100 ) {
-  bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 background jobs.csv")[,1]
+  if (Sys.info()["sysname"] == "Windows") {
+    bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 background jobs.csv")[,1]
+  } else {
+    bg_job_pool <- read.csv("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/pythonscripts/list of sampled 100 background jobs.csv")[,1]
+  }
   bg_job_pool <- sub(".pd", "", bg_job_pool)
 } else {
-  bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled background jobs.csv")[,1]
+  if (Sys.info()["sysname"] == "Windows") {
+    bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled background jobs.csv")[,1]
+  } else {
+    bg_job_pool <- read.csv("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/pythonscripts/list of sampled background jobs.csv")[,1]
+  }
   bg_job_pool <- sub(".pd", "", bg_job_pool)
 }
 
@@ -450,18 +468,32 @@ for (j in 1:ncol(data_matrix_max)) {
 
 output_dp <- NULL
 if (adjustment) {
-  #output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max post adj.xlsx"
   if (schedule_policy == "dynamic") {
-    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity) post adj.xlsx"
+    if (Sys.info()["sysname"] == "Windows") {
+      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity) post adj.xlsx"
+    } else {
+      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/Nonoverlapping windows/summary dynamic (windows,granularity) post adj.xlsx"
+    }
   } else {
-    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary disjoint (windows,granularity) post adj.xlsx"
+    if (Sys.info()["sysname"] == "Windows") {
+      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary disjoint (windows,granularity) post adj.xlsx"
+    } else {
+      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/Nonoverlapping windows/summary disjoint (windows,granularity) post adj.xlsx"
+    }
   }
 } else {
-  #output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max.xlsx"
   if (schedule_policy == "dynamic") {
-    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity).xlsx"
+    if (Sys.info()["sysname"] == "Windows") {
+      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity).xlsx"
+    } else {
+      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/Nonoverlapping windows/summary dynamic (windows,granularity).xlsx"
+    }
   } else {
-    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary disjoint (windows,granularity).xlsx"
+    if (Sys.info()["sysname"] == "Windows") {
+      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary disjoint (windows,granularity).xlsx"
+    } else {
+      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/Nonoverlapping windows/summary disjoint (windows,granularity).xlsx"
+    }
   }
 }
 

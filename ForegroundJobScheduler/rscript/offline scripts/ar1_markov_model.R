@@ -6,7 +6,11 @@ library("dict")
 library("cluster")
 library("xlsx")
 
-source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//helper_functions.R")
+if (Sys.info()["sysname"] == "Windows") {
+  source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//helper_functions.R")
+} else {
+  source("/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/rscript/helper_functions.R")
+}
 
 
 train_ar1_model <- function(ts_num, train_dataset) {
@@ -258,6 +262,14 @@ ar1_markov_model <- function(dataset_avg, dataset_max, initial_train_size, prob_
   rownames(new_trainset_avg) <- seq(1, 1 + window_size * (nrow(new_trainset_avg) - 1), window_size)
   colnames(new_trainset_avg) <- ts_names
   
+  new_trainset_max_overlap <- apply(train_dataset_max, 2, convert_frequency_dataset_overlapping, new_freq=window_size, mode="max")
+  rownames(new_trainset_max_overlap) <- 1:nrow(new_trainset_max_overlap)
+  colnames(new_trainset_max_overlap) <- ts_names
+  
+  new_trainset_avg_overlap <- apply(train_dataset_avg, 2, convert_frequency_dataset_overlapping, new_freq=window_size, mode="avg")
+  rownames(new_trainset_avg_overlap) <- 1:nrow(new_trainset_avg_overlap)
+  colnames(new_trainset_avg_overlap) <- ts_names
+  
   ## Training AR1 Model
   print("Training: AR1.")
   train_result_ar1 <- sapply(1:length(ts_names), train_ar1_model, new_trainset_avg)
@@ -267,7 +279,7 @@ ar1_markov_model <- function(dataset_avg, dataset_max, initial_train_size, prob_
   
   ## Training Markov Model
   print("Training: Markov.")
-  train_result_markov <- sapply(1:length(ts_names), train_markov_model, new_trainset_avg, new_trainset_max, num_of_states, simplify=FALSE)
+  train_result_markov <- sapply(1:length(ts_names), train_markov_model, new_trainset_avg_overlap, new_trainset_max_overlap, num_of_states, simplify=FALSE)
   
   ## Test Model
   print("Testing on Foreground job:")
@@ -366,17 +378,31 @@ adjustment <- FALSE
 window_sizes <- c(12, 36)
 prob_cut_offs <- c(0.005, 0.01, 0.1, 0.75)
 granularity <- c(100/32, 100/64, 100/128, 0)
-num_of_states <- c(10, 50, 100)
+num_of_states <- c(32, 64, 128)
 
 schedule_policy <- "dynamic"
 
-bg_jobs_path = "C://Users//carlo//Documents//sample background jobs//"
+bg_jobs_path <- NULL
+if (Sys.info()["sysname"] == "Windows") {
+  bg_jobs_path <- "C://Users//carlo//Documents//sample background jobs//"
+} else {
+  bg_jobs_path <- "/Users/carlonlv/Documents/microsoft traces/"
+}
+
 bg_job_pool <- NULL
 if (sample_size == 100 ) {
-  bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 background jobs.csv")[,1]
+  if (Sys.info()["sysname"] == "Windows") {
+    bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 background jobs.csv")[,1]
+  } else {
+    bg_job_pool <- read.csv("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/pythonscripts/list of sampled 100 background jobs.csv")[,1]
+  }
   bg_job_pool <- sub(".pd", "", bg_job_pool)
 } else {
-  bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled background jobs.csv")[,1]
+  if (Sys.info()["sysname"] == "Windows") {
+    bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled background jobs.csv")[,1]
+  } else {
+    bg_job_pool <- read.csv("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/pythonscripts/list of sampled background jobs.csv")[,1]
+  }
   bg_job_pool <- sub(".pd", "", bg_job_pool)
 }
 
@@ -399,18 +425,32 @@ for (j in 1:ncol(data_matrix_max)) {
 
 output_dp <- NULL
 if (adjustment) {
-  #output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max post adj.xlsx"
   if (schedule_policy == "dynamic") {
-    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity) post adj.xlsx"
+    if (Sys.info()["sysname"] == "Windows") {
+      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity) post adj.xlsx"
+    } else {
+      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/Nonoverlapping windows/summary dynamic (windows,granularity) post adj.xlsx"
+    }
   } else {
-    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary disjoint (windows,granularity) post adj.xlsx"
+    if (Sys.info()["sysname"] == "Windows") {
+      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary disjoint (windows,granularity) post adj.xlsx"
+    } else {
+      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/Nonoverlapping windows/summary disjoint (windows,granularity) post adj.xlsx"
+    }
   }
 } else {
-  #output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary (windows) max.xlsx"
   if (schedule_policy == "dynamic") {
-    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity).xlsx"
+    if (Sys.info()["sysname"] == "Windows") {
+      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity).xlsx"
+    } else {
+      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/Nonoverlapping windows/summary dynamic (windows,granularity).xlsx"
+    }
   } else {
-    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary disjoint (windows,granularity).xlsx"
+    if (Sys.info()["sysname"] == "Windows") {
+      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary disjoint (windows,granularity).xlsx"
+    } else {
+      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/Nonoverlapping windows/summary disjoint (windows,granularity).xlsx"
+    }
   }
 }
 

@@ -24,6 +24,25 @@ convert_frequency_dataset <- function(dataset, new_freq, mode) {
 }
 
 
+convert_frequency_dataset_overlapping <- function(dataset, new_freq, mode) {
+  
+  new_avg_cpu <- c()
+  last_window <- length(dataset) - new_freq + 1
+  for (i in 1:last_window) {
+    from <- i
+    to <- i + new_freq - 1
+    new_val <- NULL
+    if (mode == 'max') {
+      new_val <- max(dataset[from:to], na.rm = TRUE)
+    } else {
+      new_val <- mean(dataset[from:to], na.rm = TRUE)
+    }
+    new_avg_cpu <- c(new_avg_cpu, new_val)
+  }
+  return(new_avg_cpu)
+}
+
+
 round_to_nearest <- function(data, divisor, lower) {
   
   if (lower) {
@@ -50,13 +69,7 @@ compute_pi_up <- function(mu, varcov, predict_size, prob_cutoff, granularity) {
 
 check_utilization <- function(pi_up, granularity=0) {
   
-  utilization <- NULL
-  if (granularity > 0) {
-    utilization <- round_to_nearest(100-pi_up, granularity, TRUE)
-  } else {
-    utilization <- 100 - pi_up
-  }
-  return(utilization)
+  return(100-pi_up)
 }
 
 
