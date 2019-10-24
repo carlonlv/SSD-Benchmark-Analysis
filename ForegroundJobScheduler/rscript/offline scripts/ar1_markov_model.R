@@ -378,7 +378,7 @@ adjustment <- FALSE
 window_sizes <- c(12, 36)
 prob_cut_offs <- c(0.005, 0.01, 0.1, 0.75)
 granularity <- c(100/32, 100/64, 100/128, 0)
-num_of_states <- c(32, 64, 128)
+num_of_states <- c(32, 64)
 
 schedule_policy <- "dynamic"
 
