@@ -301,7 +301,7 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, initial_train_size,
 	print(paste("Avg cycle used mode 1:", "job length", window_size, utilization_rate1))
 	print(paste("Avg cycle used mode 2:", "job length", window_size, utilization_rate2))
 	print(paste("Job survival rate:", "job length", window_size, survival_rate))
-	print(paste("Scheduling summary:", "Correct scheduled rate": correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
+	print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
 	
 	result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
 	if (schedule_policy == "dynamic") {
