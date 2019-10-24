@@ -2,3 +2,4 @@
 *.xml
 ForegroundJobScheduler/.idea/ForegroundJobScheduler.iml
 ForegroundJobScheduler/datasets/originalalldata/alldfs.tar.gz.part-ab.zhvdc26.partial
+*.DS_Store
