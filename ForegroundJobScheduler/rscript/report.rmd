@@ -22,109 +22,6 @@ library("cluster")
 library("xlsx")
 library("knitr")
 library("kableExtra")
-
-source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//helper_functions.R")
-```
-
-
-```{r, echo=FALSE}
-read_runs <- function(rownum, parameter.df, model_name, sample_size, result_folder_path) {
-  param_list <- parameter.df[rownum,]
-  
-  window_size <- param_list[1]
-  prob_cut_off <- param_list[2]
-  granularity <- param_list[3]
-  
-  filename <- NULL
-  if (model_name == "AR1_logistic_lm" | model_name == "AR1_logistic_glm") {
-    bin_num <- param_list[4]
-    filename <- paste("Overall Runs", model_name, sample_size, window_size, prob_cut_off, granularity, bin_num, ".csv")
-  } else if (model_name == "AR1_state_based_logistic") {
-    state_num <- param_list[4]
-    filename <- paste("Overall Runs", model_name, sample_size, window_size, prob_cut_off, granularity, state_num, ".csv")
-  } else {
-    filename <- paste("Overall Runs", model_name, sample_size, window_size, prob_cut_off, granularity, ".csv")
-  }
-  
-  runs <- read.csv(paste(result_folder_path, filename, sep=""))
-  runs <- colSums(runs[, -1])
-  return(runs)
-}
-
-
-build_2d_dataframe <- function(runs) {
-  y <- colnames(runs)
-  x <- rownames(runs)
-  result <- expand.grid(y, x)
-  colnames(result) <- c("y", "x")
-  result$z <- NA
-  for (i in 1:length(x)) {
-    for (j in 1:length(y)) {
-      result[length(y)*(i-1)+j, 3] <- runs[i,j]
-    }
-  }
-  return(result)
-}
-
-
-convert_frequency_dataset <- function(dataset, new_freq, mode) {
-  new_avg_cpu <- c()
-  window_num <- NULL
-  window_num <- floor(length(dataset) / new_freq)
-  for (i in 1:window_num) {
-    from <- (i - 1) * new_freq + 1
-    to <- i * new_freq
-    new_val <- NULL
-    if (mode == 'max') {
-      new_val <- max(dataset[from:to], na.rm = TRUE)
-    } else {
-      new_val <- mean(dataset[from:to], na.rm = TRUE)
-    }
-    new_avg_cpu <- c(new_avg_cpu, new_val)
-  }
-  return(new_avg_cpu)
-}
-```
-
-```{r, echo=FALSE}
-find_bin_obs <- function(avg, binsize) {
-  return(floor(avg / binsize))
-}
-
-
-train_cond_var_model <- function(ts_num, train_set_max, train_set_avg, bin_num) {
-  
-  new_parsed_dat <- data.frame(matrix(nrow=nrow(train_set_avg), ncol=3))
-  binsize <- 100 / bin_num
-  bin <- as.numeric(sapply(train_set_avg[,ts_num], find_bin_obs, binsize))
-  bin <- bin * binsize
-  for (i in 1:nrow(train_set_avg)) {
-    new_parsed_dat[i,] = c(train_set_avg[i, ts_num], train_set_max[i, ts_num], bin[i])
-  }
-  
-  colnames(new_parsed_dat) <- c('avg', 'max', 'bin')
-  selected_bins <- new_parsed_dat %>%
-    group_by(bin) %>%
-    count()
-  
-  selected_bins <- subset(selected_bins, selected_bins$n >= 3)$bin
-  selected_bins <- new_parsed_dat$bin
-  new_parsed_dat1 <- new_parsed_dat %>%
-    filter(bin %in% selected_bins) %>%
-    group_by(bin) %>% 
-    summarise(sd=sqrt(var(max))) %>%
-    filter(!is.na(sd))
-  
-  sd.lm <- NULL
-  if (nrow(new_parsed_dat) >= 3) {
-    sd.lm <- lm(sd~bin+I(bin^2), data = new_parsed_dat1)
-  } else if (nrow(new_parsed_dat) == 2) {
-    sd.lm <- lm(sd~bin, data = new_parsed_dat1)
-  } else {
-    sd.lm <- new_parsed_dat1$sd
-  }
-  return(list("lm"=sd.lm, "data"=new_parsed_dat1, "data2"=new_parsed_dat))
-}
 ```
 
 
@@ -177,9 +74,10 @@ make_hist <-  function(dataset) {
 }
 
 
-plot_results <- function(model_results, sample_size, window_size, model_name="NULL") {
+plot_results <- function(model_results, sample_size, window_size, model_name=c("AR1", "VAR1", "AR1_logistic_glm", "AR1_logistic_lm", "AR1_state_based_logistic", "AR1_Markov", "Markov")) {
   model_results <- model_results %>% 
-    filter(Sample.Size== sample_size & Window.Size == window_size)
+    filter(Sample.Size== sample_size & Window.Size == window_size & Model %in% model_name) %>%
+    filter(!is.na(Avg.Cycle.Usage1) & !is.na(Avg.Cycle.Usage2) & !is.na(Survival.Rate) & !is.na(Correctly.Scheduled) & !is.na(Correctly.Unscheduled))
   plt1 <- ggplot(model_results, aes(x=Survival.Rate, y=Avg.Cycle.Usage1)) +
       geom_point(na.rm=TRUE, aes(color=factor(Model), size=factor(StateNum), alpha=factor(Granularity), shape=factor(BinNum))) + 
       geom_vline(xintercept=0.99, linetype="dashed", color="red") + 
@@ -195,23 +93,6 @@ plot_results <- function(model_results, sample_size, window_size, model_name="NU
   print(plt1)
   print(plt2)
 }
-
-
-plot_conditional_hist <- function(dataset) {
-  
-  df <- dataset %>%
-    group_by(bin) %>%
-    count()
-  binnum <- df$bin[df$n == max(df$n)]
-  df <- dataset %>%
-    filter(bin == binnum)
-  
-  plt <- ggplot(df, aes(x=max)) +
-    geom_histogram(aes(y = ..density..), binwidth=density(df$max)$bw) +
-    xlab("Maxes") +
-    ggtitle(paste(binnum))
-  return(plt)
-}
 ```
 
 
@@ -221,28 +102,54 @@ plot_conditional_hist <- function(dataset) {
 sample_size <- 100
 window_size <- 12
 
-ar_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary disjoint (windows,granularity).xlsx"
+if (Sys.info()["sysname"] == "Windows") {
+  ar_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity).xlsx"
+} else {
+  ar_data_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/Nonoverlapping windows/summary dynamic (windows,granularity).xlsx"
+}
 
 ar_xlsx <- read.xlsx(ar_data_path, sheetIndex = 1)
-plot_results(ar_xlsx, sample_size, window_size)
+plot_results(ar_xlsx, sample_size, window_size, c("AR1", "VAR1", "AR1_logistic_glm", "AR1_logistic_lm", "AR1_Markov"))
 ```
 
 ```{r echo=FALSE}
 sample_size <- 100
 window_size <- 12
 
-ar_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity).xlsx"
+if (Sys.info()["sysname"] == "Windows") {
+  ar_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity) post adj.xlsx"
+} else {
+  ar_data_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/Nonoverlapping windows/summary dynamic (windows,granularity) post adj.xlsx"
+}
 
 ar_xlsx <- read.xlsx(ar_data_path, sheetIndex = 1)
-plot_results(ar_xlsx, sample_size, window_size)
+plot_results(ar_xlsx, sample_size, window_size, c("AR1", "VAR1", "AR1_logistic_glm", "AR1_logistic_lm", "AR1_Markov"))
 ```
 
-```{r echo=FALSE}
+```{r}
 sample_size <- 100
 window_size <- 12
 
-ar_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity) post adj.xlsx"
+if (Sys.info()["sysname"] == "Windows") {
+  ar_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity).xlsx"
+} else {
+  ar_data_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/Nonoverlapping windows/summary dynamic (windows,granularity).xlsx"
+}
 
 ar_xlsx <- read.xlsx(ar_data_path, sheetIndex = 1)
-plot_results(ar_xlsx, sample_size, window_size)
+plot_results(ar_xlsx, sample_size, window_size, c("AR1", "VAR1", "AR1_Markov"))
+```
+
+```{r}
+sample_size <- 100
+window_size <- 12
+
+if (Sys.info()["sysname"] == "Windows") {
+  ar_data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//summary dynamic (windows,granularity) post adj.xlsx"
+} else {
+  ar_data_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/Nonoverlapping windows/summary dynamic (windows,granularity) post adj.xlsx"
+}
+
+ar_xlsx <- read.xlsx(ar_data_path, sheetIndex = 1)
+plot_results(ar_xlsx, sample_size, window_size, c("AR1", "VAR1", "AR1_Markov"))
 ```
