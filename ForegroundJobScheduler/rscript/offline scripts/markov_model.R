@@ -201,14 +201,14 @@ markov_model <- function(dataset, initial_train_size, window_size, prob_cut_off,
 	
 	ts_names <- colnames(dataset)
 	
-	scheduled_num <- data.frame()
-	unscheduled_num <- data.frame()
-	corrected_scheduled_num <- data.frame()
-	corrected_unscheduled_num <- data.frame()
+	scheduled_num <- data.frame(matrix(nrow=length(ts_names), ncol=0))
+	unscheduled_num <- data.frame(matrix(nrow=length(ts_names), ncol=0))
+	correct_scheduled_num <- data.frame(matrix(nrow=length(ts_names), ncol=0))
+	correct_unscheduled_num <- data.frame(matrix(nrow=length(ts_names), ncol=0))
 	
-	avg_usage <- data.frame(matrix(nrow=0, ncol=1))
-	job_survival <- data.frame(matrix(nrow=0, ncol=1))
-	overall_runs <- data.frame(matrix(nrow=0, ncol=max_run_length))
+	avg_usage <- data.frame()
+	job_survival <- data.frame()
+	overall_runs <- data.frame()
 	
 	## Split the dataset into training and testing sets
 	train_set <- dataset[1:initial_train_size,]
@@ -230,19 +230,21 @@ markov_model <- function(dataset, initial_train_size, window_size, prob_cut_off,
 	## Test Model
 	print("Testing on Foreground job:")
 	result_foreground <- sapply(1:length(ts_names), scheduling_foreground, test_set, train_result, window_size, prob_cut_off, cpu_required, granularity, schedule_policy)
+	
 	print("Testing on Model:")
 	result_model <- sapply(1:length(ts_names), scheduling_model, test_set, train_result, window_size, prob_cut_off, granularity, max_run_length, schedule_policy, adjustment, simplify=FALSE)
+	
 	scheduled_num <- cbind(scheduled_num, unlist(result_foreground[1,]))
 	unscheduled_num <- cbind(unscheduled_num, unlist(result_foreground[2,]))
 	correct_scheduled_num <- cbind(correct_scheduled_num, unlist(result_foreground[3,]))
-	correct_unscheduled_num <- cbind(correct_unscheduled, unlist(result_foreground[4,]))
+	correct_unscheduled_num <- cbind(correct_unscheduled_num, unlist(result_foreground[4,]))
 	
 	for (ts_num in 1:length(ts_names)) {
-		avg_usage <- rbind(avg_usage, c(result_model[ts_num]$utilization1, result_model[ts_num]$utilization2))
-		job_survival <- rbind(job_survival, result_model[ts_num]$survival)
-		if (schedule_policy == "dynamic") {
-			overall_runs <- rbind(overall_runs, result_model[ts_num]$run)
-		}
+	  avg_usage <- rbind(avg_usage, c(result_model[[ts_num]]$utilization1, result_model[[ts_num]]$utilization2))
+	  job_survival <- rbind(job_survival, result_model[[ts_num]]$survival)
+	  if (schedule_policy == "dynamic") {
+	    overall_runs <- rbind(overall_runs, result_model[[ts_num]]$run)
+	  }
 	}
 	
 	rownames(scheduled_num) <- ts_names
@@ -254,18 +256,18 @@ markov_model <- function(dataset, initial_train_size, window_size, prob_cut_off,
 	rownames(correct_unscheduled_num) <- ts_names
 	colnames(correct_unscheduled_num) <- "correct_unscheduled_num"
 	rownames(avg_usage) <- ts_names
-	colnames(avg_usage) <- "survival"
-	if (scheduled_policy == "dynamic") {
-		rownames(overall_runs) <- ts_names
-		colnames(overall_runs) <- sapply(1:max_run_length, function(i) as.character(i))
-		result <- list("avg_usage"=avg_usage, "job_survival"=job_survival, "scheduled_num"=scheduled_num, "unscheduled_num"=unscheduled_num, "correct_scheduled_num"=correct_scheduled_num, "correct_unscheduled_num"=correct_unscheduled_num, "overall_runs"=overall_runs)
-		return(result)
+	colnames(avg_usage) <- c("avg_usage1", "avg_usage2")
+	rownames(job_survival) <- ts_names
+	colnames(job_survival) <- "survival"
+	if (schedule_policy == "dynamic") {
+	  rownames(overall_runs) <- ts_names
+	  colnames(overall_runs) <- sapply(1:max_run_length, function(i) as.character(i))
+	  result <- list('avg_usage'=avg_usage, 'job_survival'=job_survival, 'scheduled_num'=scheduled_num, "unscheduled_num"=unscheduled_num, "correct_scheduled_num"=correct_scheduled_num, "correct_unscheduled_num"=correct_unscheduled_num, "overall_runs"=overall_runs)
+	  return(result)  
 	} else {
-		result <- list("avg_usage"=avg_usage, "job_survival"=job_survival, "scheduled_num"=scheduled_num, "unscheduled_num"=unscheduled_num, "correct_scheduled_num"=correct_scheduled_num, "correct_unscheduled_num"=correct_unscheduled_num)
-		return(result)
-	}
-}
-
+	  result <- list('avg_usage'=avg_usage, 'job_survival'=job_survival, 'scheduled_num'=scheduled_num, "unscheduled_num"=unscheduled_num, "correct_scheduled_num"=correct_scheduled_num, "correct_unscheduled_num"=correct_unscheduled_num)
+	  return(result)
+	}  
 
 wrapper.epoche <- function(parameter, dataset, cpu_required, initial_train_size, max_run_length, output_dp, schedule_policy, adjustment) {
 	
@@ -280,6 +282,7 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, initial_train_size,
 	print(paste("Num of States:", num_of_states))
 	
 	output <- markov_model(dataset, initial_train_size, window_size, prob_cut_off, max_run_length, cpu_required, granularity, num_of_states, schedule_policy, adjustment)
+	
 	overall_evaluation <- find_overall_evaluation(output$avg_usage[,1], output$avg_usage[,2], output$job_survival[,1])
 	
 	utilization_rate1 <- overall_evaluation$utilization_rate1
@@ -292,7 +295,7 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, initial_train_size,
 	correct_unscheduled_num <- sum(output$correct_unscheduled_num[,1])
 	
 	correct_scheduled_rate <- correct_scheduled_num / scheduled_num
-	correct_unscheduled_rate <- correct_unscheduled_num / scheduled_num
+	correct_unscheduled_rate <- correct_unscheduled_num / unscheduled_num
 	
 	print(paste("Avg cycle used mode 1:", "job length", window_size, utilization_rate1))
 	print(paste("Avg cycle used mode 2:", "job length", window_size, utilization_rate2))
@@ -318,7 +321,7 @@ adjustment <- FALSE
 window_sizes <- c(12, 36)
 prob_cut_offs <- c(0.005, 0.01, 0.1, 0.75)
 granularity <- c(100/32, 100/64, 100/128, 0)
-num_of_states <- c(32, 64, 128)
+num_of_states <- c(32, 64)
 
 schedule_policy <- "dynamic"
 
