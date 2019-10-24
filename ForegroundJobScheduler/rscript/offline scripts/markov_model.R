@@ -267,7 +267,8 @@ markov_model <- function(dataset, initial_train_size, window_size, prob_cut_off,
 	} else {
 	  result <- list('avg_usage'=avg_usage, 'job_survival'=job_survival, 'scheduled_num'=scheduled_num, "unscheduled_num"=unscheduled_num, "correct_scheduled_num"=correct_scheduled_num, "correct_unscheduled_num"=correct_unscheduled_num)
 	  return(result)
-	}  
+	}
+}
 
 wrapper.epoche <- function(parameter, dataset, cpu_required, initial_train_size, max_run_length, output_dp, schedule_policy, adjustment) {
 	
