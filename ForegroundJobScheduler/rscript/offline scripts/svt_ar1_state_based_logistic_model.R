@@ -75,22 +75,17 @@ calculate_probability_table <- function(state_num, expected_avgs, trained_logist
 adjust_probability <- function(prob) {
   
   for (state_num in 2:length(prob)) {
-    prob[state_num] <- ifelse(prob[state_num] < prob[state_num-1], 1, prob[state_num])
+    prob[state_num] <- ifelse(prob[state_num] < prob[state_num-1], prob[state_num-1], prob[state_num])
   }
+  prob[length(prob)] <- 1
   return(prob)
 }
 
 
 calculate_probability_foreground <- function(probability, cpu_required, num_of_states) {
   
-  binsize <- 100 / num_of_states
-  state <- NULL
-  if (cpu_required == 0) {
-    state <- 1
-  } else {
-    state <- ifelse(cpu_required %% binsize == 0, cpu_required %/% binsize - 1, ceiling(cpu_required / binsize))
-  }
-  return(probability[state])
+  state <- find_state_num(100-cpu_required, num_of_states)
+  return(1-probability[state])
 }
 
 

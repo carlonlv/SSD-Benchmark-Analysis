@@ -232,7 +232,7 @@ find_state_num <- function(obs, num_of_states) {
   if (obs == 0) {
     state <- 1
   } else {
-    state <- ifelse(obs %% binsize == 0, obs %/% binsize - 1, ceiling(obs / binsize))
+    state <- ceiling(obs / binsize)
   }
   return(state)
 }
