@@ -378,10 +378,10 @@ adjustment <- FALSE
 
 window_sizes <- c(12, 36)
 prob_cut_offs <- c(0.005, 0.01, 0.1)
-num_of_states_pool <- c(32, 64, 128)
+num_of_states_pool <- c(32)
 granularity <- c(100/32, 100/64, 100/128, 0)
 
-schedule_policy <- "disjoint"
+schedule_policy <- "dynamic"
 
 bg_jobs_path <- NULL
 if (Sys.info()["sysname"] == "Windows") {
