@@ -136,7 +136,9 @@ dynamic_total_utilization <- function(actual_obs, survivals, window_size) {
 
 compute_survival <- function(survival) {
   
-  return(sum(survival, na.rm = TRUE) / length(survival[!is.na(survival)]))
+  numerator <- sum(survival, na.rm = TRUE)
+  denominator <- length(survival[!is.na(survival)])
+  return(list("survival"=numerator/denominator, "numerator"=numerator, "denominator"=denominator))
 }
 
 
@@ -163,7 +165,7 @@ compute_utilization <- function(pi_ups, survivals, actual_obs, window_size, gran
     total_available2 <- sum(100 - actual_obs)
   }
   actual_used <- ifelse(is.na(survivals) | survivals!=0, 0, 100-pi_ups) * window_size
-  return(list("utilization1"=(sum(actual_used) / total_available1), "utilization2"=(sum(actual_used) / total_available2)))
+  return(list("utilization1"=(sum(actual_used) / total_available1), "utilization2"=(sum(actual_used) / total_available2), "numerator"=sum(actual_used), "denominator1"=total_available1, "denominator2"=total_available2))
 }
 
 

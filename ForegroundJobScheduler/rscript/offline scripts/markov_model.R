@@ -193,7 +193,7 @@ scheduling_model <- function(ts_num, test_set, transition, window_size, prob_cut
 	
 	overall_survival <- compute_survival(ifelse(is.na(survival), NA, ifelse(survival == 0, 1, 0)))
 	overall_utilization <- compute_utilization(pi_ups, survival, test_set[(window_size+1):(current_end-update_policy+window_size-1), ts_num], window_size, granularity, schedule_policy)
-	return(list("utilization1"=overall_utilization$utilization1, "utilization2"=overall_utilization$utilization2, "survival"=overall_survival, "run"=runs))
+	return(list("utilization1"=overall_utilization$utilization1, "utilization2"=overall_utilization$utilization2, "survival"=overall_survival$survival, "run"=runs))
 }
 
 
