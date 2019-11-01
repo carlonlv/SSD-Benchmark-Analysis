@@ -269,10 +269,10 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   
   ts_names <- colnames(dataset_avg)
   
-  scheduled_num <- data.frame(matrix(nrow=length(ts_names), ncol=0))
-  unscheduled_num <- data.frame(matrix(nrow=length(ts_names), ncol=0))
-  correct_scheduled_num <- data.frame(matrix(nrow=length(ts_names), ncol=0))
-  correct_unscheduled_num <- data.frame(matrix(nrow=length(ts_names), ncol=0))
+  scheduled_num <- data.frame()
+  unscheduled_num <- data.frame()
+  correct_scheduled_num <- data.frame()
+  correct_unscheduled_num <- data.frame()
   
   avg_usage <- data.frame()
   job_survival <- data.frame()
@@ -421,7 +421,7 @@ cpu_usage <- 3
 max_run_length <- 37
 total_trace_length <- 8000
 initial_train_size <- 6000
-adjustment <- FALSE
+adjustment <- TRUE
 cond.var <- "glm"
 
 window_sizes <- c(12, 36)

@@ -6,7 +6,7 @@ library("dplyr")
 merge_row <- function(rownum, file_from, file_to) {
   row_from <- file_from[rownum,]
   row_to <- file_to[rownum,]
-  if (any(is.na(row_to))) {
+  if (all(!is.na(row_from))) {
     row_to <- row_from
   }
   return(row_to)
