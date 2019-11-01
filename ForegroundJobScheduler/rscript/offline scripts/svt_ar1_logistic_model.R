@@ -443,7 +443,8 @@ if (sample_size == 100 ) {
   if (Sys.info()["sysname"] == "Windows") {
     bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 background jobs.csv")[,1]
   } else {
-    bg_job_pool <- read.csv("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/pythonscripts/list of sampled 100 background jobs.csv")[,1]
+    bg_job_pool <- read.csv("/Users/carlonlv/D
+                            ocuments/GitHub/Research-Projects/ForegroundJobScheduler/pythonscripts/list of sampled 100 background jobs.csv")[,1]
   }
   bg_job_pool <- sub(".pd", "", bg_job_pool)
 } else {
