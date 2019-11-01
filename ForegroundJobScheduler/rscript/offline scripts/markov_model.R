@@ -103,7 +103,7 @@ scheduling_foreground <- function(ts_num, test_set, transition, window_size, pro
 		current_end <- current_end + update_policy
 	}
 	
-	return(list("scheduled_num"=scheduled_num, "unscheduled_num"=unscheduled_num, "corret_scheduled_num"=correct_scheduled_num, "corret_unscheduled_num"=correct_unscheduled_num))
+	return(list("scheduled_num"=scheduled_num, "unscheduled_num"=unscheduled_num, "correct_scheduled_num"=correct_scheduled_num, "correct_unscheduled_num"=correct_unscheduled_num))
 }
 
 
