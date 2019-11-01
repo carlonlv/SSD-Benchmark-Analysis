@@ -192,7 +192,7 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, prob_
   
   ## Train Model
   print("Training:")
-  train_result <- mclapply(1:length(ts_names), train_ar1_model, new_trainset_avg)
+  train_result <- mclapply(1:length(ts_names), train_ar1_model, new_trainset)
   coeffs <- c()
   means <- c()
   vars <- c()
