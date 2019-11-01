@@ -1,4 +1,9 @@
 library("parallel")
+library("dplyr")
+library("forecast")
+library("mvtnorm")
+library("dict")
+library("xlsx")
 
 if (Sys.info()["sysname"] == "Windows") {
   source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//helper_functions.R")
@@ -164,7 +169,7 @@ svt_model <- function(ts_num, dataset, train_size, window_size, update_freq, pro
   last_time_update <- nrow(dataset) - update_freq - train_size + 1
   while (current <= last_time_update) {
     ## Split into train set and test set
-    train_set <- data_set[current:(current+train_size)]
+    train_set <- data_set[current:(current+train_size-1)]
     test_set <- data_set[(current+train_size+1):(current+train_size+update_freq)]
     
     ## Convert Frequency for training set
@@ -179,7 +184,7 @@ svt_model <- function(ts_num, dataset, train_size, window_size, update_freq, pro
     ## Test Model
     result_foreground <- scheduling_foreground(test_set, coeffs, means, vars, window_size, prob_cut_off, cpu_required, granularity, schedule_policy)
     result_model <- scheduling_model(test_set, coeffs, means, vars, window_size, prob_cut_off, granularity, schedule_policy, adjustment)
-    
+
     ## Write Result
     scheduled_num <- scheduled_num + result_foreground$scheduled_num
     unscheduled_num <- unscheduled_num + result_foreground$unscheduled_num
@@ -196,7 +201,7 @@ svt_model <- function(ts_num, dataset, train_size, window_size, update_freq, pro
     current <- current + update_freq
   }
   
-  return(list("scheduled_num"=scheduled_num, "unscheduled_num"=unscheduled_num, "correct_scheduled_num"=correct_scheduled_num, "correct_unscheduled_num"=correct_unscheduled_num, "util_numerator"=overall_utilization$numerator, "util_denominator1"=overall_utilization$denominator1, "util_denominator2"=overall_utilization$denominator2, "sur_numerator"=overall_survival$numerator, "sur_denominator"=overall_survival$denominator))
+  return(list("scheduled_num"=scheduled_num, "unscheduled_num"=unscheduled_num, "correct_scheduled_num"=correct_scheduled_num, "correct_unscheduled_num"=correct_unscheduled_num, "util_numerator"=util_numerator, "util_denominator1"=util_denominator1, "util_denominator2"=util_denominator2, "sur_numerator"=sur_numerator, "sur_denominator"=sur_denominator))
 }
 
 
@@ -218,25 +223,26 @@ svt_stationary_model <- function(dataset, train_size, window_size, update_freq, 
   result <- mclapply(1:length(ts_names), svt_model, dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy, adjustment)
   
   for (ts_num in 1:length(ts_names)) {
-    scheduled_num <- c(scheduled_num, result_foreground$scheduled_num)
-    unscheduled_num <- c(unscheduled_num, result_foreground$unscheduled_num)
-    correct_scheduled_num <- c(correct_scheduled_num, result_foreground$correct_scheduled_num)
-    correct_unscheduled_num <- c(correct_unscheduled_num, result_foreground$correct_unscheduled_num)
+    scheduled_num <- c(scheduled_num, result[[ts_num]]$scheduled_num)
+    unscheduled_num <- c(unscheduled_num, result[[ts_num]]$unscheduled_num)
+    correct_scheduled_num <- c(correct_scheduled_num, result[[ts_num]]$correct_scheduled_num)
+    correct_unscheduled_num <- c(correct_unscheduled_num, result[[ts_num]]$correct_unscheduled_num)
     
-    util_numerator <- c(util_numerator, result_model$util_numerator)
-    util_denominator1 <- c(util_denominator1, result_model$util_denominator1)
-    util_denominator2 <- c(util_denominator2, result_model$util_denominator2)
-    sur_numerator <- c(sur_numerator, result_model$sur_numerator)
-    sur_denominator <- c(sur_denominator, result_model$sur_denominator)
+    util_numerator <- c(util_numerator, result[[ts_num]]$util_numerator)
+    util_denominator1 <- c(util_denominator1, result[[ts_num]]$util_denominator1)
+    util_denominator2 <- c(util_denominator2, result[[ts_num]]$util_denominator2)
+    sur_numerator <- c(sur_numerator, result[[ts_num]]$sur_numerator)
+    sur_denominator <- c(sur_denominator, result[[ts_num]]$sur_denominator)
   }
   
   scheduled_num <- data.frame("scheduled_num"=scheduled_num)
   rownames(scheduled_num) <- ts_names
   unscheduled_num <- data.frame("unscheduled_num"=unscheduled_num)
-  rownames(unscheduled_num) <- unscheduled_num
+  rownames(unscheduled_num) <- ts_names
   correct_scheduled_num <- data.frame("correct_scheduled_num"=correct_scheduled_num)
   rownames(correct_scheduled_num) <- ts_names
   correct_unscheduled_num <- data.frame("correct_unscheduled_num"=correct_unscheduled_num)
+  rownames(correct_unscheduled_num) <- ts_names
   
   avg_usage <- data.frame("avg_usage1"=util_numerator/util_denominator1, "avg_usage2"=util_numerator/util_denominator2)
   rownames(avg_usage) <- ts_names
@@ -247,17 +253,21 @@ svt_stationary_model <- function(dataset, train_size, window_size, update_freq, 
 }
 
 
-wrapper.epoche <- function(parameter, dataset, cpu_required, initial_train_size, max_run_length, output_dp, schedule_policy, adjustment) {
+wrapper.epoche <- function(parameter, dataset, cpu_required, output_dp, schedule_policy, adjustment) {
   
   window_size <- as.numeric(parameter[1])
   prob_cut_off <- as.numeric(parameter[2])
   granularity <- as.numeric(parameter[3])
+  train_size <- as.numeric(parameter[4])
+  update_freq <- as.numeric(parameter[5])
   
   print(paste("Job len:", window_size))
   print(paste("Cut off prob:", prob_cut_off))
   print(paste("Granularity:", granularity))
+  print(paste("Train Size:", train_size))
+  print(paste("Update Freq:", update_freq))
   
-  output <- svt_stationary_model(dataset, initial_train_size, window_size, prob_cut_off, max_run_length, cpu_required, granularity, "max", schedule_policy, adjustment)
+  output <- svt_stationary_model(dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy, adjustment)
   overall_evaluation <- find_overall_evaluation(output$avg_usage[,1], output$avg_usage[,2], output$job_survival[,1])
   
   utilization_rate1 <- overall_evaluation$utilization_rate1
@@ -288,12 +298,13 @@ sample_size <- 100
 cpu_usage <- 3
 max_run_length <- 37
 total_trace_length <- 8000
-initial_train_size <- 6000
 adjustment <- TRUE
 
 window_sizes <- c(12, 36)
-prob_cut_offs <- c(0.005, 0.01, 0.1)
-granularity <- c(100/32, 100/64, 100/128, 0)
+prob_cut_offs <- c(0.01, 0.1)
+granularity <- c(100/32, 0)
+
+train_size <- c(2000, 4000)
 
 schedule_policy <- "dynamic"
 
@@ -365,8 +376,9 @@ if (adjustment) {
   }
 }
 
-parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity)
-colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity")
+parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity, train_size)
+colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity", "train_size")
+parameter.df$update_freq <- 2 * parameter.df$window_size
 parameter.df <- parameter.df %>%
-  arrange(window_size)
-slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment)
+  arrange()
+slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix, (100-cpu_required), output_dp, schedule_policy, adjustment)
