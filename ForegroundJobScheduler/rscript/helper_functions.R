@@ -118,22 +118,6 @@ overlapping_total_utilization <- function(idx, actual_obs, window_size, mode) {
 }
 
 
-dynamic_total_utilization <- function(actual_obs, survivals, window_size) {
-  
-  current <- 1
-  idx <- 1
-  total_utilization <- 0
-  while(current <= (length(actual_obs) - window_size + 1)) {
-    new_max <- convert_frequency_dataset(actual_obs[current:(current+window_size-1)], window_size, "max")
-    actual_utilization <- ifelse(is.na(survivals[current]), 100-actual_obs[current], ifelse(survivals[current]!=0, sum(100-actual_obs[current:(current+survivals[current]-1)]), (100-new_max)*window_size))
-    total_utilization <- total_utilization + actual_utilization
-    current <- ifelse(is.na(survivals[current]), current+1, ifelse(survivals[current]==0, current+window_size, current+survivals[current]))
-    idx <- idx + 1
-  }
-  return(total_utilization)
-}
-
-
 compute_survival <- function(survival) {
   
   numerator <- sum(survival, na.rm = TRUE)
@@ -155,10 +139,7 @@ compute_utilization <- function(pi_ups, survivals, actual_obs, window_size, gran
     total_available1 <- sapply(1:(length(actual_obs)-window_size), overlapping_total_utilization, actual_obs, window_size, 1)
     total_available1 <- sum(total_available1) * window_size
     total_available2 <- sapply(1:(length(actual_obs)-window_size), overlapping_total_utilization, actual_obs, window_size, 2)
-    total_available1 <- sum(total_available2)
-  } else if (schedule_policy == "dynamic") {
-    total_available1 <- dynamic_total_utilization(actual_obs, survivals, window_size)
-    total_available2 <- sum(100 - actual_obs)
+    total_available2 <- sum(total_available2)
   } else {
     new_max <- convert_frequency_dataset(actual_obs, window_size, 'max')
     total_available1 <- sum(100 - new_max) * window_size
@@ -209,6 +190,65 @@ update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num=0, sam
                                             Sample.Size == sample_size &
                                             Window.Size == window_size &
                                             Granularity == granularity &
+                                            StateNum == state_num &
+                                            BinNum == bin_num,
+                                          correct_unscheduled_rate, Correctly.Unscheduled))
+  xlsx_file <- xlsx_file %>%
+    arrange(Model, Sample.Size, Window.Size, Granularity, Probability.Cut.Off, StateNum, BinNum)
+  return(xlsx_file)
+}
+
+
+update.xlsx.df.online <- function(xlsx_file, model_name, prob_cut_off, state_num=0, sample_size, window_size, granularity, bin_num=0, train_size, update_freq, utilization1, utilization2, survival, correct_scheduled_rate, correct_unscheduled_rate) {
+  
+  xlsx_file <- xlsx_file %>%
+    mutate(Avg.Cycle.Usage1 = ifelse(Model == model_name & 
+                                       Probability.Cut.Off == prob_cut_off & 
+                                       Sample.Size == sample_size &
+                                       Window.Size == window_size &
+                                       Granularity == granularity &
+                                       Training.Size == train_size &
+                                       Update.Freq == update_freq &
+                                       StateNum == state_num &
+                                       BinNum == bin_num,
+                                     utilization1, Avg.Cycle.Usage1)) %>%
+    mutate(Avg.Cycle.Usage2 = ifelse(Model == model_name & 
+                                       Probability.Cut.Off == prob_cut_off & 
+                                       Sample.Size == sample_size &
+                                       Window.Size == window_size &
+                                       Granularity == granularity &
+                                       Training.Size == train_size &
+                                       Update.Freq == update_freq &
+                                       StateNum == state_num &
+                                       BinNum == bin_num,
+                                     utilization2, Avg.Cycle.Usage2)) %>%
+    mutate(Survival.Rate = ifelse(Model == model_name & 
+                                    Probability.Cut.Off == prob_cut_off & 
+                                    Sample.Size == sample_size &
+                                    Window.Size == window_size &
+                                    Granularity == granularity &
+                                    Training.Size == train_size &
+                                    Update.Freq == update_freq &
+                                    StateNum == state_num &
+                                    BinNum == bin_num,
+                                  survival, Survival.Rate)) %>%
+    mutate(Correctly.Scheduled = ifelse(Model == model_name & 
+                                          Probability.Cut.Off == prob_cut_off & 
+                                          Sample.Size == sample_size &
+                                          Window.Size == window_size &
+                                          Granularity == granularity &
+                                          Training.Size == train_size &
+                                          Update.Freq == update_freq &
+                                          StateNum == state_num &
+                                          BinNum == bin_num,
+                                        correct_scheduled_rate, Correctly.Scheduled)) %>%
+    mutate(Correctly.Unscheduled = ifelse(Model == model_name & 
+                                            Probability.Cut.Off == prob_cut_off & 
+                                            Sample.Size == sample_size &
+                                            Window.Size == window_size &
+                                            Granularity == granularity &
+                                            Training.Size == train_size &
+                                            Update.Freq == update_freq &
                                             StateNum == state_num &
                                             BinNum == bin_num,
                                           correct_unscheduled_rate, Correctly.Unscheduled))
