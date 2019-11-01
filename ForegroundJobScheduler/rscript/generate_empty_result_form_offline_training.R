@@ -11,8 +11,16 @@ bin_num <- c(1000, 500)
 
 prob_ban_pool <- c(0.75)
 
-result.dp1 <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//offline results//summary disjoint (windows,granularity).xlsx"
-result.dp2 <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//offline results//summary disjoint (windows,granularity) post adj.xlsx"
+result.dp1 <- NULL
+result.dp2 <- NULL
+if (Sys.info()["sysname"] == "Windows") {
+  result.dp1 <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary disjoint (windows,granularity).xlsx"
+  result.dp2 <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary disjoint (windows,granularity) post adj.xlsx"
+} else {
+  result.dp1 <- "/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity).xlsx"
+  result.dp2 <- "/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity) post adj.xlsx"
+}
+
 result.df <- expand.grid(models, statenum, prob_cut_offs, granularity, window_size, sample_size, bin_num, KEEP.OUT.ATTRS=FALSE, stringsAsFactors=FALSE)
 colnames(result.df) <- c("Model", "StateNum", "Probability.Cut.Off", "Granularity", "Window.Size", "Sample.Size", "BinNum")
 result.df$Avg.Cycle.Usage1 <- NA

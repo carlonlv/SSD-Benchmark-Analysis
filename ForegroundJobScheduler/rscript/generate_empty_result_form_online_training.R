@@ -13,13 +13,12 @@ train_size <- c(2000, 4000)
 result.dp1 <- NULL
 result.dp2 <- NULL
 if (Sys.info()["sysname"] == "Windows") {
-  result.dp1 <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//online results//summary disjoint (windows,granularity).xlsx"
-  result.dp2 <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//Nonoverlapping windows//online results//summary disjoint (windows,granularity) post adj.xlsx"
+  result.dp1 <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary dynamic (windows,granularity).xlsx"
+  result.dp2 <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary dynamic (windows,granularity) post adj.xlsx"
 } else {
-  result.dp1 <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJoScheduler/results/Nonoverlapping windows/online results/summary disjoint (windows,granularity).xlsx"
-  result.dp2 <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJoScheduler/results/Nonoverlapping windows/online results/summary disjoint (windows,granularity) post adj.xlsx"
+  result.dp1 <- "/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/results/online results/summary dynamic (windows,granularity).xlsx"
+  result.dp2 <- "/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/results/online results/summary dynamic (windows,granularity) post adj.xlsx"
 }
-
 
 result.df <- expand.grid(models, statenum, prob_cut_offs, granularity, window_size, sample_size, bin_num, train_size, KEEP.OUT.ATTRS=FALSE, stringsAsFactors=FALSE)
 colnames(result.df) <- c("Model", "StateNum", "Probability.Cut.Off", "Granularity", "Window.Size", "Sample.Size", "BinNum", "Training Size")
