@@ -249,7 +249,7 @@ svt_stationary_model <- function(dataset, train_size, window_size, update_freq, 
   job_survival <- data.frame("survival"=sur_numerator/sur_denominator)
   rownames(job_survival) <- ts_names
   result <- list('avg_usage'=avg_usage, 'job_survival'=job_survival, 'scheduled_num'=scheduled_num, "unscheduled_num"=unscheduled_num, "correct_scheduled_num"=correct_scheduled_num, "correct_unscheduled_num"=correct_unscheduled_num)
-  return(result)
+  return(result)  
 }
 
 
@@ -378,7 +378,7 @@ if (adjustment) {
 
 parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity, train_size)
 colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity", "train_size")
-parameter.df$update_freq <- 2 * parameter.df$window_size
+parameter.df$update_freq <- 3 * parameter.df$window_size
 parameter.df <- parameter.df %>%
   arrange()
 slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix, (100-cpu_required), output_dp, schedule_policy, adjustment)
