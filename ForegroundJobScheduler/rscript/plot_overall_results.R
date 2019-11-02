@@ -23,12 +23,12 @@ plot_results <- function(model_results, sample_size, window_size, model_name, ut
       xlab("Survival Rate") + 
       ggtitle(paste("Model Performance With Sample Size", sample_size, "and Window Size", window_size))
   }
-  ggsave(paste("Model Performance With Sample Size", sample_size, "and Window Size", window_size, ".png"))
+  ggsave(paste("Model Performance With Sample Size", sample_size, "and Window Size", window_size, "dynamic adjustment.png"))
 }
 
 sample_size <- 100
 window_size <- 12
-adjustment <- FALSE
+adjustment <- TRUE
 schedule_policy <- "dynamic"
 
 data_path <- NULL
@@ -65,5 +65,4 @@ if (adjustment) {
 model_names <- c("AR1", "VAR1", "Markov", "AR1_Markov", "AR1_state_based_logistic", "AR1_logistic_glm")
 
 ar_xlsx <- read.xlsx(data_path, sheetIndex = 1)
-plot_results(ar_xlsx, sample_size, window_size, model_name = model_names[c(1,3,4)])
-
+plot_results(ar_xlsx, sample_size, window_size, model_name = model_names[c(1,3,4,6)])
