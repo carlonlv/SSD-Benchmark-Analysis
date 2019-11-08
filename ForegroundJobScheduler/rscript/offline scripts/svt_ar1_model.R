@@ -11,6 +11,8 @@ if (Sys.info()["sysname"] == "Windows") {
   source("/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/rscript/helper_functions.R")
 }
 
+cores <- detectCores(all.tests = FALSE, logical = FALSE)
+
 
 calculate_var_cov_matrix_ar1 <-function(var, l, phi) {
   #### input var: A vector from var(an+l) to var(an+1) of length l
@@ -192,7 +194,7 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, prob_
   
   ## Train Model
   print("Training:")
-  train_result <- mclapply(1:length(ts_names), train_ar1_model, new_trainset)
+  train_result <- mclapply(1:length(ts_names), train_ar1_model, new_trainset, mc.cores=cores)
   coeffs <- c()
   means <- c()
   vars <- c()
@@ -204,9 +206,9 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, prob_
   
   ## Test Model
   print("Testing on Foreground job:")
-  result_foreground <- mclapply(1:length(ts_names), scheduling_foreground, test_dataset, coeffs, means, vars, window_size, prob_cut_off, cpu_required, granularity, schedule_policy, mode)
+  result_foreground <- mclapply(1:length(ts_names), scheduling_foreground, test_dataset, coeffs, means, vars, window_size, prob_cut_off, cpu_required, granularity, schedule_policy, mode, mc.cores=cores)
   print("Testing on Model:")
-  result_model <- mclapply(1:length(ts_names), scheduling_model, test_dataset, coeffs, means, vars, window_size, prob_cut_off, granularity, max_run_length, schedule_policy, mode, adjustment)
+  result_model <- mclapply(1:length(ts_names), scheduling_model, test_dataset, coeffs, means, vars, window_size, prob_cut_off, granularity, max_run_length, schedule_policy, mode, adjustment, mc.cores=cores)
   
   for (ts_num in 1:length(ts_names)) {
     scheduled_num <- rbind(scheduled_num, result_foreground[[ts_num]]$scheduled_num)

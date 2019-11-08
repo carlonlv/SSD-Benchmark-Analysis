@@ -14,46 +14,56 @@ if (Sys.info()["sysname"] == "Windows") {
 cores <- detectCores(all.tests = FALSE, logical = FALSE)
 
 
-train_ar1_model <- function(train_dataset) {
+train_markov_model <- function(dataset, num_of_states) {
   
-  ts_model <- tryCatch({
-    arima(x=train_dataset, order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000))
-  }, error = function(cond) {
-    return(arima(x=train_dataset, order = c(1,0,0), include.mean = TRUE, method = "ML", optim.control = list(maxit=2000)))
-  })
-  return(list("coeffs"=as.numeric(ts_model$coef[1]), "means"= as.numeric(ts_model$coef[2]), "vars"=ts_model$sigma2))
+  from_states <- sapply(dataset[-length(dataset)], find_state_num, num_of_states)
+  to_states <- sapply(dataset[-1], find_state_num, num_of_states)
+  transition <- matrix(0, nrow=num_of_states, ncol=num_of_states)
+  for (i in 1:length(from_states)) {
+    from <- from_states[i]
+    to <- to_states[i]
+    transition[from, to] <- transition[from, to] + 1
+  }
+  for (r in 1:ncol(transition)) {
+    if (sum(transition[r,]) == 0) {
+      transition[r,] <- rep(100 / num_of_states, num_of_states)
+    } else {
+      transition[r,] <- transition[r,] / sum(transition[r,])
+    }
+  }
+  return(transition)
 }
 
 
-calculate_var_cov_matrix_ar1 <-function(var, l, phi) {
-  #### input var: A vector from var(an+l) to var(an+1) of length l
-  #### input l: number of prediction
-  #### input phi: coeff of AR1 model
+do_prediction_markov <- function(predictor, transition, predict_size, level=NULL) {
   
-  dm=abs(outer(1:l,1:l,"-"))
-  var_cov <- matrix(var[outer(1:l,1:l,"pmin")],l,l)*phi^dm
-  return(var_cov)
-}
-
-
-do_prediction <- function(last_obs, phi, mean, variance, predict_size, level=NULL) {
+  final_transition <- diag(x=1, nrow=nrow(transition), ncol=ncol(transition))
+  parsed_transition <- transition
+  if (!is.null(level)) {
+    level_state <- find_state_num(level, nrow(transition))
+    for (i in level_state:nrow(transition)) {
+      parsed_transition[i,] <- rep(0, nrow(transition))
+      parsed_transition[i, i] <- 1
+    }
+  }
+  from <- find_state_num(predictor, nrow(transition))
+  to_states <- data.frame()
+  for (i in 1:predict_size) {
+    final_transition <- final_transition %*% parsed_transition
+    to_states <- rbind(to_states, final_transition[from, ])
+  }
   
-  # Construct mean
-  mu <- rep(last_obs, predict_size)
-  mu <- mu * phi^(1:predict_size) + (1 - phi^(1:predict_size)) * mean
-  # Construct Var-cov matrix
-  var <- cumsum((phi^2)^(0:(predict_size-1)))*variance
-  varcov <- calculate_var_cov_matrix_ar1(var, predict_size, phi)
-  # caclulate probability
+  # calculate probability
   prob <- NULL
   if (!is.null(level)) {
-    prob <- 1 - pmvnorm(lower = rep(0, predict_size), upper = rep(level, predict_size), mean = mu, sigma = varcov)
+    to <- find_state_num(level, nrow(transition))
+    prob <- sum(final_transition[from, to:(nrow(transition))])
   }
-  return(list("prob"=as.numeric(prob), "mu"=mu, "varcov"=varcov))
+  return(list("prob"=prob, "to_states"=to_states))
 }
 
 
-scheduling_foreground <- function(test_dataset, coeffs, means, vars, window_size, prob_cut_off, cpu_required, granularity, schedule_policy) {
+scheduling_foreground <- function(test_dataset, transition, window_size, prob_cut_off, cpu_required, granularity, schedule_policy) {
   
   cpu_required <- ifelse(granularity>0, round_to_nearest(cpu_required, granularity, FALSE), cpu_required)
   
@@ -69,7 +79,7 @@ scheduling_foreground <- function(test_dataset, coeffs, means, vars, window_size
   while (current_end <= last_time_schedule) {
     ## Schedule based on model predictions
     last_obs <- convert_frequency_dataset(test_dataset[(current_end-window_size):(current_end-1)], window_size, mode = "max")
-    prediction_result <- do_prediction(last_obs, coeffs, means, vars, 1, level=(100-cpu_required))
+    prediction_result <- do_prediction_markov(last_obs, transition, 1, 100-cpu_required)
     prediction <- ifelse(prediction_result$prob <= prob_cut_off, 1, 0)
     scheduled_num <- ifelse(prediction == 1, scheduled_num + 1, scheduled_num)
     unscheduled_num <- ifelse(prediction == 1, unscheduled_num, unscheduled_num + 1)
@@ -96,7 +106,36 @@ scheduling_foreground <- function(test_dataset, coeffs, means, vars, window_size
 }
 
 
-scheduling_model <- function(test_dataset, coeffs, means, vars, window_size, prob_cut_off, granularity, schedule_policy, adjustment) {
+compute_pi_up_markov_single <- function(to_states, prob_cut_off, granularity) {
+  
+  current_state <- 1
+  current_prob <- 0
+  while (current_state <= length(to_states)) {
+    current_prob <- current_prob + to_states[current_state]
+    if (current_prob < 1-prob_cut_off) {
+      current_state <- current_state + 1
+    } else {
+      break
+    }
+  }
+  
+  pi_up <- current_state * (100 / length(to_states))
+  if (granularity > 0) {
+    scheduled_size <- round_to_nearest(100 - pi_up, granularity, TRUE)
+    pi_up <- 100 - scheduled_size
+  }
+  return(pi_up)
+}
+
+
+compute_pi_up_markov <- function(to_states, prob_cut_off, granularity) {
+  
+  pi_ups <- apply(to_states, 1, compute_pi_up_markov_single, prob_cut_off, granularity)
+  return(max(pi_ups))
+}
+
+
+scheduling_model <- function(test_dataset, transition, window_size, prob_cut_off, granularity, schedule_policy, adjustment) {
   
   run_switch <- FALSE
   
@@ -111,16 +150,16 @@ scheduling_model <- function(test_dataset, coeffs, means, vars, window_size, pro
   survival <- c()
   while (current_end <= last_time_schedule) {
     ## Schedule based on model predictions
-    last_obs <- convert_frequency_dataset(test_dataset[(current_end-window_size):(current_end-1)], window_size, mode = "max")
-    prediction_result <- do_prediction(last_obs=last_obs, phi=coeffs, mean=means, variance=vars, predict_size=1)
-    pi_up <- compute_pi_up(mu=prediction_result$mu, varcov=prediction_result$varcov, predict_size=1, prob_cutoff=prob_cut_off, granularity=granularity)
+    last_obs <- convert_frequency_dataset(test_dataset[(current_end-window_size):(current_end-1),], window_size, mode="max")
+    prediction_result <- do_prediction_markov(last_obs, transition, 1, NULL)
+    pi_up <- compute_pi_up_markov(prediction_result$to_states, prob_cut_off, granularity)
     pi_ups <- c(pi_ups, pi_up)
-    ## Evalute schedulings based on prediction
+    ## Evaluate schedulings based on prediction
     start_time <- current_end
     end_time <- current_end + window_size - 1
     
     utilization <- c(utilization, check_utilization(pi_up, granularity))
-    survival <- c(survival, check_survival(pi_up, test_dataset[start_time:end_time], granularity))
+    survival <- c(survival, check_survival(pi_up, test_dataset[start_time:end_time,], granularity))
     
     if (schedule_policy == "dynamic") {
       if (!is.na(survival[length(survival)]) & survival[length(survival)] == 0) {
@@ -151,7 +190,7 @@ scheduling_model <- function(test_dataset, coeffs, means, vars, window_size, pro
 }
 
 
-svt_model <- function(ts_num, dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy="disjoint", adjustment) {
+svt_model <- function(ts_num, dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy="disjoint", adjustment, num_of_states) {
   
   data_set <- dataset[,ts_num]
   cpu_required <- cpu_required[ts_num]
@@ -175,18 +214,15 @@ svt_model <- function(ts_num, dataset, train_size, window_size, update_freq, pro
     test_set <- data_set[(current+train_size+1):(current+train_size+update_freq)]
     
     ## Convert Frequency for training set
-    new_trainset <- convert_frequency_dataset(train_set, window_size, "max")
+    new_trainset <- apply(train_set, 2, convert_frequency_dataset_overlapping, new_freq=window_size, mode="max")
     
     ## Train Model
-    trained_result <- train_ar1_model(new_trainset)
-    coeffs <- trained_result$coeffs
-    means <- trained_result$means
-    vars <- trained_result$vars
+    transition <- train_markov_model(new_trainset, num_of_states)
     
     ## Test Model
-    result_foreground <- scheduling_foreground(test_set, coeffs, means, vars, window_size, prob_cut_off, cpu_required, granularity, schedule_policy)
-    result_model <- scheduling_model(test_set, coeffs, means, vars, window_size, prob_cut_off, granularity, schedule_policy, adjustment)
-
+    result_foreground <- scheduling_foreground(test_set, transition, window_size, prob_cut_off, cpu_required, granularity, schedule_policy)
+    result_model <- scheduling_model(test_set, transition, window_size, prob_cut_off, granularity, schedule_policy, adjustment)
+    
     ## Write Result
     scheduled_num <- scheduled_num + result_foreground$scheduled_num
     unscheduled_num <- unscheduled_num + result_foreground$unscheduled_num
@@ -207,7 +243,7 @@ svt_model <- function(ts_num, dataset, train_size, window_size, update_freq, pro
 }
 
 
-svt_stationary_model <- function(dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy="disjoint", adjustment) {
+svt_stationary_model <- function(dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy="disjoint", adjustment, num_of_states) {
   
   scheduled_num <- c()
   unscheduled_num <- c()
@@ -222,7 +258,7 @@ svt_stationary_model <- function(dataset, train_size, window_size, update_freq, 
   
   ts_names <- colnames(dataset)
   
-  result <- mclapply(1:length(ts_names), svt_model, dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy, adjustment, mc.cores=cores)
+  result <- mclapply(1:length(ts_names), svt_model, dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy, adjustment, num_of_states, mc.cores=cores)
   
   for (ts_num in 1:length(ts_names)) {
     scheduled_num <- c(scheduled_num, result[[ts_num]]$scheduled_num)
@@ -262,14 +298,16 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, output_dp, schedule
   granularity <- as.numeric(parameter[3])
   train_size <- as.numeric(parameter[4])
   update_freq <- as.numeric(parameter[5])
+  num_of_states <- as.numeric(parameter[6])
   
   print(paste("Job len:", window_size))
   print(paste("Cut off prob:", prob_cut_off))
   print(paste("Granularity:", granularity))
   print(paste("Train Size:", train_size))
   print(paste("Update Freq:", update_freq))
+  print(paste("Number of States:", num_of_states))
   
-  output <- svt_stationary_model(dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy, adjustment)
+  output <- svt_stationary_model(dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy, adjustment, num_of_states)
   overall_evaluation <- find_overall_evaluation(output$avg_usage[,1], output$avg_usage[,2], output$job_survival[,1])
   
   utilization_rate1 <- overall_evaluation$utilization_rate1
@@ -290,7 +328,7 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, output_dp, schedule
   print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
   
   result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
-  result_path.xlsx <- update.xlsx.df.online(result_path.xlsx, "AR1", prob_cut_off, 0, sample_size, window_size, granularity, 0, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
+  result_path.xlsx <- update.xlsx.df.online(result_path.xlsx, "Markov", prob_cut_off, num_of_states, sample_size, window_size, granularity, 0, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
   write.xlsx(result_path.xlsx, showNA = FALSE, file = output_dp, row.names = FALSE)
 }
 
@@ -307,6 +345,8 @@ prob_cut_offs <- c(0.01, 0.1)
 granularity <- c(100/32, 0)
 
 train_size <- c(2000, 4000)
+
+state_nums <- c(8, 16, 32, 64)
 
 schedule_policy <- "dynamic"
 
@@ -378,8 +418,8 @@ if (adjustment) {
   }
 }
 
-parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity, train_size)
-colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity", "train_size")
+parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity, train_size, state_nums)
+colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity", "train_size", "num_of_states")
 parameter.df$update_freq <- 3 * parameter.df$window_size
 parameter.df <- parameter.df %>%
   arrange()

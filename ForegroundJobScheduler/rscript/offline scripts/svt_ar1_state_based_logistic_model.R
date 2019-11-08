@@ -13,6 +13,8 @@ if (Sys.info()["sysname"] == "Windows") {
   source("/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/rscript/helper_functions.R")
 }
 
+cores <- detectCores(all.tests = FALSE, logical = FALSE)
+
 
 do_prediction <- function(last_obs, phi, mean, variance) {
   
@@ -278,16 +280,16 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   ## Training State Based Logistic Model
   print("Training: Logistic.")
   ### Generate logistc inputs
-  logistic_inputs <- mclapply(1:length(ts_names), parser_logistic_model_states, new_trainset_avg, new_trainset_max, discretize(0:100, method = "interval", breaks = num_of_states, onlycuts = TRUE))
+  logistic_inputs <- mclapply(1:length(ts_names), parser_logistic_model_states, new_trainset_avg, new_trainset_max, discretize(0:100, method = "interval", breaks = num_of_states, onlycuts = TRUE), mc.cores=cores)
   ### Train logistic models
-  logistic_models <- mclapply(1:length(ts_names), train_multi_state_logistic_models, logistic_inputs, num_of_states)
+  logistic_models <- mclapply(1:length(ts_names), train_multi_state_logistic_models, logistic_inputs, num_of_states, mc.cores=cores)
   
   ## Testing
   print("Testing on Foreground job:")
-  result_foreground <- mclapply(1:length(ts_names), scheduling_foreground, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, cpu_required, granularity, num_of_states, schedule_policy)
+  result_foreground <- mclapply(1:length(ts_names), scheduling_foreground, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, cpu_required, granularity, num_of_states, schedule_policy, mc.cores=cores)
   
   print("Testing on Model:")
-  result_model <- mclapply(1:length(ts_names), scheduling_model, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, granularity, max_run_length, num_of_states, schedule_policy, adjustment)
+  result_model <- mclapply(1:length(ts_names), scheduling_model, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, granularity, max_run_length, num_of_states, schedule_policy, adjustment, mc.cores=cores)
   
   for (ts_num in 1:length(ts_names)) {
     scheduled_num <- rbind(scheduled_num, result_foreground[[ts_num]]$scheduled_num)

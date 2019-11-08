@@ -10,9 +10,12 @@ if (Sys.info()["sysname"] == "Windows") {
   source("/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/rscript/helper_functions.R")
 }
 
+cores <- detectCores(all.tests = FALSE, logical = FALSE)
+
 
 train_markov_model <- function(ts_num, dataset, num_of_states) {
   
+  dataset <- dataset[, ts_num]
   from_states <- sapply(dataset[-length(dataset)], find_state_num, num_of_states)
   to_states <- sapply(dataset[-1], find_state_num, num_of_states)
   transition <- matrix(0, nrow=num_of_states, ncol=num_of_states)
@@ -226,14 +229,14 @@ markov_model <- function(dataset, initial_train_size, window_size, prob_cut_off,
 	
 	## Train Model
 	print("Training")
-	train_result <- mclapply(1:length(ts_names), train_markov_model, new_trainset_overlap, num_of_states)
+	train_result <- mclapply(1:length(ts_names), train_markov_model, new_trainset_overlap, num_of_states, mc.cores=cores)
 	
 	## Test Model
 	print("Testing on Foreground job:")
-	result_foreground <- mclapply(1:length(ts_names), scheduling_foreground, test_set, train_result, window_size, prob_cut_off, cpu_required, granularity, schedule_policy)
+	result_foreground <- mclapply(1:length(ts_names), scheduling_foreground, test_set, train_result, window_size, prob_cut_off, cpu_required, granularity, schedule_policy, mc.cores=cores)
 	
 	print("Testing on Model:")
-	result_model <- mclapply(1:length(ts_names), scheduling_model, test_set, train_result, window_size, prob_cut_off, granularity, max_run_length, schedule_policy, adjustment)
+	result_model <- mclapply(1:length(ts_names), scheduling_model, test_set, train_result, window_size, prob_cut_off, granularity, max_run_length, schedule_policy, adjustment, mc.cores=cores)
 	
 	for (ts_num in 1:length(ts_names)) {
 	  scheduled_num <- rbind(scheduled_num, result_foreground[[ts_num]]$scheduled_num)

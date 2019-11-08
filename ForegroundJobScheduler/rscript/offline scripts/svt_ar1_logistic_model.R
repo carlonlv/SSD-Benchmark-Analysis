@@ -13,6 +13,8 @@ if (Sys.info()["sysname"] == "Windows") {
   source("/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/rscript/helper_functions.R")
 }
 
+cores <- detectCores(all.tests = FALSE, logical = FALSE)
+
 
 generate_expected_conditional_var <- function(expected_avgs, variance_model) {
   
@@ -299,7 +301,7 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   
   ## Training AR1 Model
   print("Training: AR1.")
-  train_result <- mclapply(1:length(ts_names), train_ar1_model, new_trainset_avg)
+  train_result <- mclapply(1:length(ts_names), train_ar1_model, new_trainset_avg, mc.cores=cores)
   coeffs <- c()
   means <- c()
   vars <- c()
@@ -311,18 +313,18 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   
   ## Training Logistic Model
   print("Training: Logistic.")
-  logistic_models <- mclapply(1:length(ts_names), train_logistic_model, new_trainset_max, new_trainset_avg, cpu_required)
+  logistic_models <- mclapply(1:length(ts_names), train_logistic_model, new_trainset_max, new_trainset_avg, cpu_required, mc.cores=cores)
   
   ## Training Polynomial Regression Model
   print("Training: Polynomial Regression.")
-  cond_var_models <- mclapply(1:length(ts_names), train_cond_var_model, new_trainset_max, new_trainset_avg, bin_num, cond.var)
+  cond_var_models <- mclapply(1:length(ts_names), train_cond_var_model, new_trainset_max, new_trainset_avg, bin_num, cond.var, mc.cores=cores)
   
   ## Test Model
   print("Testing on Foreground job:")
-  result_foreground <- mclapply(1:length(ts_names), scheduling_foreground, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, cpu_required, granularity, schedule_policy)
+  result_foreground <- mclapply(1:length(ts_names), scheduling_foreground, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, cpu_required, granularity, schedule_policy, mc.cores=cores)
   
   print("Testing on Model:")
-  result_model <- mclapply(1:length(ts_names), scheduling_model, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, cond_var_models, cond.var, window_size, prob_cut_off, cpu_required, granularity, max_run_length, schedule_policy, adjustment)
+  result_model <- mclapply(1:length(ts_names), scheduling_model, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, cond_var_models, cond.var, window_size, prob_cut_off, cpu_required, granularity, max_run_length, schedule_policy, adjustment, mc.cores=cores)
   
   for (ts_num in 1:length(ts_names)) {
     scheduled_num <- rbind(scheduled_num, result_foreground[[ts_num]]$scheduled_num)
