@@ -10,7 +10,7 @@ if (Sys.info()["sysname"] == "Windows") {
   source("/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/rscript/helper_functions.R")
 }
 
-cores <- detectCores(all.tests = FALSE, logical = FALSE)
+cores <- ifelse(Sys.info()["sysname"] == "Windows", 1, detectCores(all.tests = FALSE, logical = FALSE))
 
 
 train_markov_model <- function(ts_num, dataset, num_of_states) {
@@ -406,5 +406,6 @@ parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity, num_of_sta
 colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity", "num_of_states")
 parameter.df <- parameter.df %>% 
   arrange(window_size)
+parameter.df <- parameter.df[47:nrow(parameter.df),]
 
 slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment)
