@@ -404,8 +404,6 @@ granularity <- c(100/32, 0)
 
 train_size <- c(2000, 4000)
 
-state_nums <- c(8, 16, 32, 64)
-
 schedule_policy <- "dynamic"
 
 bg_jobs_path <- NULL
@@ -480,8 +478,8 @@ if (adjustment) {
   }
 }
 
-parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity, train_size, state_nums)
-colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity", "train_size", "num_of_states")
+parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity, train_size)
+colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity", "train_size")
 parameter.df$update_freq <- 3 * parameter.df$window_size
 parameter.df <- parameter.df %>%
   arrange()
