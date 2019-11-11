@@ -52,6 +52,8 @@ do_prediction_markov <- function(predictor, transition, predict_size, level=NULL
       final_transition <- final_transition %*% parsed_transition
       to_states <- rbind(to_states, final_transition[from, ])
     }
+  } else {
+    to_states <- rbind(to_states, final_transition[from, ])
   }
   
   # calculate probability
