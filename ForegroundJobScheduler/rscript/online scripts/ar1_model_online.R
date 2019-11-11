@@ -297,9 +297,8 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, output_dp, schedule
 
 sample_size <- 100
 cpu_usage <- 3
-max_run_length <- 37
 total_trace_length <- 8000
-adjustment <- TRUE
+adjustment <- FALSE
 
 window_sizes <- c(12, 36)
 prob_cut_offs <- c(0.01, 0.1)

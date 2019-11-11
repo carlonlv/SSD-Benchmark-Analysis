@@ -393,7 +393,6 @@ wrapper.epoche <- function(parameter, dataset_max, dataset_avg, cpu_required, ou
 
 sample_size <- 100
 cpu_usage <- 3
-max_run_length <- 37
 total_trace_length <- 8000
 adjustment <- TRUE
 
