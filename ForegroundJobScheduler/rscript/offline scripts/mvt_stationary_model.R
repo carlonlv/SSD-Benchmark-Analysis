@@ -1,5 +1,4 @@
 library("mvtnorm")
-library("dict")
 library("MTS")
 library("dplyr")
 library("parallel")
@@ -10,7 +9,7 @@ if (Sys.info()["sysname"] == "Windows") {
   source("/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/rscript/helper_functions.R")
 }
 
-cores <- ifelse(Sys.info()["sysname"] == "Windows", 1, detectCores(all.tests = FALSE, logical = FALSE))
+cores <- ifelse(Sys.info()["sysname"] == "Windows", 1, detectCores(all.tests = FALSE, logical = TRUE))
 
 
 initialize_coefficient_matrix <- function(ma_coef, q, predict_size, current_err) {

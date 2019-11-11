@@ -10,7 +10,7 @@ if (Sys.info()["sysname"] == "Windows") {
   source("/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/rscript/helper_functions.R")
 }
 
-cores <- detectCores(all.tests = FALSE, logical = FALSE)
+cores <- detectCores(all.tests = FALSE, logical = TRUE)
 
 
 train_markov_model <- function(dataset, num_of_states) {
@@ -327,7 +327,7 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, output_dp, schedule
   print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
   
   result_path.csv <- read.csv(output_dp)
-  result_path.csv <- update.df.online(result_path.csv, "Markov", prob_cut_off, num_of_states, sample_size, window_size, granularity, 0, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
+  result_path.csv <- update.df.online(result_path.csv, "AR1", prob_cut_off, 0, sample_size, window_size, granularity, 0, train_size, update_freq, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
   write.csv(result_path.csv, file = output_dp, row.names = FALSE)
 }
 

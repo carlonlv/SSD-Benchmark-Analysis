@@ -1,7 +1,6 @@
 library("forecast")
 library("mvtnorm")
 library("dplyr")
-library("dict")
 library("arules")
 library("cluster")
 library("parallel")
@@ -12,7 +11,7 @@ if (Sys.info()["sysname"] == "Windows") {
   source("/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/rscript/helper_functions.R")
 }
 
-cores <- detectCores(all.tests = FALSE, logical = FALSE)
+cores <- ifelse(Sys.info()["sysname"] == "Windows", 1, detectCores(all.tests = FALSE, logical = TRUE))
 
 
 do_prediction <- function(last_obs, phi, mean, variance) {

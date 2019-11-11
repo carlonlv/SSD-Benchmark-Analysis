@@ -1,6 +1,5 @@
 library("forecast")
 library("mvtnorm")
-library("dict")
 library("dplyr")
 library("parallel")
 
@@ -10,7 +9,7 @@ if (Sys.info()["sysname"] == "Windows") {
   source("/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/rscript/helper_functions.R")
 }
 
-cores <- detectCores(all.tests = FALSE, logical = FALSE)
+cores <- ifelse(Sys.info()["sysname"] == "Windows", 1, detectCores(all.tests = FALSE, logical = TRUE))
 
 
 calculate_var_cov_matrix_ar1 <-function(var, l, phi) {
