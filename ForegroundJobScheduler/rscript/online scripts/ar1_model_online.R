@@ -10,7 +10,7 @@ if (Sys.info()["sysname"] == "Windows") {
   source("/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/rscript/helper_functions.R")
 }
 
-cores <- detectCores(all.tests = FALSE, logical = TRUE)
+cores <- ifelse(Sys.info()["sysname"] == "Windows", 1, detectCores(all.tests = FALSE, logical = TRUE))
 
 
 train_ar1_model <- function(train_dataset) {
@@ -306,7 +306,7 @@ granularity <- c(100/32, 0)
 
 train_size <- c(2000, 4000)
 
-schedule_policy <- "dynamic"
+schedule_policy <- "disjoint"
 
 bg_jobs_path <- NULL
 if (Sys.info()["sysname"] == "Windows") {

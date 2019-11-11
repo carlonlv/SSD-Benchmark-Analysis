@@ -13,6 +13,17 @@ if (Sys.info()["sysname"] == "Windows") {
 cores <- ifelse(Sys.info()["sysname"] == "Windows", 1, detectCores(all.tests = FALSE, logical = TRUE))
 
 
+train_ar1_model <- function(ts_num, train_dataset) {
+  
+  ts_model <- tryCatch({
+    arima(x=train_dataset[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000))
+  }, error = function(cond) {
+    return(arima(x=train_dataset[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "ML", optim.control = list(maxit=2000)))
+  })
+  return(list("coeffs"=as.numeric(ts_model$coef[1]), "means"= as.numeric(ts_model$coef[2]), "vars"=ts_model$sigma2))
+}
+
+
 generate_expected_conditional_var <- function(expected_avgs, variance_model) {
   
   expected_var <- NULL
@@ -22,17 +33,6 @@ generate_expected_conditional_var <- function(expected_avgs, variance_model) {
     expected_var <- predict(variance_model, newdata=data.frame("bin"=expected_avgs), type = "response")^2
   }
   return(max(expected_var, 0))
-}
-
-
-train_ar1_model <- function(ts_num, train_dataset) {
-  
-  ts_model <- tryCatch({
-    arima(x=train_dataset[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000))
-  }, error = function(cond) {
-    return(arima(x=train_dataset[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "ML", optim.control = list(maxit=2000)))
-  })
-  return(list("coeffs"=as.numeric(ts_model$coef[1]), "means"= as.numeric(ts_model$coef[2]), "vars"=ts_model$sigma2))
 }
 
 
