@@ -36,7 +36,7 @@ train_markov_model <- function(dataset, num_of_states) {
 
 do_prediction_markov <- function(predictor, transition, predict_size, level=NULL) {
   
-  final_transition <- diag(x=1, nrow=nrow(transition), ncol=ncol(transition))
+  final_transition <- transition
   parsed_transition <- transition
   if (!is.null(level)) {
     level_state <- find_state_num(level, nrow(transition))
@@ -47,9 +47,11 @@ do_prediction_markov <- function(predictor, transition, predict_size, level=NULL
   }
   from <- find_state_num(predictor, nrow(transition))
   to_states <- data.frame()
-  for (i in 1:predict_size) {
-    final_transition <- final_transition %*% parsed_transition
-    to_states <- rbind(to_states, final_transition[from, ])
+  if (predict_size > 1) {
+    for (i in 1:(predict_size-1)) {
+      final_transition <- final_transition %*% parsed_transition
+      to_states <- rbind(to_states, final_transition[from, ])
+    }
   }
   
   # calculate probability
@@ -134,7 +136,7 @@ compute_pi_up_markov <- function(to_states, prob_cut_off, granularity) {
 }
 
 
-scheduling_model <- function(test_dataset, transition, window_size, prob_cut_off, granularity, schedule_policy, adjustment) {
+scheduling_model <- function(test_dataset, transition, window_size, prob_cut_off, granularity, schedule_policy) {
   
   run_switch <- FALSE
   
@@ -149,7 +151,7 @@ scheduling_model <- function(test_dataset, transition, window_size, prob_cut_off
   survival <- c()
   while (current_end <= last_time_schedule) {
     ## Schedule based on model predictions
-    last_obs <- convert_frequency_dataset(test_dataset[(current_end-window_size):(current_end-1),], window_size, mode="max")
+    last_obs <- convert_frequency_dataset(test_dataset[(current_end-window_size):(current_end-1)], window_size, mode="max")
     prediction_result <- do_prediction_markov(last_obs, transition, 1, NULL)
     pi_up <- compute_pi_up_markov(prediction_result$to_states, prob_cut_off, granularity)
     pi_ups <- c(pi_ups, pi_up)
@@ -176,7 +178,7 @@ scheduling_model <- function(test_dataset, transition, window_size, prob_cut_off
         if (!run_switch) {
           run_switch <- TRUE
         } else {
-          survival[length(survival)] <- ifelse(adjustment, NA, survival[length(survival)])
+          survival[length(survival)] <- survival[length(survival)]
         }
       }
     }
@@ -189,7 +191,7 @@ scheduling_model <- function(test_dataset, transition, window_size, prob_cut_off
 }
 
 
-svt_model <- function(ts_num, dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy="disjoint", adjustment, num_of_states) {
+svt_model <- function(ts_num, dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy="disjoint", num_of_states) {
   
   data_set <- dataset[,ts_num]
   cpu_required <- cpu_required[ts_num]
@@ -213,14 +215,14 @@ svt_model <- function(ts_num, dataset, train_size, window_size, update_freq, pro
     test_set <- data_set[(current+train_size+1):(current+train_size+update_freq)]
     
     ## Convert Frequency for training set
-    new_trainset <- apply(train_set, 2, convert_frequency_dataset_overlapping, new_freq=window_size, mode="max")
+    new_trainset <- convert_frequency_dataset_overlapping(train_set, window_size, "max")
     
     ## Train Model
     transition <- train_markov_model(new_trainset, num_of_states)
     
     ## Test Model
     result_foreground <- scheduling_foreground(test_set, transition, window_size, prob_cut_off, cpu_required, granularity, schedule_policy)
-    result_model <- scheduling_model(test_set, transition, window_size, prob_cut_off, granularity, schedule_policy, adjustment)
+    result_model <- scheduling_model(test_set, transition, window_size, prob_cut_off, granularity, schedule_policy)
     
     ## Write Result
     scheduled_num <- scheduled_num + result_foreground$scheduled_num
@@ -242,7 +244,7 @@ svt_model <- function(ts_num, dataset, train_size, window_size, update_freq, pro
 }
 
 
-svt_stationary_model <- function(dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy="disjoint", adjustment, num_of_states) {
+svt_stationary_model <- function(dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy="disjoint", num_of_states) {
   
   scheduled_num <- c()
   unscheduled_num <- c()
@@ -257,7 +259,7 @@ svt_stationary_model <- function(dataset, train_size, window_size, update_freq, 
   
   ts_names <- colnames(dataset)
   
-  result <- mclapply(1:length(ts_names), svt_model, dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy, adjustment, num_of_states, mc.cores=cores)
+  result <- lapply(1:length(ts_names), svt_model, dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy, num_of_states)
   
   for (ts_num in 1:length(ts_names)) {
     scheduled_num <- c(scheduled_num, result[[ts_num]]$scheduled_num)
@@ -290,14 +292,14 @@ svt_stationary_model <- function(dataset, train_size, window_size, update_freq, 
 }
 
 
-wrapper.epoche <- function(parameter, dataset, cpu_required, output_dp, schedule_policy, adjustment) {
-  
-  window_size <- as.numeric(parameter[1])
-  prob_cut_off <- as.numeric(parameter[2])
-  granularity <- as.numeric(parameter[3])
-  train_size <- as.numeric(parameter[4])
-  update_freq <- as.numeric(parameter[5])
-  num_of_states <- as.numeric(parameter[6])
+wrapper.epoche <- function(parameter, dataset, cpu_required, output_dp, schedule_policy) {
+
+  window_size <- as.numeric(parameter["window_size"])
+  prob_cut_off <- as.numeric(parameter["prob_cut_off"])
+  granularity <- as.numeric(parameter["granularity"])
+  train_size <- as.numeric(parameter["train_size"])
+  update_freq <- as.numeric(parameter["update_freq"])
+  num_of_states <- as.numeric(parameter["num_of_states"])
   
   print(paste("Job len:", window_size))
   print(paste("Cut off prob:", prob_cut_off))
@@ -306,7 +308,7 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, output_dp, schedule
   print(paste("Update Freq:", update_freq))
   print(paste("Number of States:", num_of_states))
   
-  output <- svt_stationary_model(dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy, adjustment, num_of_states)
+  output <- svt_stationary_model(dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy, num_of_states)
   overall_evaluation <- find_overall_evaluation(output$avg_usage[,1], output$avg_usage[,2], output$job_survival[,1])
   
   utilization_rate1 <- overall_evaluation$utilization_rate1
@@ -336,7 +338,6 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, output_dp, schedule
 sample_size <- 100
 cpu_usage <- 3
 total_trace_length <- 8000
-adjustment <- TRUE
 
 window_sizes <- c(12, 36)
 prob_cut_offs <- c(0.01, 0.1)
@@ -386,33 +387,17 @@ for (j in 1:ncol(data_matrix)) {
 }
 
 output_dp <- NULL
-if (adjustment) {
-  if (schedule_policy == "dynamic") {
-    if (Sys.info()["sysname"] == "Windows") {
-      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary dynamic (windows,granularity) post adj.csv"
-    } else {
-      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary dynamic (windows,granularity) post adj.csv"
-    }
+if (schedule_policy == "dynamic") {
+  if (Sys.info()["sysname"] == "Windows") {
+    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary dynamic (windows,granularity).csv"
   } else {
-    if (Sys.info()["sysname"] == "Windows") {
-      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary disjoint (windows,granularity) post adj.csv"
-    } else {
-      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity) post adj.csv"
-    }
+    output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary dynamic (windows,granularity).csv"
   }
 } else {
-  if (schedule_policy == "dynamic") {
-    if (Sys.info()["sysname"] == "Windows") {
-      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary dynamic (windows,granularity).csv"
-    } else {
-      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary dynamic (windows,granularity).csv"
-    }
+  if (Sys.info()["sysname"] == "Windows") {
+    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary disjoint (windows,granularity).csv"
   } else {
-    if (Sys.info()["sysname"] == "Windows") {
-      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary disjoint (windows,granularity).csv"
-    } else {
-      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity).csv"
-    }
+    output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity).csv"
   }
 }
 
@@ -421,4 +406,4 @@ colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity", "train
 parameter.df$update_freq <- 3 * parameter.df$window_size
 parameter.df <- parameter.df %>%
   arrange()
-slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix, (100-cpu_required), output_dp, schedule_policy, adjustment)
+slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix, (100-cpu_required), output_dp, schedule_policy)

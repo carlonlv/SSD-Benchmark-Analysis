@@ -362,10 +362,11 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
 
 wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, initial_train_size, max_run_length, cond.var, output_dp, schedule_policy, adjustment) {
   
-  window_size <- as.numeric(parameter[1])
-  prob_cut_off <- as.numeric(parameter[2])
-  granularity <- as.numeric(parameter[3])
-  bin_num <- as.numeric(parameter[4])
+  window_size <- as.numeric(parameter["window_size"])
+  prob_cut_off <- as.numeric(parameter["prob_cut_off"])
+  granularity <- as.numeric(parameter["granularity"])
+  train_size <- as.numeric(parameter["train_size"])
+  update_freq <- as.numeric(parameter["update_freq"])
   
   print(paste("Job len:", window_size))
   print(paste("Cut off prob:", prob_cut_off))

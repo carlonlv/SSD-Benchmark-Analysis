@@ -35,7 +35,7 @@ train_markov_model <- function(ts_num, dataset, num_of_states) {
 
 do_prediction_markov <- function(predictor, transition, predict_size, level=NULL) {
   
-  final_transition <- diag(x=1, nrow=nrow(transition), ncol=ncol(transition))
+  final_transition <- transition
   parsed_transition <- transition
   if (!is.null(level)) {
     level_state <- find_state_num(level, nrow(transition))
@@ -46,9 +46,11 @@ do_prediction_markov <- function(predictor, transition, predict_size, level=NULL
   }
   from <- find_state_num(predictor, nrow(transition))
   to_states <- data.frame()
-  for (i in 1:predict_size) {
-    final_transition <- final_transition %*% parsed_transition
-    to_states <- rbind(to_states, final_transition[from, ])
+  if (predict_size > 1) {
+    for (i in 1:(predict_size-1)) {
+      final_transition <- final_transition %*% parsed_transition
+      to_states <- rbind(to_states, final_transition[from, ])
+    }
   }
   
   # calculate probability

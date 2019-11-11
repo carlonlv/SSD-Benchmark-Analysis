@@ -200,8 +200,8 @@ scheduling_model <- function(test_dataset_max, test_dataset_avg, ts_model, windo
   survival <- c()
   while (current_end <= last_time_schedule) {
     ## Schedule based on model predictions
-    last_obs_max <- convert_frequency_dataset(test_dataset_max[(current_end-p*window_size):(current_end-1), ts_num], window_size, mode="max")
-    last_obs_avg <- convert_frequency_dataset(test_dataset_avg[(current_end-p*window_size):(current_end-1), ts_num], window_size, mode="avg")
+    last_obs_max <- convert_frequency_dataset(test_dataset_max[(current_end-p*window_size):(current_end-1)], window_size, mode="max")
+    last_obs_avg <- convert_frequency_dataset(test_dataset_avg[(current_end-p*window_size):(current_end-1)], window_size, mode="avg")
     last_obs <- matrix(nrow = 2, ncol = length(last_obs_max))
     last_obs[1,] <- last_obs_max
     last_obs[2,] <- last_obs_avg
@@ -272,8 +272,8 @@ svt_model <- function(ts_num, dataset_max, dataset_avg, train_size, window_size,
     test_set_avg <- dataset_avg[(current+train_size+1):(current+train_size+update_freq)]
     
     ## Convert Frequency for training set
-    new_trainset_max <- apply(train_set_max, 2, convert_frequency_dataset_overlapping, new_freq=window_size, mode="max")
-    new_trainset_avg <- apply(train_set_avg, 2, convert_frequency_dataset_overlapping, new_freq=window_size, mode="max")
+    new_trainset_max <- convert_frequency_dataset(train_set_max, window_size, "max")
+    new_trainset_avg <- convert_frequency_dataset(train_set_avg, window_size, "avg")
     
     ## Train Model
     trained_result <- train_mvt_model(new_trainset_max, new_trainset_avg, p=1, q=0)
@@ -352,11 +352,11 @@ svt_stationary_model <- function(dataset_max, dataset_avg, train_size, window_si
 
 wrapper.epoche <- function(parameter, dataset_max, dataset_avg, cpu_required, output_dp, schedule_policy, adjustment) {
   
-  window_size <- as.numeric(parameter[1])
-  prob_cut_off <- as.numeric(parameter[2])
-  granularity <- as.numeric(parameter[3])
-  train_size <- as.numeric(parameter[4])
-  update_freq <- as.numeric(parameter[5])
+  window_size <- as.numeric(parameter["window_size"])
+  prob_cut_off <- as.numeric(parameter["prob_cut_off"])
+  granularity <- as.numeric(parameter["granularity"])
+  train_size <- as.numeric(parameter["train_size"])
+  update_freq <- as.numeric(parameter["update_freq"])
 
   print(paste("Job len:", window_size))
   print(paste("Cut off prob:", prob_cut_off))
@@ -446,33 +446,17 @@ for (j in 1:ncol(data_matrix)) {
 }
 
 output_dp <- NULL
-if (adjustment) {
-  if (schedule_policy == "dynamic") {
-    if (Sys.info()["sysname"] == "Windows") {
-      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary dynamic (windows,granularity) post adj.csv"
-    } else {
-      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary dynamic (windows,granularity) post adj.csv"
-    }
+if (schedule_policy == "dynamic") {
+  if (Sys.info()["sysname"] == "Windows") {
+    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary dynamic (windows,granularity).csv"
   } else {
-    if (Sys.info()["sysname"] == "Windows") {
-      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary disjoint (windows,granularity) post adj.csv"
-    } else {
-      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity) post adj.csv"
-    }
+    output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary dynamic (windows,granularity).csv"
   }
 } else {
-  if (schedule_policy == "dynamic") {
-    if (Sys.info()["sysname"] == "Windows") {
-      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary dynamic (windows,granularity).csv"
-    } else {
-      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary dynamic (windows,granularity).csv"
-    }
+  if (Sys.info()["sysname"] == "Windows") {
+    output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary disjoint (windows,granularity).csv"
   } else {
-    if (Sys.info()["sysname"] == "Windows") {
-      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary disjoint (windows,granularity).csv"
-    } else {
-      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity).csv"
-    }
+    output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity).csv"
   }
 }
 
