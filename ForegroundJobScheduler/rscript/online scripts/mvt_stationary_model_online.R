@@ -3,7 +3,6 @@ library("dplyr")
 library("forecast")
 library("mvtnorm")
 library("dict")
-library("xlsx")
 
 if (Sys.info()["sysname"] == "Windows") {
   source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//helper_functions.R")
@@ -385,9 +384,9 @@ wrapper.epoche <- function(parameter, dataset_max, dataset_avg, cpu_required, ou
   print(paste("Job survival rate:", "job length", window_size, survival_rate))
   print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
   
-  result_path.xlsx <- read.xlsx(output_dp, sheetIndex = 1)
-  result_path.xlsx <- update.xlsx.df.online(result_path.xlsx, "VAR1", prob_cut_off, 0, sample_size, window_size, granularity, 0, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
-  write.xlsx(result_path.xlsx, showNA = FALSE, file = output_dp, row.names = FALSE)
+  result_path.csv <- read.csv(output_dp)
+  result_path.csv <- update.df.online(result_path.csv, "VAR1", prob_cut_off, 0, sample_size, window_size, granularity, 0, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
+  write.csv(result_path.csv, file = output_dp, row.names = FALSE)
 }
 
 ## Read background job pool
@@ -451,29 +450,29 @@ output_dp <- NULL
 if (adjustment) {
   if (schedule_policy == "dynamic") {
     if (Sys.info()["sysname"] == "Windows") {
-      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary dynamic (windows,granularity) post adj.xlsx"
+      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary dynamic (windows,granularity) post adj.csv"
     } else {
-      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary dynamic (windows,granularity) post adj.xlsx"
+      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary dynamic (windows,granularity) post adj.csv"
     }
   } else {
     if (Sys.info()["sysname"] == "Windows") {
-      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary disjoint (windows,granularity) post adj.xlsx"
+      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary disjoint (windows,granularity) post adj.csv"
     } else {
-      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity) post adj.xlsx"
+      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity) post adj.csv"
     }
   }
 } else {
   if (schedule_policy == "dynamic") {
     if (Sys.info()["sysname"] == "Windows") {
-      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary dynamic (windows,granularity).xlsx"
+      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary dynamic (windows,granularity).csv"
     } else {
-      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary dynamic (windows,granularity).xlsx"
+      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary dynamic (windows,granularity).csv"
     }
   } else {
     if (Sys.info()["sysname"] == "Windows") {
-      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary disjoint (windows,granularity).xlsx"
+      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary disjoint (windows,granularity).csv"
     } else {
-      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity).xlsx"
+      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity).csv"
     }
   }
 }

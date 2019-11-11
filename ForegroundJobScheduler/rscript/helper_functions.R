@@ -2,7 +2,6 @@ library("forecast")
 library("mvtnorm")
 library("dict")
 library("dplyr")
-library("xlsx")
 
 
 convert_frequency_dataset <- function(dataset, new_freq, mode) {
@@ -150,9 +149,9 @@ compute_utilization <- function(pi_ups, survivals, actual_obs, window_size, gran
 }
 
 
-update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num=0, sample_size, window_size, granularity, bin_num=0, utilization1, utilization2, survival, correct_scheduled_rate, correct_unscheduled_rate) {
+update.df <- function(file, model_name, prob_cut_off, state_num=0, sample_size, window_size, granularity, bin_num=0, utilization1, utilization2, survival, correct_scheduled_rate, correct_unscheduled_rate) {
   
-  xlsx_file <- xlsx_file %>%
+  file <- file %>%
     mutate(Avg.Cycle.Usage1 = ifelse(Model == model_name & 
                                       Probability.Cut.Off == prob_cut_off & 
                                       Sample.Size == sample_size &
@@ -193,15 +192,15 @@ update.xlsx.df <- function(xlsx_file, model_name, prob_cut_off, state_num=0, sam
                                             StateNum == state_num &
                                             BinNum == bin_num,
                                           correct_unscheduled_rate, Correctly.Unscheduled))
-  xlsx_file <- xlsx_file %>%
+  file <- file %>%
     arrange(Model, Sample.Size, Window.Size, Granularity, Probability.Cut.Off, StateNum, BinNum)
-  return(xlsx_file)
+  return(file)
 }
 
 
-update.xlsx.df.online <- function(xlsx_file, model_name, prob_cut_off, state_num=0, sample_size, window_size, granularity, bin_num=0, train_size, update_freq, utilization1, utilization2, survival, correct_scheduled_rate, correct_unscheduled_rate) {
+update.df.online <- function(file, model_name, prob_cut_off, state_num=0, sample_size, window_size, granularity, bin_num=0, train_size, update_freq, utilization1, utilization2, survival, correct_scheduled_rate, correct_unscheduled_rate) {
   
-  xlsx_file <- xlsx_file %>%
+  file <- file %>%
     mutate(Avg.Cycle.Usage1 = ifelse(Model == model_name & 
                                        Probability.Cut.Off == prob_cut_off & 
                                        Sample.Size == sample_size &
@@ -252,9 +251,9 @@ update.xlsx.df.online <- function(xlsx_file, model_name, prob_cut_off, state_num
                                             StateNum == state_num &
                                             BinNum == bin_num,
                                           correct_unscheduled_rate, Correctly.Unscheduled))
-  xlsx_file <- xlsx_file %>%
+  file <- file %>%
     arrange(Model, Sample.Size, Window.Size, Granularity, Probability.Cut.Off, StateNum, BinNum)
-  return(xlsx_file)
+  return(file)
 }
 
 
