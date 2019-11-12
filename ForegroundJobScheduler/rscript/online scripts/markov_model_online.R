@@ -211,7 +211,7 @@ svt_model <- function(ts_num, dataset, train_size, window_size, update_freq, pro
   sur_denominator <- 0
   
   current <- 1
-  last_time_update <- nrow(dataset) - update_freq - train_size + 1
+  last_time_update <- length(data_set) - update_freq - train_size + 1
   while (current <= last_time_update) {
     ## Split into train set and test set
     train_set <- data_set[current:(current+train_size-1)]

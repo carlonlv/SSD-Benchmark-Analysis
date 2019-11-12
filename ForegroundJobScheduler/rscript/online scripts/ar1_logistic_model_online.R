@@ -145,7 +145,7 @@ scheduling_foreground <- function(test_dataset_max, test_dataset_avg, coeffs, me
     ## Evalute schedulings based on prediction
     start_time <- current_end
     end_time <- current_end + window_size - 1
-    position_vec <- convert_frequency_dataset(test_dataset[start_time:end_time], window_size, mode = "max")
+    position_vec <- convert_frequency_dataset(test_dataset_max[start_time:end_time], window_size, mode = "max")
     actual <- ifelse(all(position_vec <= (100-cpu_required)), 1, 0)
     correct_scheduled_num <- ifelse(prediction == 1 & actual == 1, correct_scheduled_num + 1, correct_scheduled_num)
     correct_unscheduled_num <- ifelse(prediction == 0 & actual == 0, correct_unscheduled_num + 1, correct_unscheduled_num)
@@ -211,9 +211,6 @@ scheduling_model <- function(test_dataset_max, test_dataset_avg, coeffs, means, 
       if (!is.na(survival[length(survival)]) & survival[length(survival)] == 0) {
         update_policy <- window_size
         if (run_switch) {
-          idx <- ifelse(run_counter > max_run_length, max_run_length, run_counter)
-          runs[idx] <- runs[idx] + 1
-          run_counter <- 0
           run_switch <- FALSE
         } 
       } else if (is.na(survival[length(survival)])){
@@ -221,7 +218,6 @@ scheduling_model <- function(test_dataset_max, test_dataset_avg, coeffs, means, 
         if (!run_switch) {
           run_switch <- TRUE
         }
-        run_counter <- run_counter + 1
       } else {
         update_policy <- survival[length(survival)]
         if (!run_switch) {
@@ -229,11 +225,8 @@ scheduling_model <- function(test_dataset_max, test_dataset_avg, coeffs, means, 
         } else {
           survival[length(survival)] <- survival[length(survival)]
         }
-        run_counter <- run_counter + 1
       }
     }
-    current_end <- current_end + update_policy
-  }
   
   overall_survival <- compute_survival(ifelse(is.na(survival), NA, ifelse(survival == 0, 1, 0)))
   overall_utilization <- compute_utilization(pi_ups, survival, test_dataset_max[(window_size+1):(current_end-update_policy+window_size-1)], window_size, granularity, schedule_policy)
@@ -259,7 +252,7 @@ svt_model <- function(ts_num, dataset_max, dataset_avg, train_size, window_size,
   sur_denominator <- 0
   
   current <- 1
-  last_time_update <- nrow(dataset_max) - update_freq - train_size + 1
+  last_time_update <- length(dataset_max) - update_freq - train_size + 1
   while (current <= last_time_update) {
     ## Split into train set and test set
     train_set_max <- dataset_max[current:(current+train_size-1)]
@@ -440,9 +433,9 @@ rownames(data_matrix_max) <- seq(1, nrow(data_matrix_max) ,1)
 colnames(data_matrix_avg) <- bg_job_pool
 colnames(data_matrix_max) <- bg_job_pool
 
-cpu_required <- rep(0, ncol(data_matrix))
-for (j in 1:ncol(data_matrix)) {
-  cpu_required[j] <- as.numeric(quantile(data_matrix[,j], c(0.15, 0.5, 0.85), type = 4)[cpu_usage])
+cpu_required <- rep(0, ncol(data_matrix_max))
+for (j in 1:ncol(data_matrix_max)) {
+  cpu_required[j] <- as.numeric(quantile(data_matrix_max[,j], c(0.15, 0.5, 0.85), type = 4)[cpu_usage])
 }
 
 output_dp <- NULL

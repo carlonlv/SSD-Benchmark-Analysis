@@ -1,5 +1,6 @@
 library("parallel")
 library("dplyr")
+library("MTS")
 library("forecast")
 library("mvtnorm")
 library("dict")
@@ -15,7 +16,7 @@ cores <- ifelse(Sys.info()["sysname"] == "Windows", 1, detectCores(all.tests = F
 
 train_mvt_model <- function(train_dataset_max, train_dataset_avg, p, q) {
   
-  uni_data_matrix <- matrix(nrow = nrow(train_dataset_max), ncol = 2)
+  uni_data_matrix <- matrix(nrow = length(train_dataset_max), ncol = 2)
   uni_data_matrix[,1] <- train_dataset_max
   uni_data_matrix[,2] <- train_dataset_avg
   return(VARMACpp(uni_data_matrix, p=p, q=q, include.mean = TRUE))
@@ -92,6 +93,42 @@ calculate_var_cov_matrix <-function(p, q, var, predict_size, ar_coef, ma_coef) {
 }
 
 
+calculate_estimates <- function(p, ar_coef, last_obs, predict_size, intercept) {
+  
+  estimate <- matrix(nrow = 2, ncol = predict_size)
+  if (p == 0) {
+    estimate[1,] <- rep(intercept[1,1], predict_size)
+    estimate[2,] <- rep(intercept[2,1], predict_size)
+    return(estimate)
+  } else {
+    last_obs <- last_obs
+    intercept_extended <- NULL
+    for (l in 1:ncol(last_obs)) {
+      intercept_extended <- cbind(intercept_extended, intercept)
+    }
+    last_obs <- last_obs - intercept_extended
+    for (i in 1:predict_size) {
+      last_ob <- matrix(c(0,0), nrow = 2, ncol = 1)
+      for (j in 1:p) {
+        ar_coef_matrix <- matrix(nrow = 2, ncol = 2)
+        ar_coef_matrix[1,1] <- ar_coef[1,(1+2*(j-1))]
+        ar_coef_matrix[1,2] <- ar_coef[1,(2*j)]
+        ar_coef_matrix[2,1] <- ar_coef[2,(1+2*(j-1))]
+        ar_coef_matrix[2,2] <- ar_coef[2,(2*j)]
+        last_ob <- last_ob + ar_coef_matrix %*% last_obs[,j]
+      }
+      last_obs <- cbind(last_ob, last_obs)
+    }
+    intercept_extended <- NULL
+    for (l in 1:ncol(last_obs)) {
+      intercept_extended <- cbind(intercept_extended, intercept)
+    }
+    last_obs <- last_obs + intercept_extended
+    return(last_obs[1,1:predict_size])
+  }
+}
+
+
 do_prediction <- function(last_obs, ts_model, predict_size=1, level=NULL) {
   
   p <- ts_model$ARorder
@@ -165,7 +202,7 @@ scheduling_foreground <- function(test_dataset_max, test_dataset_avg, ts_model, 
     ## Evalute schedulings based on prediction
     start_time <- current_end
     end_time <- current_end + window_size - 1
-    position_vec <- convert_frequency_dataset(test_dataset[start_time:end_time], window_size, mode = "max")
+    position_vec <- convert_frequency_dataset(test_dataset_max[start_time:end_time], window_size, mode = "max")
     actual <- ifelse(all(position_vec <= (100-cpu_required)), 1, 0)
     correct_scheduled_num <- ifelse(prediction == 1 & actual == 1, correct_scheduled_num + 1, correct_scheduled_num)
     correct_unscheduled_num <- ifelse(prediction == 0 & actual == 0, correct_unscheduled_num + 1, correct_unscheduled_num)
@@ -215,7 +252,7 @@ scheduling_model <- function(test_dataset_max, test_dataset_avg, ts_model, windo
     end_time <- current_end + window_size - 1
     
     utilization <- c(utilization, check_utilization(pi_up, granularity))
-    survival <- c(survival, check_survival(pi_up, test_dataset[start_time:end_time], granularity))
+    survival <- c(survival, check_survival(pi_up, test_dataset_max[start_time:end_time], granularity))
     
     if (schedule_policy == "dynamic") {
       if (!is.na(survival[length(survival)]) & survival[length(survival)] == 0) {
@@ -241,12 +278,12 @@ scheduling_model <- function(test_dataset_max, test_dataset_avg, ts_model, windo
   }
   
   overall_survival <- compute_survival(ifelse(is.na(survival), NA, ifelse(survival == 0, 1, 0)))
-  overall_utilization <- compute_utilization(pi_ups, survival, test_dataset[(window_size+1):(current_end-update_policy+window_size-1)], window_size, granularity, schedule_policy)
+  overall_utilization <- compute_utilization(pi_ups, survival, test_dataset_max[(window_size+1):(current_end-update_policy+window_size-1)], window_size, granularity, schedule_policy)
   return(list("util_numerator"=overall_utilization$numerator, "util_denominator1"=overall_utilization$denominator1, "util_denominator2"=overall_utilization$denominator2, "sur_numerator"=overall_survival$numerator, "sur_denominator"=overall_survival$denominator))
 }
 
 
-svt_model <- function(ts_num, dataset_max, dataset_avg, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy="disjoint", num_of_states) {
+svt_model <- function(ts_num, dataset_max, dataset_avg, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy="disjoint") {
   
   dataset_max <- dataset_max[,ts_num]
   dataset_avg <- dataset_avg[,ts_num]
@@ -264,7 +301,7 @@ svt_model <- function(ts_num, dataset_max, dataset_avg, train_size, window_size,
   sur_denominator <- 0
   
   current <- 1
-  last_time_update <- nrow(dataset_max) - update_freq - train_size + 1
+  last_time_update <- length(dataset_max) - update_freq - train_size + 1
   while (current <= last_time_update) {
     ## Split into train set and test set
     train_set_max <- dataset_max[current:(current+train_size-1)]
@@ -318,7 +355,7 @@ svt_stationary_model <- function(dataset_max, dataset_avg, train_size, window_si
   
   ts_names <- colnames(dataset_max)
   
-  result <- mclapply(1:length(ts_names), svt_model, dataset_max, dataset_avg, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy)
+  result <- mclapply(1:length(ts_names), svt_model, dataset_max, dataset_avg, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy, mc.cores=cores)
   
   for (ts_num in 1:length(ts_names)) {
     scheduled_num <- c(scheduled_num, result[[ts_num]]$scheduled_num)
@@ -440,9 +477,9 @@ rownames(data_matrix_max) <- seq(1, nrow(data_matrix_max) ,1)
 colnames(data_matrix_avg) <- bg_job_pool
 colnames(data_matrix_max) <- bg_job_pool
 
-cpu_required <- rep(0, ncol(data_matrix))
-for (j in 1:ncol(data_matrix)) {
-  cpu_required[j] <- as.numeric(quantile(data_matrix[,j], c(0.15, 0.5, 0.85), type = 4)[cpu_usage])
+cpu_required <- rep(0, ncol(data_matrix_max))
+for (j in 1:ncol(data_matrix_max)) {
+  cpu_required[j] <- as.numeric(quantile(data_matrix_max[,j], c(0.15, 0.5, 0.85), type = 4)[cpu_usage])
 }
 
 output_dp <- NULL
