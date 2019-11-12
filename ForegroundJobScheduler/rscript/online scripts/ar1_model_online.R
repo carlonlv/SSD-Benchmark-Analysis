@@ -114,6 +114,7 @@ scheduling_model <- function(test_dataset, coeffs, means, vars, window_size, pro
     prediction_result <- do_prediction(last_obs=last_obs, phi=coeffs, mean=means, variance=vars, predict_size=1)
     pi_up <- compute_pi_up(mu=prediction_result$mu, varcov=prediction_result$varcov, predict_size=1, prob_cutoff=prob_cut_off, granularity=granularity)
     pi_ups <- c(pi_ups, pi_up)
+    
     ## Evalute schedulings based on prediction
     start_time <- current_end
     end_time <- current_end + window_size - 1

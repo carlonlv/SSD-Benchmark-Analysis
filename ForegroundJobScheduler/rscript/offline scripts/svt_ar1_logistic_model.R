@@ -141,11 +141,8 @@ scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, co
   
     ## Predict current avgs using AR1
     last_obs <- convert_frequency_dataset(test_dataset_avg[(current_end-window_size):(current_end-1), ts_num], window_size, mode = "avg")
-    
     expected_avgs <- do_prediction(last_obs, coeffs[ts_num], means[ts_num], vars[ts_num])$mu
-    
     logistic_model <- logistic_models[[ts_num]]
-    
     prediction_prob <- 1 - predict(logistic_model, newdata = data.frame("avg"=expected_avgs), type = "response")
     
     prediction <- ifelse(prediction_prob <= prob_cut_off, 1, 0)

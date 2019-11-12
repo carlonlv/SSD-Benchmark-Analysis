@@ -184,7 +184,7 @@ scheduling_foreground <- function(test_dataset_max, test_dataset_avg, ts_model, 
 }
 
 
-scheduling_model <- function(test_dataset_max, test_dataset_avg, ts_model, window_size, prob_cut_off, granularity, schedule_policy, adjustment) {
+scheduling_model <- function(test_dataset_max, test_dataset_avg, ts_model, window_size, prob_cut_off, granularity, schedule_policy) {
   
   run_switch <- FALSE
   
@@ -209,12 +209,13 @@ scheduling_model <- function(test_dataset_max, test_dataset_avg, ts_model, windo
     prediction_result <- do_prediction(last_obs=last_obs, ts_model=ts_model, predict_size=1)
     pi_up <- compute_pi_up(prediction_result$mu, prediction_result$varcov, 1, prob_cut_off, granularity)
     pi_ups <- c(pi_ups, pi_up)
+    
     ## Evaluate schedulings based on prediction
     start_time <- current_end
     end_time <- current_end + window_size - 1
     
     utilization <- c(utilization, check_utilization(pi_up, granularity))
-    survival <- c(survival, check_survival(pi_up, test_dataset[start_time:end_time,], granularity))
+    survival <- c(survival, check_survival(pi_up, test_dataset[start_time:end_time], granularity))
     
     if (schedule_policy == "dynamic") {
       if (!is.na(survival[length(survival)]) & survival[length(survival)] == 0) {
@@ -232,7 +233,7 @@ scheduling_model <- function(test_dataset_max, test_dataset_avg, ts_model, windo
         if (!run_switch) {
           run_switch <- TRUE
         } else {
-          survival[length(survival)] <- ifelse(adjustment, NA, survival[length(survival)])
+          survival[length(survival)] <- survival[length(survival)]
         }
       }
     }
@@ -245,7 +246,7 @@ scheduling_model <- function(test_dataset_max, test_dataset_avg, ts_model, windo
 }
 
 
-svt_model <- function(ts_num, dataset_max, dataset_avg, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy="disjoint", adjustment, num_of_states) {
+svt_model <- function(ts_num, dataset_max, dataset_avg, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy="disjoint", num_of_states) {
   
   dataset_max <- dataset_max[,ts_num]
   dataset_avg <- dataset_avg[,ts_num]
@@ -280,7 +281,7 @@ svt_model <- function(ts_num, dataset_max, dataset_avg, train_size, window_size,
     
     ## Test Model
     result_foreground <- scheduling_foreground(test_set_max, test_set_avg, trained_result, window_size, prob_cut_off, cpu_required, granularity, schedule_policy)
-    result_model <- scheduling_model(test_set_max, test_set_avg, trained_result, window_size, prob_cut_off, granularity, schedule_policy, adjustment)
+    result_model <- scheduling_model(test_set_max, test_set_avg, trained_result, window_size, prob_cut_off, granularity, schedule_policy)
     
     ## Write Result
     scheduled_num <- scheduled_num + result_foreground$scheduled_num
@@ -302,7 +303,7 @@ svt_model <- function(ts_num, dataset_max, dataset_avg, train_size, window_size,
 }
 
 
-svt_stationary_model <- function(dataset_max, dataset_avg, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy="disjoint", adjustment) {
+svt_stationary_model <- function(dataset_max, dataset_avg, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy="disjoint") {
   
   scheduled_num <- c()
   unscheduled_num <- c()
@@ -317,7 +318,7 @@ svt_stationary_model <- function(dataset_max, dataset_avg, train_size, window_si
   
   ts_names <- colnames(dataset_max)
   
-  result <- mclapply(1:length(ts_names), svt_model, dataset_max, dataset_avg, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy, adjustment)
+  result <- mclapply(1:length(ts_names), svt_model, dataset_max, dataset_avg, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy)
   
   for (ts_num in 1:length(ts_names)) {
     scheduled_num <- c(scheduled_num, result[[ts_num]]$scheduled_num)
@@ -350,7 +351,7 @@ svt_stationary_model <- function(dataset_max, dataset_avg, train_size, window_si
 }
 
 
-wrapper.epoche <- function(parameter, dataset_max, dataset_avg, cpu_required, output_dp, schedule_policy, adjustment) {
+wrapper.epoche <- function(parameter, dataset_max, dataset_avg, cpu_required, output_dp, schedule_policy) {
   
   window_size <- as.numeric(parameter["window_size"])
   prob_cut_off <- as.numeric(parameter["prob_cut_off"])
@@ -364,7 +365,7 @@ wrapper.epoche <- function(parameter, dataset_max, dataset_avg, cpu_required, ou
   print(paste("Train Size:", train_size))
   print(paste("Update Freq:", update_freq))
 
-  output <- svt_stationary_model(dataset_max, dataset_avg, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy, adjustment)
+  output <- svt_stationary_model(dataset_max, dataset_avg, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy)
   overall_evaluation <- find_overall_evaluation(output$avg_usage[,1], output$avg_usage[,2], output$job_survival[,1])
   
   utilization_rate1 <- overall_evaluation$utilization_rate1
@@ -394,7 +395,6 @@ wrapper.epoche <- function(parameter, dataset_max, dataset_avg, cpu_required, ou
 sample_size <- 100
 cpu_usage <- 3
 total_trace_length <- 8000
-adjustment <- TRUE
 
 window_sizes <- c(12, 36)
 prob_cut_offs <- c(0.01, 0.1)
@@ -465,4 +465,4 @@ colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity", "train
 parameter.df$update_freq <- 3 * parameter.df$window_size
 parameter.df <- parameter.df %>%
   arrange()
-slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), output_dp, schedule_policy, adjustment)
+slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), output_dp, schedule_policy)

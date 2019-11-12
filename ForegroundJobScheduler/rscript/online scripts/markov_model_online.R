@@ -157,12 +157,13 @@ scheduling_model <- function(test_dataset, transition, window_size, prob_cut_off
     prediction_result <- do_prediction_markov(last_obs, transition, 1, NULL)
     pi_up <- compute_pi_up_markov(prediction_result$to_states, prob_cut_off, granularity)
     pi_ups <- c(pi_ups, pi_up)
+    
     ## Evaluate schedulings based on prediction
     start_time <- current_end
     end_time <- current_end + window_size - 1
     
     utilization <- c(utilization, check_utilization(pi_up, granularity))
-    survival <- c(survival, check_survival(pi_up, test_dataset[start_time:end_time,], granularity))
+    survival <- c(survival, check_survival(pi_up, test_dataset[start_time:end_time], granularity))
     
     if (schedule_policy == "dynamic") {
       if (!is.na(survival[length(survival)]) & survival[length(survival)] == 0) {
@@ -261,7 +262,7 @@ svt_stationary_model <- function(dataset, train_size, window_size, update_freq, 
   
   ts_names <- colnames(dataset)
   
-  result <- lapply(1:length(ts_names), svt_model, dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy, num_of_states)
+  result <- mclapply(1:length(ts_names), svt_model, dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy, num_of_states, mc.cores=cores)
   
   for (ts_num in 1:length(ts_names)) {
     scheduled_num <- c(scheduled_num, result[[ts_num]]$scheduled_num)
@@ -331,7 +332,7 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, output_dp, schedule
   print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
   
   result_path.csv <- read.csv(output_dp)
-  result_path.csv <- update.df.online(result_path.csv, "AR1", prob_cut_off, 0, sample_size, window_size, granularity, 0, train_size, update_freq, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
+  result_path.csv <- update.df.online(result_path.csv, "Markov", prob_cut_off, 0, sample_size, window_size, granularity, 0, train_size, update_freq, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
   write.csv(result_path.csv, file = output_dp, row.names = FALSE)
 }
 
