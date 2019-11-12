@@ -1,8 +1,7 @@
 library("dplyr")
-library("xlsx")
 
 models <- c("AR1", "VAR1", "AR1_logistic_glm", "AR1_logistic_lm", "AR1_state_based_logistic", "AR1_Markov", "Markov")
-statenum <- c(32, 64, 128)
+statenum <- c(8, 16, 32, 64)
 prob_cut_offs <- c(0.005, 0.01, 0.1, 0.75)
 granularity <- c(100/32, 100/64, 100/128, 0)
 window_size <- c(12, 36)
@@ -14,11 +13,11 @@ prob_ban_pool <- c(0.75)
 result.dp1 <- NULL
 result.dp2 <- NULL
 if (Sys.info()["sysname"] == "Windows") {
-  result.dp1 <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary disjoint (windows,granularity).xlsx"
-  result.dp2 <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary disjoint (windows,granularity) post adj.xlsx"
+  result.dp1 <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary disjoint (windows,granularity).csv"
+  result.dp2 <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary disjoint (windows,granularity) post adj.csv"
 } else {
-  result.dp1 <- "/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity).xlsx"
-  result.dp2 <- "/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity) post adj.xlsx"
+  result.dp1 <- "/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/results/offline results/summary disjoint (windows,granularity).csv"
+  result.dp2 <- "/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/results/offline results/summary disjoint (windows,granularity) post adj.csv"
 }
 
 result.df <- expand.grid(models, statenum, prob_cut_offs, granularity, window_size, sample_size, bin_num, KEEP.OUT.ATTRS=FALSE, stringsAsFactors=FALSE)
@@ -37,5 +36,5 @@ result.df <- result.df %>%
   distinct() %>%
   arrange(Model, StateNum, Probability.Cut.Off, Granularity, Window.Size, Sample.Size)
 
-write.xlsx(result.df, file = result.dp1, row.names = FALSE, showNA = FALSE)
-write.xlsx(result.df, file = result.dp2, row.names = FALSE, showNA = FALSE)
+write.csv(result.df, file = result.dp1, row.names = FALSE, showNA = FALSE)
+write.csv(result.df, file = result.dp2, row.names = FALSE, showNA = FALSE)
