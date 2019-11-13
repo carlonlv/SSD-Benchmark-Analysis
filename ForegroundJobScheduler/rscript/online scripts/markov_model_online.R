@@ -350,7 +350,7 @@ train_size <- c(2000, 4000)
 
 num_of_states <- c(8, 16, 32, 64)
 
-schedule_policy <- "disjoint"
+schedule_policy <- "dynamic"
 
 bg_jobs_path <- NULL
 if (Sys.info()["sysname"] == "Windows") {

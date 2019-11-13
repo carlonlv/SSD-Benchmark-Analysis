@@ -14,7 +14,7 @@ if (Sys.info()["sysname"] == "Windows") {
 cores <- ifelse(Sys.info()["sysname"] == "Windows", 1, detectCores(all.tests = FALSE, logical = TRUE))
 
 
-do_prediction <- function(last_obs, phi, mean, variance) {
+do_prediction_ar1 <- function(last_obs, phi, mean, variance) {
   
   # Construct mean
   mu <- last_obs * phi + (1 - phi) * mean
@@ -108,10 +108,9 @@ scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, co
   update_policy = ifelse(schedule_policy == "disjoint", window_size, 1)
   current_end <- window_size + 1
   while (current_end <= last_time_schedule) {
-  
     ## Predict current avgs using AR1
     last_obs <- convert_frequency_dataset(test_dataset_avg[(current_end-window_size):(current_end-1), ts_num], window_size, mode = 'avg')
-    expected_avgs <- do_prediction(last_obs, coeffs[ts_num], means[ts_num], vars[ts_num])$mu
+    expected_avgs <- do_prediction_ar1(last_obs, coeffs[ts_num], means[ts_num], vars[ts_num])$mu
     
     probability <- sapply(1:num_of_states, calculate_probability_table, expected_avgs, logistic_models[[ts_num]], simplify=FALSE)
     probability <- adjust_probability(unlist(probability))
@@ -182,7 +181,7 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs,
   while (current_end <= last_time_schedule) {
     ## Schedule based on model predictions
     last_obs <- convert_frequency_dataset(test_dataset_avg[(current_end-window_size):(current_end-1), ts_num], window_size, mode = 'avg')
-    expected_avgs <- do_prediction(last_obs, coeffs[ts_num], means[ts_num], vars[ts_num])$mu
+    expected_avgs <- do_prediction_ar1(last_obs, coeffs[ts_num], means[ts_num], vars[ts_num])$mu
     
     probability <- sapply(1:num_of_states, calculate_probability_table, expected_avgs, logistic_models[[ts_num]], simplify=FALSE)
     probability <- adjust_probability(unlist(probability))

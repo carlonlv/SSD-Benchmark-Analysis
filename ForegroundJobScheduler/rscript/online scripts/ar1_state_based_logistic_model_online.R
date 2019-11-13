@@ -1,7 +1,10 @@
 library("forecast")
 library("mvtnorm")
 library("dplyr")
+library("arules")
+library("cluster")
 library("parallel")
+
 
 if (Sys.info()["sysname"] == "Windows") {
   source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//helper_functions.R")
@@ -10,38 +13,6 @@ if (Sys.info()["sysname"] == "Windows") {
 }
 
 cores <- ifelse(Sys.info()["sysname"] == "Windows", 1, detectCores(all.tests = FALSE, logical = TRUE))
-
-
-train_ar1_model <- function(train_dataset) {
-  
-  ts_model <- tryCatch({
-    arima(x=train_dataset, order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000))
-  }, error = function(cond) {
-    return(arima(x=train_dataset, order = c(1,0,0), include.mean = TRUE, method = "ML", optim.control = list(maxit=2000)))
-  })
-  return(list("coeffs"=as.numeric(ts_model$coef[1]), "means"= as.numeric(ts_model$coef[2]), "vars"=ts_model$sigma2))
-}
-
-
-train_markov_model <- function(train_dataset_avg, train_dataset_max, num_of_states) {
-  
-  from_states <- sapply(train_dataset_avg, find_state_num, num_of_states)
-  to_states <- sapply(train_dataset_max, find_state_num, num_of_states)
-  transition <- matrix(0, nrow=num_of_states, ncol=num_of_states)
-  for (i in 1:length(from_states)) {
-    from <- from_states[i]
-    to <- to_states[i]
-    transition[from, to] <- transition[from, to] + 1
-  }
-  for (r in 1:ncol(transition)) {
-    if (sum(transition[r,]) == 0) {
-      transition[r,] <- rep(100 / num_of_states, num_of_states)
-    } else {
-      transition[r,] <- transition[r,] / sum(transition[r,])
-    }
-  }
-  return(transition)
-}
 
 
 do_prediction_ar1 <- function(last_obs, phi, mean, variance) {
@@ -55,39 +26,72 @@ do_prediction_ar1 <- function(last_obs, phi, mean, variance) {
 }
 
 
-do_prediction_markov <- function(predictor, transition, predict_size, level=NULL) {
+train_ar1_model <- function(train_dataset) {
   
-  final_transition <- transition
-  parsed_transition <- transition
-  if (!is.null(level)) {
-    level_state <- find_state_num(level, nrow(transition))
-    for (i in level_state:nrow(transition)) {
-      parsed_transition[i,] <- rep(0, nrow(transition))
-      parsed_transition[i, i] <- 1
-    }
-  }
-  from <- find_state_num(predictor, nrow(transition))
-  to_states <- data.frame()
-  if (predict_size > 1) {
-    for (i in 1:(predict_size-1)) {
-      final_transition <- final_transition %*% parsed_transition
-      to_states <- rbind(to_states, final_transition[from, ])
-    }
-  } else {
-    to_states <- rbind(to_states, final_transition[from, ])
-  }
-  
-  # calculate probability
-  prob <- NULL
-  if (!is.null(level)) {
-    to <- find_state_num(level, nrow(transition))
-    prob <- sum(final_transition[from, to:(nrow(transition))])
-  }
-  return(list("prob"=prob, "to_states"=to_states))
+  ts_model <- tryCatch({
+    arima(x=train_dataset, order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000))
+  }, error = function(cond) {
+    return(arima(x=train_dataset, order = c(1,0,0), include.mean = TRUE, method = "ML", optim.control = list(maxit=2000)))
+  })
+  return(list("coeffs"=as.numeric(ts_model$coef[1]), "means"= as.numeric(ts_model$coef[2]), "vars"=ts_model$sigma2))
 }
 
 
-scheduling_foreground <- function(test_dataset_max, test_dataset_avg, coeffs, means, vars, transition, window_size, prob_cut_off, cpu_required, granularity, schedule_policy) {
+parser_logistic_model_state <- function(state_num, train_set_avg, train_set_max, breaks) {
+  
+  df <- data.frame("avg"=train_set_avg, "max"=train_set_max)
+  df$survived <- factor(ifelse(train_set_max < breaks[state_num+1], 1, 0), levels=c(0, 1))
+  return(df)
+}
+
+
+parser_logistic_model_states <- function(train_set_avg, train_set_max, breaks) {
+  
+  ts_logistic_input <- lapply(1:(length(breaks) - 1), parser_logistic_model_state, train_set_avg, train_set_max, breaks)
+  return(ts_logistic_input)
+}
+
+
+train_multi_state_logistic_model <- function(state_num, parsed_states_input) {
+  
+  df <- parsed_states_input[[state_num]]
+  log.lm <- glm(survived~avg, data=df, family="binomial", control=glm.control(maxit=200))
+  return(log.lm)
+}
+
+
+train_multi_state_logistic_models <- function(parsed_states_input, num_of_states) {
+  
+  multi_state_logistic <- lapply(1:num_of_states, train_multi_state_logistic_model, parsed_states_input)
+  return(multi_state_logistic)
+}
+
+
+calculate_probability_table <- function(state_num, expected_avgs, trained_logistic_models) {
+  
+  prob <- predict(trained_logistic_models[[state_num]], newdata = data.frame("avg"=expected_avgs), type = "response")
+  return(prob)
+}
+
+
+adjust_probability <- function(prob) {
+  
+  for (state_num in 2:length(prob)) {
+    prob[state_num] <- ifelse(prob[state_num] < prob[state_num-1], prob[state_num-1], prob[state_num])
+  }
+  prob[length(prob)] <- 1
+  return(prob)
+}
+
+
+calculate_probability_foreground <- function(probability, cpu_required, num_of_states) {
+  
+  state <- find_state_num(100-cpu_required, num_of_states)
+  return(1-probability[state])
+}
+
+
+scheduling_foreground <- function(test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, cpu_required, granularity, schedule_policy) {
   
   cpu_required <- ifelse(granularity>0, round_to_nearest(cpu_required, granularity, FALSE), cpu_required)
   
@@ -101,11 +105,19 @@ scheduling_foreground <- function(test_dataset_max, test_dataset_avg, coeffs, me
   update_policy = ifelse(schedule_policy == "disjoint", window_size, 1)
   current_end <- window_size + 1
   while (current_end <= last_time_schedule) {
-    ## Schedule based on model predictions
+    ## Predict current avgs using AR1
     last_obs_avg <- convert_frequency_dataset(test_dataset_avg[(current_end-window_size):(current_end-1)], window_size, mode="avg")
     expected_avgs <- do_prediction_ar1(last_obs_avg, coeffs, means, vars)$mu
-    prediction_result <- do_prediction_markov(expected_avgs, transition, 1, NULL)
     
+    probability <- sapply(1:num_of_states, calculate_probability_table, expected_avgs, logistic_models, simplify=FALSE)
+    probability <- adjust_probability(unlist(probability))
+    prediction_prob <- calculate_probability_foreground(probability, cpu_required, num_of_states)
+    
+    prediction <- ifelse(prediction_prob <= prob_cut_off, 1, 0)
+    scheduled_num <- ifelse(prediction == 1, scheduled_num + 1, scheduled_num)
+    unscheduled_num <- ifelse(prediction == 1, unscheduled_num, unscheduled_num + 1)
+    
+    ## Evalute schedulings based on prediction
     prediction <- ifelse(prediction_result$prob <= prob_cut_off, 1, 0)
     scheduled_num <- ifelse(prediction == 1, scheduled_num + 1, scheduled_num)
     unscheduled_num <- ifelse(prediction == 1, unscheduled_num, unscheduled_num + 1)
@@ -132,36 +144,27 @@ scheduling_foreground <- function(test_dataset_max, test_dataset_avg, coeffs, me
 }
 
 
-compute_pi_up_markov_single <- function(to_states, prob_cut_off, granularity) {
+compute_pi_up_states <- function(expected_avgs, probability, granularity, prob_cutoff) {
   
   current_state <- 1
   current_prob <- 0
-  while (current_state <= length(to_states)) {
-    current_prob <- current_prob + to_states[current_state]
-    if (current_prob < 1-prob_cut_off) {
-      current_state <- current_state + 1
-    } else {
+  while (current_state <= length(probability)) {
+    current_prob <- probability[current_state]
+    if (current_prob >= 1 - prob_cutoff) {
       break
     }
+    current_state <- current_state + 1
   }
-  
-  pi_up <- current_state * (100 / length(to_states))
+  upper_bounds <- current_state * (100 / length(probability))
   if (granularity > 0) {
-    scheduled_size <- round_to_nearest(100 - pi_up, granularity, TRUE)
-    pi_up <- 100 - scheduled_size
+    scheduled_size <- round_to_nearest(100 - upper_bounds, granularity, TRUE)
+    upper_bounds <- 100 - scheduled_size
   }
-  return(pi_up)
+  return(upper_bounds)
 }
 
 
-compute_pi_up_markov <- function(to_states, prob_cut_off, granularity) {
-  
-  pi_ups <- apply(to_states, 1, compute_pi_up_markov_single, prob_cut_off, granularity)
-  return(max(pi_ups))
-}
-
-
-scheduling_model <- function(test_dataset_max, test_dataset_avg, coeffs, means, vars, transition, window_size, prob_cut_off, cpu_required, granularity, schedule_policy) {
+scheduling_model <- function(test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, cpu_required, granularity, schedule_policy) {
   
   run_switch <- FALSE
   
@@ -178,9 +181,11 @@ scheduling_model <- function(test_dataset_max, test_dataset_avg, coeffs, means, 
     ## Schedule based on model predictions
     last_obs_avg <- convert_frequency_dataset(test_dataset_avg[(current_end-window_size):(current_end-1)], window_size, mode = 'avg')
     expected_avgs <- do_prediction_ar1(last_obs_avg, coeffs, means, vars)$mu
-    prediction_result <- do_prediction_markov(expected_avgs, transition, 1, NULL)
+
+    probability <- sapply(1:num_of_states, calculate_probability_table, expected_avgs, logistic_models, simplify=FALSE)
+    probability <- adjust_probability(unlist(probability))
     
-    pi_up <- compute_pi_up_markov(prediction_result$to_states, prob_cut_off, granularity)
+    pi_up <- compute_pi_up_states(expected_avgs, probability, granularity, prob_cut_off)
     pi_ups <- c(pi_ups, pi_up)
     
     ## Evalute schedulings based on prediction
@@ -253,7 +258,7 @@ svt_model <- function(ts_num, dataset_max, dataset_avg, train_size, window_size,
     ## Train Model
     trained_ar1 <- train_ar1_model(new_trainset_avg)
     transition <- train_markov_model(new_trainset_overlap_avg, new_trainset_overlap_max, num_of_states)
-
+    
     ## Test Model
     result_foreground <- scheduling_foreground(test_set_max, test_set_avg, trained_ar1$coeffs, trained_ar1$means, trained_ar1$vars, transition, window_size, prob_cut_off, cpu_required, granularity, schedule_policy)
     result_model <- scheduling_model(test_set_max, test_set_avg, trained_ar1$coeffs, trained_ar1$means, trained_ar1$vars, transition, window_size, prob_cut_off, granularity, schedule_policy)
