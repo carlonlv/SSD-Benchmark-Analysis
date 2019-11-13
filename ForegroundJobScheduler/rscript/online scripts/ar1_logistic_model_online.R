@@ -227,11 +227,13 @@ scheduling_model <- function(test_dataset_max, test_dataset_avg, coeffs, means, 
         }
       }
     }
+    current_end <- current_end + update_policy
+  }
   
   overall_survival <- compute_survival(ifelse(is.na(survival), NA, ifelse(survival == 0, 1, 0)))
   overall_utilization <- compute_utilization(pi_ups, survival, test_dataset_max[(window_size+1):(current_end-update_policy+window_size-1)], window_size, granularity, schedule_policy)
   return(list("utilization1"=overall_utilization$utilization1, "utilization2"=overall_utilization$utilization2, "survival"=overall_survival$survival, "run"=runs))
-}
+} 
 
 
 svt_model <- function(ts_num, dataset_max, dataset_avg, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy="disjoint", bin_num, cond.var) {
@@ -341,7 +343,7 @@ svt_stationary_model <- function(dataset_max, dataset_avg, train_size, window_si
 }
 
 
-wrapper.epoche <- function(parameter, dataset_max, dataset_avg, cpu_required, output_dp, schedule_policy) {
+wrapper.epoche <- function(parameter, dataset_max, dataset_avg, cpu_required, output_dp, schedule_policy, cond.var) {
   
   window_size <- as.numeric(parameter["window_size"])
   prob_cut_off <- as.numeric(parameter["prob_cut_off"])
@@ -378,8 +380,15 @@ wrapper.epoche <- function(parameter, dataset_max, dataset_avg, cpu_required, ou
   print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
   
   result_path.csv <- read.csv(output_dp)
-  result_path.csv <- update.df.online(result_path.csv, "VAR1", prob_cut_off, 0, sample_size, window_size, granularity, 0, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
-  write.csv(result_path.csv, file = output_dp, row.names = FALSE)
+  if (cond.var == "lm") {
+    
+    result_path.csv <- update.df.online(result_path.csv, "AR1_logistic_lm", prob_cut_off, 0, sample_size, window_size, granularity, bin_num, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
+    write.csv(result_path.csv, file = output_dp, row.names = FALSE)
+  } else {
+    
+    result_path.csv <- update.df.online(result_path.csv, "AR1_logistic_glm", prob_cut_off, 0, sample_size, window_size, granularity, bin_num, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
+    write.csv(result_path.csv, file = output_dp, row.names = FALSE)
+  }
 }
 
 ## Read background job pool
@@ -391,9 +400,11 @@ total_trace_length <- 8000
 window_sizes <- c(12, 36)
 prob_cut_offs <- c(0.01, 0.1)
 granularity <- c(100/32, 0)
-num_of_bins <- c(1000, 500)
 
 train_size <- c(2000, 4000)
+
+cond.var <- "lm"
+num_of_bins <- c(1000, 500)
 
 schedule_policy <- "dynamic"
 

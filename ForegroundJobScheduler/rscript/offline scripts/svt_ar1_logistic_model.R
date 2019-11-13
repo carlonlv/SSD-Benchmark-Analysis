@@ -399,7 +399,6 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
     result_path.csv <- read.csv(output_dp)
     result_path.csv <- update.df(result_path.csv, "AR1_logistic_lm", prob_cut_off, 0, sample_size, window_size, granularity, bin_num, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
     write.csv(result_path.csv, file = output_dp, row.names = FALSE)
-    
   } else {
     
     if (schedule_policy == "dynamic") {

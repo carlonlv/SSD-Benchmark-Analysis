@@ -306,7 +306,7 @@ granularity <- c(100/32, 0)
 
 train_size <- c(2000, 4000)
 
-schedule_policy <- "disjoint"
+schedule_policy <- "dynamic"
 
 bg_jobs_path <- NULL
 if (Sys.info()["sysname"] == "Windows") {
