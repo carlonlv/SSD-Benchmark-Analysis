@@ -180,7 +180,7 @@ scheduling_model <- function(test_dataset_max, test_dataset_avg, coeffs, means, 
   
   run_switch <- FALSE
   
-  last_time_schedule <- nrow(test_dataset_max) - window_size + 1
+  last_time_schedule <- length(test_dataset_max) - window_size + 1
   
   current_end <- window_size + 1
   update_policy <- ifelse(schedule_policy == "disjoint", window_size, 1)
