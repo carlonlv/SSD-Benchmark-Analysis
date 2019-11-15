@@ -15,9 +15,15 @@ cores <- ifelse(Sys.info()["sysname"] == "Windows", 1, detectCores(all.tests = F
 train_ar1_model <- function(train_dataset) {
   
   ts_model <- tryCatch({
+    arima(x=train_dataset, order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000), optim.method="Nelder-Mead")
+  }, warning = function(w) {
     arima(x=train_dataset, order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000), optim.method="BFGS")
   }, error = function(cond) {
-    return(arima(x=train_dataset, order = c(1,0,0), include.mean = TRUE, method = "ML", optim.control = list(maxit=2000), optim.method="BFGS"))
+    ts_model_relax <- tryCatch({
+      arima(x=train_dataset, order = c(1,0,0), include.mean = TRUE, method = "ML", optim.control = list(maxit=2000), transform.pars = FALSE, optim.method="BFGS")
+    }, error = function(cond) {
+      arima(x=train_dataset, order = c(1,0,0), include.mean = TRUE, method = "CSS", optim.control = list(maxit=2000), transform.pars = TRUE, optim.method="CG")
+    })
   })
   return(list("coeffs"=as.numeric(ts_model$coef[1]), "means"= as.numeric(ts_model$coef[2]), "vars"=ts_model$sigma2))
 }
@@ -293,7 +299,7 @@ svt_stationary_model <- function(dataset_max, dataset_avg, train_size, window_si
   
   ts_names <- colnames(dataset_max)
   
-  result <- lapply(1:length(ts_names), svt_model, dataset_max, dataset_avg, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy, num_of_states)
+  result <- mclapply(1:length(ts_names), svt_model, dataset_max, dataset_avg, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy, num_of_states, mc.cores=cores)
   
   for (ts_num in 1:length(ts_names)) {
     scheduled_num <- c(scheduled_num, result[[ts_num]]$scheduled_num)
@@ -443,5 +449,4 @@ colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity", "train
 parameter.df$update_freq <- 3 * parameter.df$window_size
 parameter.df <- parameter.df %>%
   arrange()
-parameter.df <- parameter.df[2,]
 slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), output_dp, schedule_policy)
