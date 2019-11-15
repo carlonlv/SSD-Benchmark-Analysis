@@ -2,6 +2,10 @@ library("forecast")
 library("mvtnorm")
 library("dict")
 library("dplyr")
+library("arules")
+library("parallel")
+library("MTS")
+library("dict")
 
 
 convert_frequency_dataset <- function(dataset, new_freq, mode) {

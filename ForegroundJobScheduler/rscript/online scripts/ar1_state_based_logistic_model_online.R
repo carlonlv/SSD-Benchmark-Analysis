@@ -1,10 +1,3 @@
-library("forecast")
-library("mvtnorm")
-library("dplyr")
-library("arules")
-library("cluster")
-library("parallel")
-
 
 if (Sys.info()["sysname"] == "Windows") {
   source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//helper_functions.R")

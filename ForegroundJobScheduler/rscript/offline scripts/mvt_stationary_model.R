@@ -1,7 +1,3 @@
-library("mvtnorm")
-library("MTS")
-library("dplyr")
-library("parallel")
 
 if (Sys.info()["sysname"] == "Windows") {
   source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//helper_functions.R")

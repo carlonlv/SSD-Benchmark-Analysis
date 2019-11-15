@@ -1,0 +1,8 @@
+install.packages("forecast")
+install.packages("mvtnorm")
+install.packages("dplyr")
+install.packages("arules")
+install.packages("parallel")
+install.packages("MTS")
+install.packages("devtools")
+devtools::install_github("mkuhn/dict")
