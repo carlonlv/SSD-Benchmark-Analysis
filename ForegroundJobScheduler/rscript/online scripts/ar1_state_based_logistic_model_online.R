@@ -61,7 +61,7 @@ parser_logistic_model_states <- function(train_set_avg, train_set_max, breaks) {
 train_multi_state_logistic_model <- function(state_num, parsed_states_input) {
   
   df <- parsed_states_input[[state_num]]
-  log.lm <- glm(survived~avg, data=df, family="binomial", control=glm.control(maxit=200))
+  suppressWarnings(log.lm <- glm(survived~avg, data=df, family="binomial", control=glm.control(maxit=200)))
   return(log.lm)
 }
 
@@ -97,7 +97,7 @@ calculate_probability_foreground <- function(probability, cpu_required, num_of_s
 }
 
 
-scheduling_foreground <- function(test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, cpu_required, granularity, schedule_policy) {
+scheduling_foreground <- function(test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, cpu_required, granularity, schedule_policy, num_of_states) {
   
   cpu_required <- ifelse(granularity>0, round_to_nearest(cpu_required, granularity, FALSE), cpu_required)
   
@@ -113,18 +113,14 @@ scheduling_foreground <- function(test_dataset_max, test_dataset_avg, coeffs, me
   while (current_end <= last_time_schedule) {
     ## Predict current avgs using AR1
     last_obs_avg <- convert_frequency_dataset(test_dataset_avg[(current_end-window_size):(current_end-1)], window_size, mode="avg")
-    expected_avgs <- do_prediction_ar1(last_obs_avg, coeffs, means, vars)$mu
+    expected_avgs <- max(do_prediction_ar1(last_obs_avg, coeffs, means, vars)$mu, 0)
     
-    probability <- sapply(1:num_of_states, calculate_probability_table, expected_avgs, logistic_models, simplify=FALSE)
+    probability <- lapply(1:num_of_states, calculate_probability_table, expected_avgs, logistic_models)
     probability <- adjust_probability(unlist(probability))
     prediction_prob <- calculate_probability_foreground(probability, cpu_required, num_of_states)
     
-    prediction <- ifelse(prediction_prob <= prob_cut_off, 1, 0)
-    scheduled_num <- ifelse(prediction == 1, scheduled_num + 1, scheduled_num)
-    unscheduled_num <- ifelse(prediction == 1, unscheduled_num, unscheduled_num + 1)
-    
     ## Evalute schedulings based on prediction
-    prediction <- ifelse(prediction_result$prob <= prob_cut_off, 1, 0)
+    prediction <- ifelse(prediction_prob <= prob_cut_off, 1, 0)
     scheduled_num <- ifelse(prediction == 1, scheduled_num + 1, scheduled_num)
     unscheduled_num <- ifelse(prediction == 1, unscheduled_num, unscheduled_num + 1)
     
@@ -170,11 +166,11 @@ compute_pi_up_states <- function(expected_avgs, probability, granularity, prob_c
 }
 
 
-scheduling_model <- function(test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, cpu_required, granularity, schedule_policy) {
+scheduling_model <- function(test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, granularity, schedule_policy, num_of_states) {
   
   run_switch <- FALSE
   
-  last_time_schedule <- nrow(test_dataset_max) - window_size + 1
+  last_time_schedule <- length(test_dataset_max) - window_size + 1
   
   current_end <- window_size + 1
   update_policy <- ifelse(schedule_policy == "disjoint", window_size, 1)
@@ -186,9 +182,9 @@ scheduling_model <- function(test_dataset_max, test_dataset_avg, coeffs, means, 
   while (current_end <= last_time_schedule) {
     ## Schedule based on model predictions
     last_obs_avg <- convert_frequency_dataset(test_dataset_avg[(current_end-window_size):(current_end-1)], window_size, mode = 'avg')
-    expected_avgs <- do_prediction_ar1(last_obs_avg, coeffs, means, vars)$mu
+    expected_avgs <- max(do_prediction_ar1(last_obs_avg, coeffs, means, vars)$mu, 0)
 
-    probability <- sapply(1:num_of_states, calculate_probability_table, expected_avgs, logistic_models, simplify=FALSE)
+    probability <- lapply(1:num_of_states, calculate_probability_table, expected_avgs, logistic_models)
     probability <- adjust_probability(unlist(probability))
     
     pi_up <- compute_pi_up_states(expected_avgs, probability, granularity, prob_cut_off)
@@ -226,7 +222,7 @@ scheduling_model <- function(test_dataset_max, test_dataset_avg, coeffs, means, 
   
   overall_survival <- compute_survival(ifelse(is.na(survival), NA, ifelse(survival == 0, 1, 0)))
   overall_utilization <- compute_utilization(pi_ups, survival, test_dataset_max[(window_size+1):(current_end-update_policy+window_size-1)], window_size, granularity, schedule_policy)
-  return(list("utilization1"=overall_utilization$utilization1, "utilization2"=overall_utilization$utilization2, "survival"=overall_survival$survival, "run"=runs))
+  return(list("util_numerator"=overall_utilization$numerator, "util_denominator1"=overall_utilization$denominator1, "util_denominator2"=overall_utilization$denominator2, "sur_numerator"=overall_survival$numerator, "sur_denominator"=overall_survival$denominator))
 }
 
 
@@ -257,17 +253,21 @@ svt_model <- function(ts_num, dataset_max, dataset_avg, train_size, window_size,
     test_set_avg <- dataset_avg[(current+train_size+1):(current+train_size+update_freq)]
     
     ## Convert Frequency for training set
+    new_trainset_max <- convert_frequency_dataset(train_set_max, window_size, "max")
     new_trainset_avg <- convert_frequency_dataset(train_set_avg, window_size, "avg")
     new_trainset_overlap_max <- convert_frequency_dataset_overlapping(train_set_max, window_size, "max")
     new_trainset_overlap_avg <- convert_frequency_dataset_overlapping(train_set_avg, window_size, "avg")
     
     ## Train Model
     trained_ar1 <- train_ar1_model(new_trainset_avg)
-    transition <- train_markov_model(new_trainset_overlap_avg, new_trainset_overlap_max, num_of_states)
-    
+    ### Generate logistc inputs
+    logistic_inputs <- parser_logistic_model_states(new_trainset_avg, new_trainset_max, discretize(0:100, method = "interval", breaks = num_of_states, onlycuts = TRUE))
+    ### Train logistic models
+    logistic_models <- train_multi_state_logistic_models(logistic_inputs, num_of_states)
+
     ## Test Model
-    result_foreground <- scheduling_foreground(test_set_max, test_set_avg, trained_ar1$coeffs, trained_ar1$means, trained_ar1$vars, transition, window_size, prob_cut_off, cpu_required, granularity, schedule_policy)
-    result_model <- scheduling_model(test_set_max, test_set_avg, trained_ar1$coeffs, trained_ar1$means, trained_ar1$vars, transition, window_size, prob_cut_off, granularity, schedule_policy)
+    result_foreground <- scheduling_foreground(test_set_max, test_set_avg, trained_ar1$coeffs, trained_ar1$means, trained_ar1$vars, logistic_models, window_size, prob_cut_off, cpu_required, granularity, schedule_policy, num_of_states)
+    result_model <- scheduling_model(test_set_max, test_set_avg, trained_ar1$coeffs, trained_ar1$means, trained_ar1$vars, logistic_models, window_size, prob_cut_off, granularity, schedule_policy, num_of_states)
     
     ## Write Result
     scheduled_num <- scheduled_num + result_foreground$scheduled_num

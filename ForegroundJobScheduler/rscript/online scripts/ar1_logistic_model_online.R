@@ -53,7 +53,7 @@ parser_for_logistic_model <- function(train_set_max, train_set_avg, cpu_required
 train_logistic_model <- function(train_dataset_max, train_dataset_avg, cpu_required) {
   
   logistic_input <- parser_for_logistic_model(train_dataset_max, train_dataset_avg, cpu_required)
-  log.lm <- glm(survived~avg, data = logistic_input, family = "binomial", control=glm.control(maxit=2000))
+  suppressWarnings(log.lm <- glm(survived~avg, data = logistic_input, family = "binomial", control=glm.control(maxit=2000)))
   return(log.lm) 
 }
 
