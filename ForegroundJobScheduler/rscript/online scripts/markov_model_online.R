@@ -362,12 +362,10 @@ schedule_policy <- "dynamic"
 write_result <- TRUE
 
 write_result_path <- NULL
-if (write_result) {
-  if (Sys.info()["sysname"] == "Windows") {
-    write_result_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//"
-  } else {
-    write_result_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/"
-  }
+if (Sys.info()["sysname"] == "Windows") {
+  write_result_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//ts_results//"
+} else {
+  write_result_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/ts_results/"
 }
 
 bg_jobs_path <- NULL
