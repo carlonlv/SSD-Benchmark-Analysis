@@ -290,7 +290,7 @@ svt_stationary_model <- function(dataset, train_size, window_size, update_freq, 
 }
 
 
-wrapper.epoche <- function(parameter, dataset, cpu_required, output_dp, schedule_policy) {
+wrapper.epoche <- function(parameter, dataset, cpu_required, output_dp, schedule_policy, write_result, write_result_path=NULL) {
 
   window_size <- as.numeric(parameter["window_size"])
   prob_cut_off <- as.numeric(parameter["prob_cut_off"])
@@ -326,6 +326,18 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, output_dp, schedule
   print(paste("Job survival rate:", "job length", window_size, survival_rate))
   print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
   
+  if (write_result == TRUE) {
+    ts_results <- data.frame()
+    ts_results$utilization_rate1 <- output$avg_usage[,1]
+    ts_results$utilization_rate2 <- output$avg_usage[,2]
+    ts_results$survival_rate <- output$job_survival[,1]
+    ts_results$correct_scheduled_rate <- output$correct_scheduled_num[,1] / output$scheduled_num[,1]
+    ts_results$correct_unscheduled_rate <- output$correct_unscheduled_num[,1] / output$unscheduled_num[,1]
+    rownames(ts_results) <- rownames(dataset)
+    result_file_name <- paste("Markov online", num_of_states, prob_cut_off, granularity, window_size, nrow(dataset), 0, train_size, update_freq)
+    write.csv(ts_results, file = paste0(write_result_path, result_file_name), row.names = TRUE)
+  }
+  
   result_path.csv <- read.csv(output_dp)
   result_path.csv <- update.df.online(result_path.csv, "Markov", prob_cut_off, num_of_states, sample_size, window_size, granularity, 0, train_size, update_freq, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
   write.csv(result_path.csv, file = output_dp, row.names = FALSE)
@@ -345,7 +357,18 @@ train_size <- c(2000, 4000)
 
 num_of_states <- c(8, 16, 32, 64)
 
-schedule_policy <- "disjoint"
+schedule_policy <- "dynamic"
+
+write_result <- TRUE
+
+write_result_path <- NULL
+if (write_result) {
+  if (Sys.info()["sysname"] == "Windows") {
+    write_result_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//"
+  } else {
+    write_result_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/"
+  }
+}
 
 bg_jobs_path <- NULL
 if (Sys.info()["sysname"] == "Windows") {
@@ -404,4 +427,4 @@ colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity", "train
 parameter.df$update_freq <- 3 * parameter.df$window_size
 parameter.df <- parameter.df %>%
   arrange()
-slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix, (100-cpu_required), output_dp, schedule_policy)
+slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix, (100-cpu_required), output_dp, schedule_policy, write_result, write_result_path)
