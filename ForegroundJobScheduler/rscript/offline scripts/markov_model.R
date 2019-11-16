@@ -273,7 +273,7 @@ markov_model <- function(dataset, initial_train_size, window_size, prob_cut_off,
 	}
 }
 
-wrapper.epoche <- function(parameter, dataset, cpu_required, initial_train_size, max_run_length, output_dp, schedule_policy, adjustment) {
+wrapper.epoche <- function(parameter, dataset, cpu_required, initial_train_size, max_run_length, output_dp, schedule_policy, adjustment, write_result, write_result_path) {
 	
 	window_size <- as.numeric(parameter[1])
 	prob_cut_off <- as.numeric(parameter[2])
@@ -306,10 +306,19 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, initial_train_size,
 	print(paste("Job survival rate:", "job length", window_size, survival_rate))
 	print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
 	
-	result_path.csv <- read.csv(output_dp)
-	if (schedule_policy == "dynamic") {
-		write.csv(output$overall_runs, paste("Overall Runs", "Markov", sample_size, window_size, prob_cut_off, granularity, num_of_states, ".csv"))
+	if (write_result == TRUE) {
+	  ts_results <- data.frame()
+	  ts_results$utilization_rate1 <- output$avg_usage[,1]
+	  ts_results$utilization_rate2 <- output$avg_usage[,2]
+	  ts_results$survival_rate <- output$job_survival[,1]
+	  ts_results$correct_scheduled_rate <- output$correct_scheduled_num[,1] / output$scheduled_num[,1]
+	  ts_results$correct_unscheduled_rate <- output$correct_unscheduled_num[,1] / output$unscheduled_num[,1]
+	  rownames(ts_results) <- rownames(dataset)
+	  result_file_name <- paste("Markov", schedule_policy, num_of_states, prob_cut_off, granularity, window_size, nrow(dataset), 0, train_size, update_freq)
+	  write.csv(ts_results, file = paste0(write_result_path, result_file_name), row.names = TRUE)
 	}
+	
+	result_path.csv <- read.csv(output_dp)
 	result_path.csv <- update.df(result_path.csv, "Markov", prob_cut_off, num_of_states, sample_size, window_size, granularity, 0, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
 	write.csv(result_path.csv, file=output_dp, row.names=FALSE)
 }
@@ -328,6 +337,15 @@ granularity <- c(100/32, 100/64, 100/128, 0)
 num_of_states <- c(8, 16, 32, 64)
 
 schedule_policy <- "dynamic"
+
+write_result <- TRUE
+
+write_result_path <- NULL
+if (Sys.info()["sysname"] == "Windows") {
+  write_result_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//ts_results//"
+} else {
+  write_result_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/ts_results/"
+}
 
 bg_jobs_path <- NULL
 if (Sys.info()["sysname"] == "Windows") {
@@ -407,4 +425,4 @@ parameter.df <- parameter.df %>%
   arrange(window_size)
 parameter.df <- parameter.df[47:nrow(parameter.df),]
 
-slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment)
+slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment, write_result, write_result_path)
