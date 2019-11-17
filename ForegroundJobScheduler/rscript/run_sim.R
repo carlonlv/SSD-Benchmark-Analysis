@@ -26,9 +26,17 @@ if (action == "file") {
   file_path <- arg_checker("--file", args)
   
   if (simulation == "online") {
-    
+    if (Sys.info()["sysname"] == "Windows") {
+      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary dynamic (windows,granularity) post adj.csv"
+    } else {
+      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary dynamic (windows,granularity) post adj.csv"
+    }
   } else if (simulation == "offline") {
-    
+    if (Sys.info()["sysname"] == "Windows") {
+      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary dynamic (windows,granularity) post adj.csv"
+    } else {
+      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary dynamic (windows,granularity) post adj.csv"
+    }
   } else {
     stop("Usage: --sim <offline/online>")
   }
