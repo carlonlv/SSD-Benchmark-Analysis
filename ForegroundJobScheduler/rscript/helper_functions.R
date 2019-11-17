@@ -155,47 +155,73 @@ compute_utilization <- function(pi_ups, survivals, actual_obs, window_size, gran
 
 update.df <- function(file, model_name, prob_cut_off, state_num=0, sample_size, window_size, granularity, bin_num=0, utilization1, utilization2, survival, correct_scheduled_rate, correct_unscheduled_rate) {
   
-  file <- file %>%
-    mutate(Avg.Cycle.Usage1 = ifelse(Model == model_name & 
+  ## See if this update is addition or update
+  checker <- file %>%
+    filter(Model == model_name & 
+             Probability.Cut.Off == prob_cut_off & 
+             Sample.Size == sample_size &
+             Window.Size == window_size &
+             Granularity == granularity &
+             StateNum == state_num &
+             BinNum == bin_num) %>%
+    tally()
+  if (checker$n == 0) {
+    file <- file %>% 
+      add_row(Model = model_name, 
+              Probability.Cut.Off = prob_cut_off,
+              Sample.Size = sample_size,
+              Window.Size = window_size,
+              Granularity = granularity,
+              StateNum = state_num,
+              BinNum = bin_num,
+              Avg.Cycle.Usage1 = utilization1,
+              Avg.Cycle.Usage2 = utilization2,
+              Survival.Rate = survival,
+              Correctly.Scheduled = correct_scheduled_rate,
+              Correctly.Unscheduled = correct_unscheduled_rate)
+  } else {
+    file <- file %>%
+      mutate(Avg.Cycle.Usage1 = ifelse(Model == model_name & 
+                                         Probability.Cut.Off == prob_cut_off & 
+                                         Sample.Size == sample_size &
+                                         Window.Size == window_size &
+                                         Granularity == granularity &
+                                         StateNum == state_num &
+                                         BinNum == bin_num,
+                                       utilization1, Avg.Cycle.Usage1)) %>%
+      mutate(Avg.Cycle.Usage2 = ifelse(Model == model_name & 
+                                         Probability.Cut.Off == prob_cut_off & 
+                                         Sample.Size == sample_size &
+                                         Window.Size == window_size &
+                                         Granularity == granularity &
+                                         StateNum == state_num &
+                                         BinNum == bin_num,
+                                       utilization2, Avg.Cycle.Usage2)) %>%
+      mutate(Survival.Rate = ifelse(Model == model_name & 
                                       Probability.Cut.Off == prob_cut_off & 
                                       Sample.Size == sample_size &
                                       Window.Size == window_size &
                                       Granularity == granularity &
                                       StateNum == state_num &
                                       BinNum == bin_num,
-                                    utilization1, Avg.Cycle.Usage1)) %>%
-    mutate(Avg.Cycle.Usage2 = ifelse(Model == model_name & 
-                                       Probability.Cut.Off == prob_cut_off & 
-                                       Sample.Size == sample_size &
-                                       Window.Size == window_size &
-                                       Granularity == granularity &
-                                       StateNum == state_num &
-                                       BinNum == bin_num,
-                                     utilization2, Avg.Cycle.Usage2)) %>%
-    mutate(Survival.Rate = ifelse(Model == model_name & 
-                                    Probability.Cut.Off == prob_cut_off & 
-                                    Sample.Size == sample_size &
-                                    Window.Size == window_size &
-                                    Granularity == granularity &
-                                    StateNum == state_num &
-                                    BinNum == bin_num,
-                                  survival, Survival.Rate)) %>%
-    mutate(Correctly.Scheduled = ifelse(Model == model_name & 
-                                          Probability.Cut.Off == prob_cut_off & 
-                                          Sample.Size == sample_size &
-                                          Window.Size == window_size &
-                                          Granularity == granularity &
-                                          StateNum == state_num &
-                                          BinNum == bin_num,
-                                        correct_scheduled_rate, Correctly.Scheduled)) %>%
-    mutate(Correctly.Unscheduled = ifelse(Model == model_name & 
+                                    survival, Survival.Rate)) %>%
+      mutate(Correctly.Scheduled = ifelse(Model == model_name & 
                                             Probability.Cut.Off == prob_cut_off & 
                                             Sample.Size == sample_size &
                                             Window.Size == window_size &
                                             Granularity == granularity &
                                             StateNum == state_num &
                                             BinNum == bin_num,
-                                          correct_unscheduled_rate, Correctly.Unscheduled))
+                                          correct_scheduled_rate, Correctly.Scheduled)) %>%
+      mutate(Correctly.Unscheduled = ifelse(Model == model_name & 
+                                              Probability.Cut.Off == prob_cut_off & 
+                                              Sample.Size == sample_size &
+                                              Window.Size == window_size &
+                                              Granularity == granularity &
+                                              StateNum == state_num &
+                                              BinNum == bin_num,
+                                            correct_unscheduled_rate, Correctly.Unscheduled))
+  }
   file <- file %>%
     arrange(Model, Sample.Size, Window.Size, Granularity, Probability.Cut.Off, StateNum, BinNum)
   return(file)
@@ -204,48 +230,66 @@ update.df <- function(file, model_name, prob_cut_off, state_num=0, sample_size, 
 
 update.df.online <- function(file, model_name, prob_cut_off, state_num=0, sample_size, window_size, granularity, bin_num=0, train_size, update_freq, utilization1, utilization2, survival, correct_scheduled_rate, correct_unscheduled_rate) {
   
-  file <- file %>%
-    mutate(Avg.Cycle.Usage1 = ifelse(Model == model_name & 
-                                       Probability.Cut.Off == prob_cut_off & 
-                                       Sample.Size == sample_size &
-                                       Window.Size == window_size &
-                                       Granularity == granularity &
-                                       Training.Size == train_size &
-                                       Update.Freq == update_freq &
-                                       StateNum == state_num &
-                                       BinNum == bin_num,
-                                     utilization1, Avg.Cycle.Usage1)) %>%
-    mutate(Avg.Cycle.Usage2 = ifelse(Model == model_name & 
-                                       Probability.Cut.Off == prob_cut_off & 
-                                       Sample.Size == sample_size &
-                                       Window.Size == window_size &
-                                       Granularity == granularity &
-                                       Training.Size == train_size &
-                                       Update.Freq == update_freq &
-                                       StateNum == state_num &
-                                       BinNum == bin_num,
-                                     utilization2, Avg.Cycle.Usage2)) %>%
-    mutate(Survival.Rate = ifelse(Model == model_name & 
-                                    Probability.Cut.Off == prob_cut_off & 
-                                    Sample.Size == sample_size &
-                                    Window.Size == window_size &
-                                    Granularity == granularity &
-                                    Training.Size == train_size &
-                                    Update.Freq == update_freq &
-                                    StateNum == state_num &
-                                    BinNum == bin_num,
-                                  survival, Survival.Rate)) %>%
-    mutate(Correctly.Scheduled = ifelse(Model == model_name & 
-                                          Probability.Cut.Off == prob_cut_off & 
-                                          Sample.Size == sample_size &
-                                          Window.Size == window_size &
-                                          Granularity == granularity &
-                                          Training.Size == train_size &
-                                          Update.Freq == update_freq &
-                                          StateNum == state_num &
-                                          BinNum == bin_num,
-                                        correct_scheduled_rate, Correctly.Scheduled)) %>%
-    mutate(Correctly.Unscheduled = ifelse(Model == model_name & 
+  checker <- file %>%
+    filter(Model == model_name & 
+             Probability.Cut.Off == prob_cut_off & 
+             Sample.Size == sample_size &
+             Window.Size == window_size &
+             Granularity == granularity &
+             Training.Size == train_size &
+             Update.Freq == update_freq &
+             StateNum == state_num &
+             BinNum == bin_num) %>%
+    tally()
+  if (checker$n == 0) {
+    file <- file %>%
+      add_row(Model = model_name, 
+              Probability.Cut.Off = prob_cut_off,
+              Sample.Size = sample_size,
+              Window.Size = window_size,
+              Granularity = granularity,
+              Training.Size = train_size,
+              Update.Freq = update_freq,
+              StateNum = state_num,
+              BinNum = bin_num,
+              Avg.Cycle.Usage1 = utilization1,
+              Avg.Cycle.Usage2 = utilization2,
+              Survival.Rate = survival,
+              Correctly.Scheduled = correct_scheduled_rate,
+              Correctly.Unscheduled = correct_unscheduled_rate)
+  } else {
+    file <- file %>%
+      mutate(Avg.Cycle.Usage1 = ifelse(Model == model_name & 
+                                         Probability.Cut.Off == prob_cut_off & 
+                                         Sample.Size == sample_size &
+                                         Window.Size == window_size &
+                                         Granularity == granularity &
+                                         Training.Size == train_size &
+                                         Update.Freq == update_freq &
+                                         StateNum == state_num &
+                                         BinNum == bin_num,
+                                       utilization1, Avg.Cycle.Usage1)) %>%
+      mutate(Avg.Cycle.Usage2 = ifelse(Model == model_name & 
+                                         Probability.Cut.Off == prob_cut_off & 
+                                         Sample.Size == sample_size &
+                                         Window.Size == window_size &
+                                         Granularity == granularity &
+                                         Training.Size == train_size &
+                                         Update.Freq == update_freq &
+                                         StateNum == state_num &
+                                         BinNum == bin_num,
+                                       utilization2, Avg.Cycle.Usage2)) %>%
+      mutate(Survival.Rate = ifelse(Model == model_name & 
+                                      Probability.Cut.Off == prob_cut_off & 
+                                      Sample.Size == sample_size &
+                                      Window.Size == window_size &
+                                      Granularity == granularity &
+                                      Training.Size == train_size &
+                                      Update.Freq == update_freq &
+                                      StateNum == state_num &
+                                      BinNum == bin_num,
+                                    survival, Survival.Rate)) %>%
+      mutate(Correctly.Scheduled = ifelse(Model == model_name & 
                                             Probability.Cut.Off == prob_cut_off & 
                                             Sample.Size == sample_size &
                                             Window.Size == window_size &
@@ -254,7 +298,18 @@ update.df.online <- function(file, model_name, prob_cut_off, state_num=0, sample
                                             Update.Freq == update_freq &
                                             StateNum == state_num &
                                             BinNum == bin_num,
-                                          correct_unscheduled_rate, Correctly.Unscheduled))
+                                          correct_scheduled_rate, Correctly.Scheduled)) %>%
+      mutate(Correctly.Unscheduled = ifelse(Model == model_name & 
+                                              Probability.Cut.Off == prob_cut_off & 
+                                              Sample.Size == sample_size &
+                                              Window.Size == window_size &
+                                              Granularity == granularity &
+                                              Training.Size == train_size &
+                                              Update.Freq == update_freq &
+                                              StateNum == state_num &
+                                              BinNum == bin_num,
+                                            correct_unscheduled_rate, Correctly.Unscheduled))
+  }
   file <- file %>%
     arrange(Model, Sample.Size, Window.Size, Granularity, Probability.Cut.Off, StateNum, BinNum)
   return(file)
