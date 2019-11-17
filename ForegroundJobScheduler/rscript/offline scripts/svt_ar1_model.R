@@ -243,10 +243,10 @@ svt_stationary_model <- function(dataset, initial_train_size, window_size, prob_
 
 wrapper.epoche <- function(parameter, dataset, cpu_required, initial_train_size, max_run_length, output_dp, schedule_policy, adjustment, write_result, write_result_path=NULL) {
   
-  window_size <- as.numeric(parameter[1])
-  prob_cut_off <- as.numeric(parameter[2])
-  granularity <- as.numeric(parameter[3])
-  
+  window_size <- as.numeric(parameter["window_size"])
+  prob_cut_off <- as.numeric(parameter["prob_cut_off"])
+  granularity <- as.numeric(parameter["granularity"])
+
   print(paste("Job len:", window_size))
   print(paste("Cut off prob:", prob_cut_off))
   print(paste("Granularity:", granularity))
@@ -287,101 +287,3 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, initial_train_size,
   result_path.csv <- update.df(result_path.csv, "AR1", prob_cut_off, 0, sample_size, window_size, granularity, 0, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
   write.csv(result_path.csv, file = output_dp, row.names = FALSE)
 }
-
-## Read background job pool
-
-sample_size <- 100
-cpu_usage <- 3
-max_run_length <- 37
-total_trace_length <- 8000
-initial_train_size <- 6000
-adjustment <- TRUE
-
-window_sizes <- c(12, 36)
-prob_cut_offs <- c(0.005, 0.01, 0.1)
-granularity <- c(100/32, 100/64, 100/128, 0)
-
-schedule_policy <- "dynamic"
-
-write_result <- TRUE
-
-write_result_path <- NULL
-if (Sys.info()["sysname"] == "Windows") {
-  write_result_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//ts_results//"
-} else {
-  write_result_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/ts_results/"
-}
-
-bg_jobs_path <- NULL
-if (Sys.info()["sysname"] == "Windows") {
-  bg_jobs_path <- "C://Users//carlo//Documents//sample background jobs//"
-} else {
-  bg_jobs_path <- "/Users/carlonlv/Documents/microsoft traces/"
-}
-
-bg_job_pool <- NULL
-if (sample_size == 100 ) {
-  if (Sys.info()["sysname"] == "Windows") {
-    bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 background jobs.csv")[,1]
-  } else {
-    bg_job_pool <- read.csv("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/pythonscripts/list of sampled 100 background jobs.csv")[,1]
-  }
-  bg_job_pool <- sub(".pd", "", bg_job_pool)
-} else {
-  if (Sys.info()["sysname"] == "Windows") {
-    bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled background jobs.csv")[,1]
-  } else {
-    bg_job_pool <- read.csv("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/pythonscripts/list of sampled background jobs.csv")[,1]
-  }
-  bg_job_pool <- sub(".pd", "", bg_job_pool)
-}
-
-data_matrix <- matrix(nrow = total_trace_length, ncol = 0)
-for (job_num in bg_job_pool) {
-  bg_job <- read.csv(paste(bg_jobs_path, job_num, ".csv", sep = ""))
-  data_matrix <- cbind(data_matrix, bg_job$max_cpu[1:total_trace_length])
-}
-rownames(data_matrix) <- seq(1, nrow(data_matrix) ,1)
-colnames(data_matrix) <- bg_job_pool
-
-cpu_required <- rep(0, ncol(data_matrix))
-for (j in 1:ncol(data_matrix)) {
-  cpu_required[j] <- as.numeric(quantile(data_matrix[,j], c(0.15, 0.5, 0.85), type = 4)[cpu_usage])
-}
-
-output_dp <- NULL
-if (adjustment) {
-  if (schedule_policy == "dynamic") {
-    if (Sys.info()["sysname"] == "Windows") {
-      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary dynamic (windows,granularity) post adj.csv"
-    } else {
-      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary dynamic (windows,granularity) post adj.csv"
-    }
-  } else {
-    if (Sys.info()["sysname"] == "Windows") {
-      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary disjoint (windows,granularity) post adj.csv"
-    } else {
-      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary disjoint (windows,granularity) post adj.csv"
-    }
-  }
-} else {
-  if (schedule_policy == "dynamic") {
-    if (Sys.info()["sysname"] == "Windows") {
-      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary dynamic (windows,granularity).csv"
-    } else {
-      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary dynamic (windows,granularity).csv"
-    }
-  } else {
-    if (Sys.info()["sysname"] == "Windows") {
-      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary disjoint (windows,granularity).csv"
-    } else {
-      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary disjoint (windows,granularity).csv"
-    }
-  }
-}
-
-parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity)
-colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity")
-parameter.df <- parameter.df %>%
-  arrange(window_size)
-slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment, write_result, write_result_path)
