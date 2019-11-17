@@ -1,10 +1,10 @@
-arg_checker <- function(check, args, type="mandatory") {
+arg_checker <- function(check, args, mandatory=TRUE, default=NULL) {
   idx <- which(check == args)
   if (length(idx) == 0) {
-    if (type == "mandatory") {
+    if (mandatory) {
       stop(paste("Error: flag", check, "not found."))
     } else {
-      return(NULL)
+      return(default)
     }
   }
   content <- args[idx + 1]
@@ -14,29 +14,54 @@ arg_checker <- function(check, args, type="mandatory") {
   return(content)
 }
 
+true_false_checker <- function(check, flag) {
+  if (any(check == c("T", "True", "TRUE"))) {
+    adjustment <- TRUE
+  } else if (any(check == c("F", "False", "FALSE"))) {
+    adjustment <- FALSE
+  } else {
+    stop(paste("Usage:", flag, "<T/F>"))
+  }
+}
+
 args <- commandArgs(trailingOnly = TRUE)
 
 action <- arg_checker("--action", args)
-model <- arg_checker("--model", args)
 simulation <- arg_checker("--sim", args)
 sample_size <- arg_checker("--sample", args)
-adjustment <- arg_checker("--adjust", args)
-
+if (!any(sample_size == c(100, 3000))) {
+  stop("Usage: --sample <100/3000>")
+}
+adjustment <- true_false_checker(arg_checker("--adjust", args), "--adjust")
+write_result <- true_false_checker(arg_checker("--result", args), "--result")
+schedule_policy <- ifelse(arg_checker("--schedule", args))
+if (!any(schedule_policy == c("disjoint", "dynamic"))) {
+  stop("Usage: -- sample <disjoint/dynamic>")
+}
+  
 if (action == "file") {
   file_path <- arg_checker("--file", args)
+  param <- ifelse(file_path == "default", NULL, file_path)
+  
+  cpu_usage <- arg_checker("--cpu_use", args, FALSE, 0.85)
+  max_run_length <- arg_checker("--max_run", args, FALSE, 37)
+  total_trace_length <- arg_checker("--total_trace", args, FALSE, 8000)
   
   if (simulation == "online") {
     if (Sys.info()["sysname"] == "Windows") {
-      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary dynamic (windows,granularity) post adj.csv"
+      source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//online_simulation.R")
     } else {
-      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary dynamic (windows,granularity) post adj.csv"
+      source("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/rscript/online_simulation.R")
     }
+    ################
   } else if (simulation == "offline") {
+    initial_train_size <- arg_checker("--initial_train_size", args, FALSE, 6000)
     if (Sys.info()["sysname"] == "Windows") {
-      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary dynamic (windows,granularity) post adj.csv"
+      source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//offline_simulation.R")
     } else {
-      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary dynamic (windows,granularity) post adj.csv"
+      source("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/rscript/offline_simulation.R")
     }
+    define.inputs(model, param, sample_size, adjustment, write_result, schedule_policy, cpu_usage, max_run_length, total_trace_length, initial_train_size)
   } else {
     stop("Usage: --sim <offline/online>")
   }
@@ -44,25 +69,42 @@ if (action == "file") {
   window_size <- arg_checker("--window", args)
   prob_cut_off <- arg_checker("--prob", args)
   granularity <- arg_checker("--gran", args)
-
+  
+  model <- arg_checker("--model", args)
+  param <- NULL 
   if (model %in% c("AR1", "VAR1")) {
-    
+    param <- data.frame("window_size"=window_size, "prob_cut_off"=prob_cut_off, "granularity"=granularity)
   } else if (model %in% c("AR1_logistic_lm", "AR1_logistic_glm")) {
-    bin_num <- arg_checker("--bin", args)
-    
+    num_of_bins <- arg_checker("--bin", args)
+    param <- data.frame("window_size"=window_size, "prob_cut_off"=prob_cut_off, "granularity"=granularity, "num_of_bins"=num_of_bins)
   } else if (model %in% c("Markov", "AR1_Markov", "AR1_state_based_logistic")) {
     num_of_states <- arg_checker("--state", args)
-    
+    param <- data.frame("window_size"=window_size, "prob_cut_off"=prob_cut_off, "granularity"=granularity, "num_of_states"=num_of_states)
   } else {
     stop("Usage: --model <model name>")
   }
-    
+  
+  cpu_usage <- arg_checker("--cpu_use", args, FALSE, 0.85)
+  max_run_length <- arg_checker("--max_run", args, FALSE, 37)
+  total_trace_length <- arg_checker("--total_trace", args, FALSE, 8000)
+  
   if (simulation == "online") {
     train_size <- arg_checker("--train", args)
     update_freq <- arg_checker("--update", args)
-    
+    if (Sys.info()["sysname"] == "Windows") {
+      source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//online_simulation.R")
+    } else {
+      source("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/rscript/online_simulation.R")
+    }
+    #######################
   } else if (simulation == "offline") {
-    
+    initial_train_size <- arg_checker("--initial_train_size", args, FALSE, 6000)
+    if (Sys.info()["sysname"] == "Windows") {
+      source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//offline_simulation.R")
+    } else {
+      source("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/rscript/offline_simulation.R")
+    }
+    define.inputs(model, param, sample_size, adjustment, write_result, schedule_policy, cpu_usage, max_run_length, total_trace_length, initial_train_size)
   } else {
     stop("Usage: --sim <offline/online>")
   }
