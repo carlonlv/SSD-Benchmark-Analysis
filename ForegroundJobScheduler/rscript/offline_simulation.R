@@ -10,19 +10,24 @@ generate_default_df <- function(include.bin, include.state) {
   if (include.bin & include.state) {
     parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity, num_of_states, num_of_bins)
     colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity", "num_of_states", "num_of_bins")
+    parameter.df <- parameter.df %>%
+      arrange(window_size, granularity, prob_cut_off, num_of_states, num_of_bins)
   } else if (include.state & !include.bin) {
     parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity)
     colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity", "num_of_states")
+    parameter.df <- parameter.df %>%
+      arrange(window_size, granularity, prob_cut_off, num_of_states)
   } else if (include.bin & !include.state) {
     parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity, num_of_bins)
     colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity", "num_of_bins")
+    parameter.df <- parameter.df %>%
+      arrange(window_size, granularity, prob_cut_off, num_of_bins)
   }  else {
     parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity)
     colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity")
+    parameter.df <- parameter.df %>%
+      arrange(window_size, granularity, prob_cut_off)
   }
-  
-  parameter.df <- parameter.df %>%
-    arrange()
   return(parameter.df)
 }
 
@@ -133,7 +138,7 @@ define.inputs <- function(model_name, param, sample_size, adjustment, write_resu
       source("/home/jialun/Research-Projects/ForegroundJobScheduler/rscript/offline scripts/svt_ar1_model.R")
     }
     parameter.df <- param
-    if (param == "default") {
+    if (suppressWarnings(is.na(param))) {
       parameter.df <- generate_default_df(FALSE, FALSE)
     }
     slt <- apply(paramter.df, 1, wrapper.epoche, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment, write_result, write_result_path)
@@ -146,7 +151,7 @@ define.inputs <- function(model_name, param, sample_size, adjustment, write_resu
       source("/home/jialun/Research-Projects/ForegroundJobScheduler/rscript/offline scripts/mvt_stationary_model.R")
     }
     parameter.df <- param
-    if (param == "default") {
+    if (suppressWarnings(is.na(param))) {
       parameter.df <- generate_default_df(FALSE, FALSE)
     }
     slt <- apply(paramter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment, write_result, write_result_path)
@@ -159,7 +164,7 @@ define.inputs <- function(model_name, param, sample_size, adjustment, write_resu
       source("/home/jialun/Research-Projects/ForegroundJobScheduler/rscript/offline scripts/markov_model.R")
     }
     parameter.df <- param
-    if (param == "default") {
+    if (suppressWarnings(is.na(param))) {
       parameter.df <- generate_default_df(FALSE, TRUE)
     }
     slt <- apply(paramter.df, 1, wrapper.epoche, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment, write_result, write_result_path)
@@ -172,7 +177,7 @@ define.inputs <- function(model_name, param, sample_size, adjustment, write_resu
       source("/home/jialun/Research-Projects/ForegroundJobScheduler/rscript/offline scripts/ar1_markov_model.R")
     }
     parameter.df <- param
-    if (param == "default") {
+    if (suppressWarnings(is.na(param))) {
       parameter.df <- generate_default_df(FALSE, TRUE)
     }
     slt <- apply(paramter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment, write_result, write_result_path)
@@ -185,7 +190,7 @@ define.inputs <- function(model_name, param, sample_size, adjustment, write_resu
       source("/home/jialun/Research-Projects/ForegroundJobScheduler/rscript/offline scripts/svt_ar1_logistic_model.R")
     }
     parameter.df <- param
-    if (param == "default") {
+    if (suppressWarnings(is.na(param))) {
       parameter.df <- generate_default_df(TRUE, FALSE)
     }
     slt <- apply(paramter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, "lm", output_dp, schedule_policy, adjustment, write_result, write_result_path)
@@ -198,7 +203,7 @@ define.inputs <- function(model_name, param, sample_size, adjustment, write_resu
       source("/home/jialun/Research-Projects/ForegroundJobScheduler/rscript/offline scripts/svt_ar1_logistic_model.R")
     }
     parameter.df <- param
-    if (param == "default") {
+    if (suppressWarnings(is.na(param))) {
       parameter.df <- generate_default_df(TRUE, FALSE)
     }
     slt <- apply(paramter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, "glm", output_dp, schedule_policy, adjustment, write_result, write_result_path)
@@ -211,7 +216,7 @@ define.inputs <- function(model_name, param, sample_size, adjustment, write_resu
       source("/home/jialun/Research-Projects/ForegroundJobScheduler/rscript/offline scripts/svt_ar1_state_based_logistic_model.R")
     }
     parameter.df <- param
-    if (param == "default") {
+    if (suppressWarnings(is.na(param))) {
       parameter.df <- generate_default_df(FALSE, TRUE)
     }
     slt <- apply(paramter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment, write_result, write_result_path)

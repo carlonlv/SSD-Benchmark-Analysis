@@ -108,9 +108,13 @@ train_cond_var_model <- function(train_set_max, train_set_avg, bin_num, method) 
       suppressWarnings(sd.lm <- lm(sd~bin+I(bin^2), data = new_parsed_dat))
     } else {
       suppressWarnings(sd.lm <- tryCatch({
-        glm(sd~bin, data = new_parsed_dat, family = Gamma(link="log"), glm.control(maxit=2000))
+        glm(sd~bin, data = new_parsed_dat, family = Gamma(link="log"), control = glm.control(maxit=2000))
       }, error = function(cond) {
-        glm(sd~bin, data = new_parsed_dat, family = Gamma(link="inverse"), glm.control(maxit=2000))
+        tryCatch({
+          glm(sd~bin, data = new_parsed_dat, family = Gamma(link="inverse"), control = glm.control(maxit=2000))
+        }, error = function(cond) {
+          lm(sd~bin+I(bin^2), data = new_parsed_dat)
+        })
       }))
     }
   } else if (nrow(new_parsed_dat) == 2) {

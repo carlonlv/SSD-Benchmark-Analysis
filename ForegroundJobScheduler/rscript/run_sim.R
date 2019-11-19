@@ -38,13 +38,13 @@ if (!any(sample_size == c(100, 3000))) {
 write_result <- true_false_checker(arg_checker("--result", args), "--result")
 schedule_policy <- arg_checker("--schedule", args)
 if (!any(schedule_policy == c("disjoint", "dynamic"))) {
-  stop("Usage: -- sample <disjoint/dynamic>")
+  stop("Usage: -- schedule <disjoint/dynamic>")
 }
   
 if (action == "file") {
   ## File mandatory flags
   file_path <- arg_checker("--file", args)
-  param <- file_path
+  param <- ifelse(file_path == "default", NA, file_path)
   if (!any(model == c("AR1", "VAR1", "AR1_logistic_lm", "AR1_logistic_glm", "AR1_Markov", "Markov"))) {
     stop("Usage: --model <model name>")
   }
@@ -152,7 +152,7 @@ if (action == "file") {
                 paste0("num_of_states=", num_of_states),
                 paste0("num_of_bins=", num_of_bins),
                 sep="\n")
-    define.inputs(model_name, param, sample_size, write_result, schedule_policy, cpu_usage, total_trace_length)
+    define.inputs(model, param, sample_size, write_result, schedule_policy, cpu_usage, total_trace_length)
   } else if (simulation == "offline") {
     max_run_length <- arg_checker("--max_run", args, FALSE, 37)
     initial_train_size <- arg_checker("--initial_train_size", args, FALSE, 6000)
