@@ -287,7 +287,8 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, initial_train_size,
 	print(paste("Granularity:", granularity))
 	print(paste("Num of States:", num_of_states))
 	
-	system.time(output <- markov_model(dataset, initial_train_size, window_size, prob_cut_off, max_run_length, cpu_required, granularity, num_of_states, schedule_policy, adjustment))
+	print(system.time(output <- markov_model(dataset, initial_train_size, window_size, prob_cut_off, max_run_length, cpu_required, granularity, num_of_states, schedule_policy, adjustment))) 
+	
 	overall_evaluation <- find_overall_evaluation(output$avg_usage[,1], output$avg_usage[,2], output$job_survival[,1])
 	
 	utilization_rate1 <- overall_evaluation$utilization_rate1
