@@ -274,13 +274,12 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, initial_train_size,
   print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
   
   if (write_result == TRUE) {
-    ts_results <- data.frame()
-    ts_results$utilization_rate1 <- output$avg_usage[,1]
-    ts_results$utilization_rate2 <- output$avg_usage[,2]
-    ts_results$survival_rate <- output$job_survival[,1]
-    ts_results$correct_scheduled_rate <- output$correct_scheduled_num[,1] / output$scheduled_num[,1]
-    ts_results$correct_unscheduled_rate <- output$correct_unscheduled_num[,1] / output$unscheduled_num[,1]
-    rownames(ts_results) <- rownames(dataset)
+    ts_results <- data.frame("utilization_rate1"=output$avg_usage[,1],
+                             "utilization_rate2"=output$avg_usage[,2],
+                             "survival_rate"=output$job_survival[,1],
+                             "correct_scheduled_rate"=(output$correct_scheduled_num[,1] / output$scheduled_num[,1]),
+                             "correct_unscheduled_rate"=(output$correct_unscheduled_num[,1] / output$unscheduled_num[,1]))
+    rownames(ts_results) <- colnames(dataset)
     result_file_name <- paste("AR1", schedule_policy, 0, prob_cut_off, granularity, window_size, nrow(dataset), 0, train_size, update_freq)
     write.csv(ts_results, file = paste0(write_result_path, result_file_name), row.names = TRUE)
   }
