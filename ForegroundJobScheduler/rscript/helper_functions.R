@@ -1,10 +1,10 @@
-library("forecast")
-library("mvtnorm")
-library("dict")
-library("dplyr")
-library("arules")
-library("parallel")
-library("MTS")
+suppressMessages(library("forecast"))
+suppressMessages(library("mvtnorm"))
+suppressMessages(library("dict"))
+suppressMessages(library("dplyr"))
+suppressMessages(library("arules"))
+suppressMessages(library("parallel"))
+suppressMessages(library("MTS"))
 
 
 convert_frequency_dataset <- function(dataset, new_freq, mode) {

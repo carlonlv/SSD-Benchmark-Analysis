@@ -12,7 +12,7 @@ cores <- ifelse(Sys.info()["sysname"] == "Windows", 1, detectCores(all.tests = F
 
 train_ar1_model <- function(train_dataset) {
   
-  ts_model <- tryCatch({
+  suppressWarnings(ts_model <- tryCatch({
     arima(x=train_dataset, order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000), optim.method="Nelder-Mead")
   }, warning = function(w) {
     arima(x=train_dataset, order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000), optim.method="BFGS")
@@ -22,7 +22,7 @@ train_ar1_model <- function(train_dataset) {
     }, error = function(cond) {
       arima(x=train_dataset, order = c(1,0,0), include.mean = TRUE, method = "CSS", optim.control = list(maxit=2000), transform.pars = TRUE, optim.method="CG")
     })
-  })
+  }))
   return(list("coeffs"=as.numeric(ts_model$coef[1]), "means"= as.numeric(ts_model$coef[2]), "vars"=ts_model$sigma2))
 }
 
@@ -105,16 +105,16 @@ train_cond_var_model <- function(train_set_max, train_set_avg, bin_num, method) 
   sd.lm <- NULL
   if (nrow(new_parsed_dat) >= 3) {
     if (method == "lm") {
-      sd.lm <- lm(sd~bin+I(bin^2), data = new_parsed_dat)
+      suppressWarnings(sd.lm <- lm(sd~bin+I(bin^2), data = new_parsed_dat))
     } else {
-      sd.lm <- glm(sd~bin, data = new_parsed_dat, family = Gamma(link="log"))
+      suppressWarnings(sd.lm <- tryCatch({
+        glm(sd~bin, data = new_parsed_dat, family = Gamma(link="log"), glm.control(maxit=2000))
+      }, error = function(cond) {
+        glm(sd~bin, data = new_parsed_dat, family = Gamma(link="inverse"), glm.control(maxit=2000))
+      }))
     }
   } else if (nrow(new_parsed_dat) == 2) {
-    if (method == "lm") {
-      sd.lm <- lm(sd~bin, data = new_parsed_dat)
-    } else {
-      sd.lm <- glm(sd~bin, data = new_parsed_dat)
-    }
+    sd.lm <- lm(sd~bin, data = new_parsed_dat)
   } else {
     sd.lm <- new_parsed_dat$sd
   }
