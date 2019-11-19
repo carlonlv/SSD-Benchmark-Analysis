@@ -53,8 +53,10 @@ if (action == "file") {
   if (simulation == "online") {
     if (Sys.info()["sysname"] == "Windows") {
       source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//online_simulation.R")
-    } else {
+    } else if (Sys.info()["sysname"] == "Darwin") {
       source("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/rscript/online_simulation.R")
+    } else {
+      source("/home/jialun/Research-Projects/ForegroundJobScheduler/rscript/online_simulation.R")
     }
     define.inputs(model, param, sample_size, write_result, schedule_policy, cpu_usage=0.85, total_trace_length=8000)
   } else if (simulation == "offline") {
@@ -66,8 +68,10 @@ if (action == "file") {
     
     if (Sys.info()["sysname"] == "Windows") {
       source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//offline_simulation.R")
-    } else {
+    } else if (Sys.info()["sysname"] == "Darwin") {
       source("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/rscript/offline_simulation.R")
+    } else {
+      source("/home/jialun/Research-Projects/ForegroundJobScheduler/rscript/offline_simulation.R")
     }
     define.inputs(model, param, sample_size, adjustment, write_result, schedule_policy, cpu_usage, max_run_length, total_trace_length, initial_train_size)
   } else {
@@ -100,8 +104,10 @@ if (action == "file") {
     
     if (Sys.info()["sysname"] == "Windows") {
       source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//online_simulation.R")
-    } else {
+    } else if (Sys.info()["sysname"] == "Darwin") {
       source("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/rscript/online_simulation.R")
+    } else {
+      source("/home/jialun/Research-Projects/ForegroundJobScheduler/rscript/online_simulation.R")
     }
     define.inputs(model_name, param, sample_size, write_result, schedule_policy, cpu_usage, total_trace_length)
   } else if (simulation == "offline") {
@@ -123,8 +129,10 @@ if (action == "file") {
     
     if (Sys.info()["sysname"] == "Windows") {
       source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//offline_simulation.R")
-    } else {
+    } else if (Sys.info()["sysname"] == "Darwin") {
       source("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/rscript/offline_simulation.R")
+    } else {
+      source("/home/jialun/Research-Projects/ForegroundJobScheduler/rscript/offline_simulation.R")
     }
     define.inputs(model, param, sample_size, adjustment, write_result, schedule_policy, cpu_usage, max_run_length, total_trace_length, initial_train_size)
   } else {

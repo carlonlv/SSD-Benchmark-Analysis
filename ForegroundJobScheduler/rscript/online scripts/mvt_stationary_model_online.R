@@ -1,8 +1,10 @@
 
 if (Sys.info()["sysname"] == "Windows") {
   source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//helper_functions.R")
-} else {
+} else if (Sys.info()["sysname"] == "Darwin") {
   source("/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/rscript/helper_functions.R")
+} else {
+  source("/home/jialun/Research-Projects/ForegroundJobScheduler/rscript/helper_functions.R")
 }
 
 cores <- ifelse(Sys.info()["sysname"] == "Windows", 1, detectCores(all.tests = FALSE, logical = TRUE))
