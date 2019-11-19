@@ -416,3 +416,5 @@ wrapper.epoche <- function(parameter, dataset_max, dataset_avg, cpu_required, ou
     write.csv(result_path.csv, file = output_dp, row.names = FALSE)
   }
 }
+
+warnings()
