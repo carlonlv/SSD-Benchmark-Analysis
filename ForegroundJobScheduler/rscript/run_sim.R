@@ -8,7 +8,7 @@ arg_checker <- function(check, args, mandatory=TRUE, default=NULL) {
     }
   }
   content <- args[idx + 1]
-  if (is.na(content) | "--" %in% content) {
+  if (is.na(content) | grepl("--", content)) {
     stop(paste("Error: content", check, "not found, but flag is provided."))
   }
   return(content)
