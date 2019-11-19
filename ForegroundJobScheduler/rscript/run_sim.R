@@ -20,7 +20,7 @@ true_false_checker <- function(check, flag) {
   } else if (any(check == c("F", "False", "FALSE"))) {
     adjustment <- FALSE
   } else {
-    stop(paste("Usage:", flag, "<T/F>"))
+    stop(paste("Usage:", flag, "<True/False>"))
   }
 }
 
