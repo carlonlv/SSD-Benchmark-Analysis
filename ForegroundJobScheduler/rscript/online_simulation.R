@@ -118,7 +118,7 @@ define.inputs <- function(model_name, param, sample_size, write_result, schedule
     } else {
       if (Sys.info()["sysname"] == "Windows") {
         output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary disjoint (windows,granularity).csv"
-      } else if (Sys.info()) {
+      } else if (Sys.info()["sysname"] == "Darwin") {
         output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity).csv"
       } else {
         output_dp <- "/home/jialun/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity).csv"
