@@ -310,7 +310,7 @@ update.df.online <- function(file, model_name, prob_cut_off, state_num=0, sample
                                             correct_unscheduled_rate, Correctly.Unscheduled))
   }
   file <- file %>%
-    arrange(Model, Sample.Size, Window.Size, Granularity, Probability.Cut.Off, StateNum, BinNum)
+    arrange(Model, Sample.Size, Window.Size, Granularity, Probability.Cut.Off, StateNum, BinNum, Training.Size, Update.Freq)
   return(file)
 }
 
