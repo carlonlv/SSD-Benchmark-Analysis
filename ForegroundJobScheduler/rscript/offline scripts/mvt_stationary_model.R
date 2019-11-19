@@ -388,7 +388,7 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
   print(paste("Cut off prob:", prob_cut_off))
   print(paste("Granularity:", granularity))
   
-  output <- mvt_stationary_model(dataset_avg, dataset_max, initial_train_size, 1, 0, window_size, cpu_required, prob_cut_off, max_run_length, granularity, schedule_policy, adjustment)
+  system.time(output <- mvt_stationary_model(dataset_avg, dataset_max, initial_train_size, 1, 0, window_size, cpu_required, prob_cut_off, max_run_length, granularity, schedule_policy, adjustment))
   overall_evaluation <- find_overall_evaluation(output$avg_usage[,1], output$avg_usage[,2], output$job_survival[,1])
   
   utilization_rate1 <- overall_evaluation$utilization_rate1
