@@ -396,7 +396,7 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
                                "correct_unscheduled_rate"=(output$correct_unscheduled_num[,1] / output$unscheduled_num[,1]))
       rownames(ts_results) <- colnames(dataset_max)
       result_file_name <- paste("AR1_logistic_lm", schedule_policy, 0, prob_cut_off, granularity, window_size, nrow(dataset_max), bin_num, train_size, update_freq)
-      write.csv(ts_results, file = paste0(write_result_path, result_file_name), row.names = TRUE)
+      write.csv(ts_results, file = paste0(write_result_path, result_file_name, ".csv"), row.names = TRUE)
     }
     
     result_path.csv <- read.csv(output_dp)
@@ -411,7 +411,7 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
                                "correct_unscheduled_rate"=(output$correct_unscheduled_num[,1] / output$unscheduled_num[,1]))
       rownames(ts_results) <- colnames(dataset_max)
       result_file_name <- paste("AR1_logistic_glm", schedule_policy, 0, prob_cut_off, granularity, window_size, nrow(dataset_max), bin_num, train_size, update_freq)
-      write.csv(ts_results, file = paste0(write_result_path, result_file_name), row.names = TRUE)
+      write.csv(ts_results, file = paste0(write_result_path, result_file_name, ".csv"), row.names = TRUE)
     }
     
     result_path.csv <- read.csv(output_dp)

@@ -315,7 +315,7 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, initial_train_size,
 	                           "correct_unscheduled_rate"=(output$correct_unscheduled_num[,1] / output$unscheduled_num[,1]))
 	  rownames(ts_results) <- colnames(dataset)
 	  result_file_name <- paste("Markov", schedule_policy, num_of_states, prob_cut_off, granularity, window_size, nrow(dataset), 0, train_size, update_freq)
-	  write.csv(ts_results, file = paste0(write_result_path, result_file_name), row.names = TRUE)
+	  write.csv(ts_results, file = paste0(write_result_path, result_file_name, ".csv"), row.names = TRUE)
 	}
 	
 	result_path.csv <- read.csv(output_dp)
