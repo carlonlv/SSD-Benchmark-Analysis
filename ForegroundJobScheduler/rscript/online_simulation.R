@@ -34,30 +34,38 @@ define.inputs <- function(model_name, param, sample_size, write_result, schedule
   write_result_path <- NULL
   if (Sys.info()["sysname"] == "Windows") {
     write_result_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//ts_results//"
-  } else {
+  } else if (Sys.info()["sysname"] == "Darwin") {
     write_result_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/ts_results/"
+  } else {
+    write_result_path <- "/home/jialun/Research-Projects/ForegroundJobScheduler/results/online results/ts_results/"
   }
   
   bg_jobs_path <- NULL
   if (Sys.info()["sysname"] == "Windows") {
     bg_jobs_path <- "C://Users//carlo//Documents//sample background jobs//"
-  } else {
+  } else if (Sys.info()["sysname"] == "Darwin") {
     bg_jobs_path <- "/Users/carlonlv/Documents/microsoft traces/"
+  } else {
+    bg_jobs_path <- "/home/jialun/Documents/microsoft traces/"
   }
   
   bg_job_pool <- NULL
   if (sample_size == 100 ) {
     if (Sys.info()["sysname"] == "Windows") {
       bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled 100 background jobs.csv")[,1]
-    } else {
+    } else if (Sys.info()["sysname"] == "Darwin") {
       bg_job_pool <- read.csv("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/pythonscripts/list of sampled 100 background jobs.csv")[,1]
+    } else {
+      bg_job_pool <- read.csv("/home/jialun/Research-Projects/ForegroundJobScheduler/pythonscripts/list of sampled 100 background jobs.csv")[,1]
     }
     bg_job_pool <- sub(".pd", "", bg_job_pool)
   } else {
     if (Sys.info()["sysname"] == "Windows") {
       bg_job_pool <- read.csv("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//pythonscripts//list of sampled background jobs.csv")[,1]
-    } else {
+    } else if (Sys.info()["sysname"] == "Darwin") {
       bg_job_pool <- read.csv("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/pythonscripts/list of sampled background jobs.csv")[,1]
+    } else {
+      bg_job_pool <- read.csv("/home/jialun/Research-Projects/ForegroundJobScheduler/pythonscripts/list of sampled background jobs.csv")[,1]
     }
     bg_job_pool <- sub(".pd", "", bg_job_pool)
   }
