@@ -92,28 +92,36 @@ define.inputs <- function(model_name, param, sample_size, write_result, schedule
     if (schedule_policy == "dynamic") {
       if (Sys.info()["sysname"] == "Windows") {
         output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary dynamic (windows,granularity) post adj.csv"
-      } else {
+      } else if (Sys.info()["sysname"] == "Darwin"){
         output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary dynamic (windows,granularity) post adj.csv"
+      } else {
+        output_dp <- "/home/jialun/Research-Projects/ForegroundJobScheduler/results/online results/summary dynamic (windows,granularity) post adj.csv"
       }
     } else {
       if (Sys.info()["sysname"] == "Windows") {
         output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary disjoint (windows,granularity) post adj.csv"
-      } else {
+      } else if (Sys.info()["sysname"] == "Darwin") {
         output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity) post adj.csv"
+      } else {
+        output_dp <- "/home/jialun/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity) post adj.csv"
       }
     }
   } else {
     if (schedule_policy == "dynamic") {
       if (Sys.info()["sysname"] == "Windows") {
         output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary dynamic (windows,granularity).csv"
-      } else {
+      } else if (Sys.info()["sysname"] == "Darwin") {
         output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary dynamic (windows,granularity).csv"
+      } else {
+        output_dp <- "/home/jialun/Research-Projects/ForegroundJobScheduler/results/online results/summary dynamic (windows,granularity).csv"
       }
     } else {
       if (Sys.info()["sysname"] == "Windows") {
         output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary disjoint (windows,granularity).csv"
-      } else {
+      } else if (Sys.info()) {
         output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity).csv"
+      } else {
+        output_dp <- "/home/jialun/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity).csv"
       }
     }
   }
@@ -121,56 +129,70 @@ define.inputs <- function(model_name, param, sample_size, write_result, schedule
   if (model_name == "AR1") {
     if (Sys.info()["sysname"] == "Windows") {
       source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//online scripts//svt_ar1_model.R")
-    } else {
+    } else if (Sys.info()["sysname"] == "Darwin") {
       source("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/rscript/online scripts/svt_ar1_model.R")
+    } else {
+      source("/home/jialun/Research-Projects/ForegroundJobScheduler/rscript/online scripts/svt_ar1_model.R")
     }
     param <- ifelse(is.null(param), generate_default_df(FALSE, FALSE), param)
     slt <- apply(param, 1, wrapper.epoche, data_matrix, (100-cpu_required), output_dp, schedule_policy, write_result, write_result_path)
   } else if (model_name == "VAR1") {
     if (Sys.info()["sysname"] == "Windows") {
       source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//online scripts//mvt_stationary_model.R")
-    } else {
+    } else if (Sys.info()["sysname"] == "Darwin") {
       source("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/rscript/online scripts/mvt_stationary_model.R")
+    } else {
+      source("/home/jialun/Research-Projects/ForegroundJobScheduler/rscript/online scripts/mvt_stationary_model.R")
     }
     param <- ifelse(is.null(param), generate_default_df(FALSE, FALSE), param)
     slt <- apply(param, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), output_dp, schedule_policy, write_result, write_result_path)
   } else if (model_name == "Markov") {
     if (Sys.info()["sysname"] == "Windows") {
       source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//online scripts//markov_model.R")
-    } else {
+    } else if (Sys.info()["sysname"] == "Darwin") {
       source("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/rscript/online scripts/markov_model.R")
+    } else {
+      source("/home/jialun/Research-Projects/ForegroundJobScheduler/rscript/online scripts/markov_model.R")
     }
     param <- ifelse(is.null(param), generate_default_df(FALSE, TRUE), param)
     slt <- apply(param, 1, wrapper.epoche, data_matrix, (100-cpu_required), output_dp, schedule_policy, write_result, write_result_path)
   } else if (model_name == "AR1_Markov") {
     if (Sys.info()["sysname"] == "Windows") {
       source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//online scripts//ar1_markov_model.R")
-    } else {
+    } else if (Sys.info()["sysname"] == "Darwin") {
       source("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/rscript/online scripts/ar1_markov_model.R")
+    } else {
+      source("/home/jialun/Research-Projects/ForegroundJobScheduler/rscript/online scripts/ar1_markov_model.R")
     }
     param <- ifelse(is.null(param), generate_default_df(FALSE, TRUE), param)
     slt <- apply(param, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), output_dp, schedule_policy, write_result, write_result_path)
   } else if (model_name == "AR1_logistic_lm") {
     if (Sys.info()["sysname"] == "Windows") {
       source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//online scripts//svt_ar1_logistic_model.R")
-    } else {
+    } else if (Sys.info()["sysname"] == "Darwin") {
       source("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/rscript/online scripts/svt_ar1_logistic_model.R")
+    } else {
+      source("/home/jialun/Research-Projects/ForegroundJobScheduler/rscript/online scripts/svt_ar1_logistic_model.R")
     }
     param <- ifelse(is.null(param), generate_default_df(TRUE, FALSE), param)
     slt <- apply(param, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), output_dp, schedule_policy, "lm", write_result, write_result_path)
   } else if (model_name == "AR1_logistic_glm") {
     if (Sys.info()["sysname"] == "Windows") {
       source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//online scripts//svt_ar1_logistic_model.R")
-    } else {
+    } else if (Sys.info()["sysname"] == "Darwin") {
       source("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/rscript/online scripts/svt_ar1_logistic_model.R")
+    } else {
+      source("/home/jialun/Research-Projects/ForegroundJobScheduler/rscript/online scripts/svt_ar1_logistic_model.R")
     }
     param <- ifelse(is.null(param), generate_default_df(TRUE, FALSE), param)
     slt <- apply(param, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), output_dp, schedule_policy, "glm", write_result, write_result_path)
   } else if (model_name == "AR1_state_based_logistic") {
     if (Sys.info()["sysname"] == "Windows") {
       source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//online scripts//svt_ar1_state_based_logistic_model.R")
-    } else {
+    } else if (Sys.info()["sysname"] == "Darwin") {
       source("/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/rscript/online scripts/svt_ar1_state_based_logistic_model.R")
+    } else {
+      source("/home/jialun/Research-Projects/ForegroundJobScheduler/rscript/online scripts/svt_ar1_state_based_logistic_model.R")
     }
     param <- ifelse(is.null(param), generate_default_df(FALSE, TRUE), param)
     slt <- apply(param, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), output_dp, schedule_policy, write_result, write_result_path)
