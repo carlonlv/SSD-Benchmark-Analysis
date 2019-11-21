@@ -12,11 +12,17 @@ cores <- ifelse(Sys.info()["sysname"] == "Windows", 1, detectCores(all.tests = F
 
 train_ar1_model <- function(ts_num, train_dataset) {
   
-  ts_model <- tryCatch({
-    arima(x=train_dataset[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000))
+  suppressWarnings(ts_model <- tryCatch({
+    arima(x=train_dataset, order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000), optim.method="Nelder-Mead")
+  }, warning = function(w) {
+    arima(x=train_dataset, order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000), optim.method="BFGS")
   }, error = function(cond) {
-    return(arima(x=train_dataset[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "ML", optim.control = list(maxit=2000)))
-  })
+    ts_model_relax <- tryCatch({
+      arima(x=train_dataset, order = c(1,0,0), include.mean = TRUE, method = "ML", optim.control = list(maxit=2000), transform.pars = FALSE, optim.method="BFGS")
+    }, error = function(cond) {
+      arima(x=train_dataset, order = c(1,0,0), include.mean = TRUE, method = "CSS", optim.control = list(maxit=2000), transform.pars = TRUE, optim.method="CG")
+    })
+  }))
   return(list("coeffs"=as.numeric(ts_model$coef[1]), "means"= as.numeric(ts_model$coef[2]), "vars"=ts_model$sigma2))
 }
 
@@ -44,7 +50,7 @@ parser_for_logistic_model <- function(train_set_max, train_set_avg, cpu_required
 train_logistic_model <- function(ts_num, train_dataset_max, train_dataset_avg, cpu_required) {
   
   logistic_input <- parser_for_logistic_model(train_dataset_max[,ts_num], train_dataset_avg[,ts_num], cpu_required[ts_num])
-  log.lm <- glm(survived~avg, data = logistic_input, family = "binomial", control=glm.control(maxit=2000))
+  suppressWarnings(log.lm <- glm(survived~avg, data = logistic_input, family = "binomial", control=glm.control(maxit=2000)))
   return(log.lm) 
 }
 
@@ -99,16 +105,20 @@ train_cond_var_model <- function(ts_num, train_set_max, train_set_avg, bin_num, 
   sd.lm <- NULL
   if (nrow(new_parsed_dat) >= 3) {
     if (method == "lm") {
-      sd.lm <- lm(sd~bin+I(bin^2), data = new_parsed_dat)
+      suppressWarnings(sd.lm <- lm(sd~bin+I(bin^2), data = new_parsed_dat))
     } else {
-      sd.lm <- glm(sd~bin, data = new_parsed_dat, family = Gamma(link="log"))
+      suppressWarnings(sd.lm <- tryCatch({
+        glm(sd~bin, data = new_parsed_dat, family = Gamma(link="log"), control = glm.control(maxit=2000))
+      }, error = function(cond) {
+        tryCatch({
+          glm(sd~bin, data = new_parsed_dat, family = Gamma(link="inverse"), control = glm.control(maxit=2000))
+        }, error = function(cond) {
+          lm(sd~bin+I(bin^2), data = new_parsed_dat)
+        })
+      }))
     }
   } else if (nrow(new_parsed_dat) == 2) {
-    if (method == "lm") {
-      sd.lm <- lm(sd~bin, data = new_parsed_dat)
-    } else {
-      sd.lm <- glm(sd~bin, data = new_parsed_dat)
-    }
+    suppressWarnings(sd.lm <- lm(sd~bin, data = new_parsed_dat))
   } else {
     sd.lm <- new_parsed_dat$sd
   }
@@ -411,7 +421,7 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
                                "correct_scheduled_rate"=(output$correct_scheduled_num[,1] / output$scheduled_num[,1]),
                                "correct_unscheduled_rate"=(output$correct_unscheduled_num[,1] / output$unscheduled_num[,1]))
       rownames(ts_results) <- colnames(dataset_max)
-      result_file_name <- paste("AR1_logistic_glm", schedule_policy, 0, prob_cut_off, granularity, window_size, nrow(dataset_max), bin_num, train_size, update_freq)
+      result_file_name <- paste("AR1_logistic_glm", schedule_policy, 0, prob_cut_off, granularity, window_size, nrow(dataset_max), bin_num)
       write.csv(ts_results, file = paste0(write_result_path, result_file_name, ".csv"), row.names = TRUE)
     }
     

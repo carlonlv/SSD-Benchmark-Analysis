@@ -13,7 +13,7 @@ generate_default_df <- function(include.bin, include.state) {
     parameter.df <- parameter.df %>%
       arrange(window_size, granularity, prob_cut_off, num_of_states, num_of_bins)
   } else if (include.state & !include.bin) {
-    parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity)
+    parameter.df <- expand.grid(window_sizes, prob_cut_offs, granularity, num_of_states)
     colnames(parameter.df) <- c("window_size", "prob_cut_off", "granularity", "num_of_states")
     parameter.df <- parameter.df %>%
       arrange(window_size, granularity, prob_cut_off, num_of_states)
@@ -141,7 +141,7 @@ define.inputs <- function(model_name, param, sample_size, adjustment, write_resu
     if (suppressWarnings(is.na(param))) {
       parameter.df <- generate_default_df(FALSE, FALSE)
     }
-    slt <- apply(paramter.df, 1, wrapper.epoche, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment, write_result, write_result_path)
+    slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment, write_result, write_result_path)
   } else if (model_name == "VAR1") {
     if (Sys.info()["sysname"] == "Windows") {
       source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//offline scripts//mvt_stationary_model.R")
@@ -154,7 +154,7 @@ define.inputs <- function(model_name, param, sample_size, adjustment, write_resu
     if (suppressWarnings(is.na(param))) {
       parameter.df <- generate_default_df(FALSE, FALSE)
     }
-    slt <- apply(paramter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment, write_result, write_result_path)
+    slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment, write_result, write_result_path)
   } else if (model_name == "Markov") {
     if (Sys.info()["sysname"] == "Windows") {
       source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//offline scripts//markov_model.R")
@@ -167,7 +167,7 @@ define.inputs <- function(model_name, param, sample_size, adjustment, write_resu
     if (suppressWarnings(is.na(param))) {
       parameter.df <- generate_default_df(FALSE, TRUE)
     }
-    slt <- apply(paramter.df, 1, wrapper.epoche, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment, write_result, write_result_path)
+    slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment, write_result, write_result_path)
   } else if (model_name == "AR1_Markov") {
     if (Sys.info()["sysname"] == "Windows") {
       source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//offline scripts//ar1_markov_model.R")
@@ -180,7 +180,7 @@ define.inputs <- function(model_name, param, sample_size, adjustment, write_resu
     if (suppressWarnings(is.na(param))) {
       parameter.df <- generate_default_df(FALSE, TRUE)
     }
-    slt <- apply(paramter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment, write_result, write_result_path)
+    slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment, write_result, write_result_path)
   } else if (model_name == "AR1_logistic_lm") {
     if (Sys.info()["sysname"] == "Windows") {
       source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//offline scripts//svt_ar1_logistic_model.R")
@@ -193,7 +193,7 @@ define.inputs <- function(model_name, param, sample_size, adjustment, write_resu
     if (suppressWarnings(is.na(param))) {
       parameter.df <- generate_default_df(TRUE, FALSE)
     }
-    slt <- apply(paramter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, "lm", output_dp, schedule_policy, adjustment, write_result, write_result_path)
+    slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, "lm", output_dp, schedule_policy, adjustment, write_result, write_result_path)
   } else if (model_name == "AR1_logistic_glm") {
     if (Sys.info()["sysname"] == "Windows") {
       source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//offline scripts//svt_ar1_logistic_model.R")
@@ -206,7 +206,7 @@ define.inputs <- function(model_name, param, sample_size, adjustment, write_resu
     if (suppressWarnings(is.na(param))) {
       parameter.df <- generate_default_df(TRUE, FALSE)
     }
-    slt <- apply(paramter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, "glm", output_dp, schedule_policy, adjustment, write_result, write_result_path)
+    slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, "glm", output_dp, schedule_policy, adjustment, write_result, write_result_path)
   } else if (model_name == "AR1_state_based_logistic") {
     if (Sys.info()["sysname"] == "Windows") {
       source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//offline scripts//svt_ar1_state_based_logistic_model.R")
@@ -219,7 +219,7 @@ define.inputs <- function(model_name, param, sample_size, adjustment, write_resu
     if (suppressWarnings(is.na(param))) {
       parameter.df <- generate_default_df(FALSE, TRUE)
     }
-    slt <- apply(paramter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment, write_result, write_result_path)
+    slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment, write_result, write_result_path)
   }
 }
 

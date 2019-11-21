@@ -118,7 +118,7 @@ train_cond_var_model <- function(train_set_max, train_set_avg, bin_num, method) 
       }))
     }
   } else if (nrow(new_parsed_dat) == 2) {
-    sd.lm <- lm(sd~bin, data = new_parsed_dat)
+    suppressWarnings(sd.lm <- lm(sd~bin, data = new_parsed_dat))
   } else {
     sd.lm <- new_parsed_dat$sd
   }

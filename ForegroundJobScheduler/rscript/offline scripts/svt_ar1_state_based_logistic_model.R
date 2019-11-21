@@ -23,11 +23,17 @@ do_prediction_ar1 <- function(last_obs, phi, mean, variance) {
 
 train_ar1_model <- function(ts_num, train_dataset) {
   
-  ts_model <- tryCatch({
-    arima(x=train_dataset[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000))
+  suppressWarnings(ts_model <- tryCatch({
+    arima(x=train_dataset, order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000), optim.method="Nelder-Mead")
+  }, warning = function(w) {
+    arima(x=train_dataset, order = c(1,0,0), include.mean = TRUE, method = "CSS-ML", optim.control = list(maxit=2000), optim.method="BFGS")
   }, error = function(cond) {
-    return(arima(x=train_dataset[, ts_num], order = c(1,0,0), include.mean = TRUE, method = "ML", optim.control = list(maxit=2000)))
-  })
+    ts_model_relax <- tryCatch({
+      arima(x=train_dataset, order = c(1,0,0), include.mean = TRUE, method = "ML", optim.control = list(maxit=2000), transform.pars = FALSE, optim.method="BFGS")
+    }, error = function(cond) {
+      arima(x=train_dataset, order = c(1,0,0), include.mean = TRUE, method = "CSS", optim.control = list(maxit=2000), transform.pars = TRUE, optim.method="CG")
+    })
+  }))
   return(list("coeffs"=as.numeric(ts_model$coef[1]), "means"= as.numeric(ts_model$coef[2]), "vars"=ts_model$sigma2))
 }
 
@@ -50,7 +56,7 @@ parser_logistic_model_states <- function(ts_num, train_set_avg, train_set_max, b
 train_multi_state_logistic_model <- function(state_num, parsed_states_input) {
   
   df <- parsed_states_input[[state_num]]
-  log.lm <- glm(survived~avg, data=df, family="binomial", control=glm.control(maxit=200))
+  suppressWarnings(log.lm <- glm(survived~avg, data=df, family="binomial", control=glm.control(maxit=2000)))
   return(log.lm)
 }
 
@@ -362,7 +368,7 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
                              "correct_scheduled_rate"=(output$correct_scheduled_num[,1] / output$scheduled_num[,1]),
                              "correct_unscheduled_rate"=(output$correct_unscheduled_num[,1] / output$unscheduled_num[,1]))
     rownames(ts_results) <- colnames(dataset_max)
-    result_file_name <- paste("AR1_state_based_logistic", schedule_policy, num_of_states, prob_cut_off, granularity, window_size, nrow(dataset_max), 0, train_size, update_freq)
+    result_file_name <- paste("AR1_state_based_logistic", schedule_policy, num_of_states, prob_cut_off, granularity, window_size, nrow(dataset_max), 0)
     write.csv(ts_results, file = paste0(write_result_path, result_file_name, ".csv"), row.names = TRUE)
   }
   

@@ -45,7 +45,7 @@ if (action == "file") {
   ## File mandatory flags
   file_path <- arg_checker("--file", args)
   param <- ifelse(file_path == "default", NA, file_path)
-  if (!any(model == c("AR1", "VAR1", "AR1_logistic_lm", "AR1_logistic_glm", "AR1_Markov", "Markov"))) {
+  if (!any(model == c("AR1", "VAR1", "AR1_logistic_lm", "AR1_logistic_glm", "AR1_Markov", "Markov", "AR1_state_based_logistic"))) {
     stop("Usage: --model <model name>")
   }
   ## File alternative flags
