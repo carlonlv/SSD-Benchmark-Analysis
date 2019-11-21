@@ -142,6 +142,8 @@ scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, co
   seek_length <- window_size
   last_time_schedule <- nrow(test_dataset_avg) - window_size + 1
   
+  logistic_model <- logistic_models[[ts_num]]
+  
   current_end <- window_size + 1
   update_policy <- ifelse(schedule_policy == "disjoint", window_size, 1)
   while (current_end <= last_time_schedule) {
@@ -149,7 +151,6 @@ scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, co
     ## Predict current avgs using AR1
     last_obs <- convert_frequency_dataset(test_dataset_avg[(current_end-window_size):(current_end-1), ts_num], window_size, mode = "avg")
     expected_avgs <- do_prediction(last_obs, coeffs[ts_num], means[ts_num], vars[ts_num])$mu
-    logistic_model <- logistic_models[[ts_num]]
     prediction_prob <- 1 - predict(logistic_model, newdata = data.frame("avg"=expected_avgs), type = "response")
     
     prediction <- ifelse(prediction_prob <= prob_cut_off, 1, 0)
@@ -178,7 +179,9 @@ scheduling_foreground <- function(ts_num, test_dataset_max, test_dataset_avg, co
 }
 
 
-find_expected_max <- function(probability, variance, cpu_required, expected_avgs) {
+find_expected_max <- function(logistic_model, variance, cpu_required, expected_avgs) {
+  
+  probability <- 1 - predict(logistic_model, newdata = data.frame("avg"=expected_avgs), type = "response")
   
   if (probability == 1) {
     return(100)
@@ -216,9 +219,7 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs,
     
     expected_vars <- generate_expected_conditional_var(expected_avgs, cond_var_model)
     
-    prob <- 1 - predict(logistic_model, newdata = data.frame("avg"=expected_avgs), type = "response")
-    
-    expected_max <- find_expected_max(prob, expected_vars, cpu_required[ts_num], expected_avgs)
+    expected_max <- find_expected_max(logistic_model, expected_vars, cpu_required[ts_num], expected_avgs)
     
     pi_up <- compute_pi_up(mu=expected_max, varcov=as.matrix(expected_vars), predict_size=1, prob_cutoff=prob_cut_off, granularity=granularity)
     pi_ups <- c(pi_ups, pi_up)
