@@ -31,15 +31,17 @@ train_markov_model <- function(train_dataset_avg, train_dataset_max, num_of_stat
   
   from_states <- sapply(train_dataset_avg, find_state_num, num_of_states)
   to_states <- sapply(train_dataset_max, find_state_num, num_of_states)
+  uncond_dist <- rep(0, num_of_states)
   transition <- matrix(0, nrow=num_of_states, ncol=num_of_states)
   for (i in 1:length(from_states)) {
     from <- from_states[i]
     to <- to_states[i]
     transition[from, to] <- transition[from, to] + 1
+    uncond_dist[to] <- uncond_dist[to] + 1
   }
   for (r in 1:ncol(transition)) {
     if (sum(transition[r,]) == 0) {
-      transition[r,] <- rep(100 / num_of_states, num_of_states)
+      transition[r,] <- uncond_dist
     } else {
       transition[r,] <- transition[r,] / sum(transition[r,])
     }
@@ -75,10 +77,10 @@ do_prediction_markov <- function(predictor, transition, predict_size, level=NULL
   if (predict_size > 1) {
     for (i in 1:(predict_size-1)) {
       final_transition <- final_transition %*% parsed_transition
-      to_states <- rbind(to_states, final_transition[from, ])
+      to_states <- rbind(to_states, final_transition[from,])
     }
   } else {
-    to_states <- rbind(to_states, final_transition[from, ])
+    to_states <- rbind(to_states, final_transition[from,])
   }
   
   # calculate probability
