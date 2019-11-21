@@ -171,5 +171,5 @@ if (adjustment) {
 model_names <- c("AR1", "VAR1", "Markov", "AR1_Markov", "AR1_state_based_logistic", "AR1_logistic_lm", "AR1_logistic_glm")
 
 ar_results <- read.csv(data_path)
-plot_results(ar_results, sample_size, window_size, model_name = model_names[c(1,2,3,4,5)], 2, schedule_policy, simulation, adjustment)
+plot_results(ar_results, sample_size, window_size, model_name = model_names[c(1,2,6,7)], 2, schedule_policy, simulation, adjustment)
 
