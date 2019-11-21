@@ -377,7 +377,7 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
                              "correct_scheduled_rate"=(output$correct_scheduled_num[,1] / output$scheduled_num[,1]),
                              "correct_unscheduled_rate"=(output$correct_unscheduled_num[,1] / output$unscheduled_num[,1]))
     rownames(ts_results) <- colnames(dataset_max)
-    result_file_name <- paste("AR1_Markov", schedule_policy, num_of_states, prob_cut_off, granularity, window_size, nrow(dataset_max), 0)
+    result_file_name <- paste("AR1_Markov", schedule_policy, num_of_states, prob_cut_off, granularity, window_size, 0)
     write.csv(ts_results, file = paste0(write_result_path, result_file_name, ".csv"), row.names = TRUE)
   }
   

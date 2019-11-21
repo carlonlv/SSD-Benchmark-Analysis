@@ -395,7 +395,7 @@ wrapper.epoche <- function(parameter, dataset_max, dataset_avg, cpu_required, ou
                                "correct_scheduled_rate"=(output$correct_scheduled_num[,1] / output$scheduled_num[,1]),
                                "correct_unscheduled_rate"=(output$correct_unscheduled_num[,1] / output$unscheduled_num[,1]))
       rownames(ts_results) <- colnames(dataset_max)
-      result_file_name <- paste("AR1_logistic_lm", schedule_policy, 0, prob_cut_off, granularity, window_size, nrow(dataset_max), bin_num, train_size, update_freq)
+      result_file_name <- paste("AR1_logistic_lm", schedule_policy, 0, prob_cut_off, granularity, window_size, bin_num, train_size, update_freq)
       write.csv(ts_results, file = paste0(write_result_path, result_file_name, ".csv"), row.names = TRUE)
     }
     
@@ -410,7 +410,7 @@ wrapper.epoche <- function(parameter, dataset_max, dataset_avg, cpu_required, ou
                                "correct_scheduled_rate"=(output$correct_scheduled_num[,1] / output$scheduled_num[,1]),
                                "correct_unscheduled_rate"=(output$correct_unscheduled_num[,1] / output$unscheduled_num[,1]))
       rownames(ts_results) <- colnames(dataset_max)
-      result_file_name <- paste("AR1_logistic_glm", schedule_policy, 0, prob_cut_off, granularity, window_size, nrow(dataset_max), bin_num, train_size, update_freq)
+      result_file_name <- paste("AR1_logistic_glm", schedule_policy, 0, prob_cut_off, granularity, window_size, bin_num, train_size, update_freq)
       write.csv(ts_results, file = paste0(write_result_path, result_file_name, ".csv"), row.names = TRUE)
     }
     

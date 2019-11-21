@@ -369,8 +369,7 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
   window_size <- as.numeric(parameter["window_size"])
   prob_cut_off <- as.numeric(parameter["prob_cut_off"])
   granularity <- as.numeric(parameter["granularity"])
-  train_size <- as.numeric(parameter["train_size"])
-  update_freq <- as.numeric(parameter["update_freq"])
+  bin_num <- as.numeric(parameter["num_of_bins"])
   
   print(paste("Job len:", window_size))
   print(paste("Cut off prob:", prob_cut_off))
@@ -406,12 +405,12 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
                                "correct_scheduled_rate"=(output$correct_scheduled_num[,1] / output$scheduled_num[,1]),
                                "correct_unscheduled_rate"=(output$correct_unscheduled_num[,1] / output$unscheduled_num[,1]))
       rownames(ts_results) <- colnames(dataset_max)
-      result_file_name <- paste("AR1_logistic_lm", schedule_policy, 0, prob_cut_off, granularity, window_size, nrow(dataset_max), bin_num, train_size, update_freq)
+      result_file_name <- paste("AR1_logistic_lm", schedule_policy, 0, prob_cut_off, granularity, window_size, bin_num)
       write.csv(ts_results, file = paste0(write_result_path, result_file_name, ".csv"), row.names = TRUE)
     }
     
     result_path.csv <- read.csv(output_dp)
-    result_path.csv <- update.df(result_path.csv, "AR1_logistic_lm", prob_cut_off, 0, sample_size, window_size, granularity, bin_num, train_size, update_freq, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
+    result_path.csv <- update.df(result_path.csv, "AR1_logistic_lm", prob_cut_off, 0, sample_size, window_size, granularity, bin_num, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
     write.csv(result_path.csv, file = output_dp, row.names = FALSE)
   } else {
     if (write_result == TRUE) {
@@ -421,12 +420,12 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
                                "correct_scheduled_rate"=(output$correct_scheduled_num[,1] / output$scheduled_num[,1]),
                                "correct_unscheduled_rate"=(output$correct_unscheduled_num[,1] / output$unscheduled_num[,1]))
       rownames(ts_results) <- colnames(dataset_max)
-      result_file_name <- paste("AR1_logistic_glm", schedule_policy, 0, prob_cut_off, granularity, window_size, nrow(dataset_max), bin_num)
+      result_file_name <- paste("AR1_logistic_glm", schedule_policy, 0, prob_cut_off, granularity, window_size, bin_num)
       write.csv(ts_results, file = paste0(write_result_path, result_file_name, ".csv"), row.names = TRUE)
     }
     
     result_path.csv <- read.csv(output_dp)
-    result_path.csv <- update.df(result_path.csv, "AR1_logistic_glm", prob_cut_off, 0, sample_size, window_size, granularity, bin_num, train_size, update_freq, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
+    result_path.csv <- update.df(result_path.csv, "AR1_logistic_glm", prob_cut_off, 0, sample_size, window_size, granularity, bin_num, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
     write.csv(result_path.csv, file = output_dp, row.names = FALSE)
   }
 }

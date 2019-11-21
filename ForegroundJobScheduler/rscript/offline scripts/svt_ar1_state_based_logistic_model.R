@@ -338,7 +338,7 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
   print(paste("Job len:", window_size))
   print(paste("Cut off prob:", prob_cut_off))
   print(paste("Granularity:", granularity))
-  print(paste("BinNum:", num_of_states))
+  print(paste("State Num:", num_of_states))
   
   print(system.time(output <- ar_logistic_model(dataset_avg, dataset_max, initial_train_size, prob_cut_off, max_run_length, window_size, cpu_required, num_of_states, granularity, adjustment)))
   
@@ -368,11 +368,11 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
                              "correct_scheduled_rate"=(output$correct_scheduled_num[,1] / output$scheduled_num[,1]),
                              "correct_unscheduled_rate"=(output$correct_unscheduled_num[,1] / output$unscheduled_num[,1]))
     rownames(ts_results) <- colnames(dataset_max)
-    result_file_name <- paste("AR1_state_based_logistic", schedule_policy, num_of_states, prob_cut_off, granularity, window_size, nrow(dataset_max), 0)
+    result_file_name <- paste("AR1_state_based_logistic", schedule_policy, num_of_states, prob_cut_off, granularity, window_size, 0)
     write.csv(ts_results, file = paste0(write_result_path, result_file_name, ".csv"), row.names = TRUE)
   }
   
   result_path.csv <- read.csv(output_dp)
-  result_path.csv <- update.df(result_path.csv, "AR1_state_based_logistic", prob_cut_off, num_of_states , sample_size, window_size, granularity, 0, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
+  result_path.csv <- update.df(result_path.csv, "AR1_state_based_logistic", prob_cut_off, num_of_states, sample_size, window_size, granularity, 0, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
   write.csv(result_path.csv, file = output_dp, row.names = FALSE)
 }
