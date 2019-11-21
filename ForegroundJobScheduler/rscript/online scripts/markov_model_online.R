@@ -180,7 +180,7 @@ scheduling_model <- function(test_dataset, transition, window_size, prob_cut_off
         if (!run_switch) {
           run_switch <- TRUE
         } else {
-          survival[length(survival)] <- survival[length(survival)]
+          survival[length(survival)] <- ifelse(adjustment, NA, survival[length(survival)])
         }
       }
     }

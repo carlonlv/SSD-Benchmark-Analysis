@@ -135,7 +135,7 @@ scheduling_model <- function(test_dataset, coeffs, means, vars, window_size, pro
         if (!run_switch) {
           run_switch <- TRUE
         } else {
-          survival[length(survival)] <- survival[length(survival)]
+          survival[length(survival)] <- ifelse(adjustment, NA, survival[length(survival)])
         }
       }
     }

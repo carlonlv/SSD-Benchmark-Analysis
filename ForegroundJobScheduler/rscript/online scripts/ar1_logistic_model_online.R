@@ -230,7 +230,7 @@ scheduling_model <- function(test_dataset_max, test_dataset_avg, coeffs, means, 
         if (!run_switch) {
           run_switch <- TRUE
         } else {
-          survival[length(survival)] <- survival[length(survival)]
+          survival[length(survival)] <- ifelse(adjustment, NA, survival[length(survival)])
         }
       }
     }

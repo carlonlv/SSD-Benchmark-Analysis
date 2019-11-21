@@ -217,7 +217,7 @@ scheduling_foreground <- function(test_dataset_max, test_dataset_avg, ts_model, 
 }
 
 
-scheduling_model <- function(test_dataset_max, test_dataset_avg, ts_model, window_size, prob_cut_off, granularity, schedule_policy) {
+scheduling_model <- function(test_dataset_max, test_dataset_avg, ts_model, window_size, prob_cut_off, granularity, schedule_policy, adjustment) {
   
   run_switch <- FALSE
   
@@ -266,7 +266,7 @@ scheduling_model <- function(test_dataset_max, test_dataset_avg, ts_model, windo
         if (!run_switch) {
           run_switch <- TRUE
         } else {
-          survival[length(survival)] <- survival[length(survival)]
+          survival[length(survival)] <- ifelse(adjustment, NA, survival[length(survival)])
         }
       }
     }
