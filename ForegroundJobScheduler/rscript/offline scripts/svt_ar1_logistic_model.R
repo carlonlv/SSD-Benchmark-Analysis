@@ -265,7 +265,7 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs,
 }
 
 
-ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob_cut_off, max_run_length, window_size, cpu_required, cond.var, granularity, bin_num=NULL, adjustment) {
+ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob_cut_off, max_run_length, window_size, cpu_required, granularity, cond.var, bin_num, adjustment) {
   #### input dataset_avg, dataset_max: N by M matrix, N being number of observations, M being number of time series
   #### input initial_train_size: The number of first observations used to train the model
   #### input window_size: The number of observations used to train and predict as one sample
@@ -377,7 +377,7 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
   print(paste("Granularity:", granularity))
   print(paste("BinNum:", bin_num))
   
-  print(system.time(output <- ar_logistic_model(dataset_avg, dataset_max, initial_train_size, prob_cut_off, max_run_length, window_size, cpu_required, cond.var, granularity, bin_num, adjustment)))
+  print(system.time(output <- ar_logistic_model(dataset_avg, dataset_max, initial_train_size, prob_cut_off, max_run_length, window_size, cpu_required, granularity, cond.var, bin_num, adjustment)))
   
   overall_evaluation <- find_overall_evaluation(output$avg_usage[,1], output$avg_usage[,2], output$job_survival[,1])
   
