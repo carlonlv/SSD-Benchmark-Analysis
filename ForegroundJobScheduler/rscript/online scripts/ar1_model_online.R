@@ -92,7 +92,7 @@ scheduling_foreground <- function(test_dataset, coeffs, means, vars, window_size
 }
 
 
-scheduling_model <- function(test_dataset, coeffs, means, vars, window_size, prob_cut_off, granularity, schedule_policy) {
+scheduling_model <- function(test_dataset, coeffs, means, vars, window_size, prob_cut_off, granularity, schedule_policy, adjustment) {
   
   run_switch <- FALSE
   
@@ -148,7 +148,7 @@ scheduling_model <- function(test_dataset, coeffs, means, vars, window_size, pro
 }
 
 
-svt_model <- function(ts_num, dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy="disjoint") {
+svt_model <- function(ts_num, dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy="disjoint", adjustment) {
   
   data_set <- dataset[,ts_num]
   cpu_required <- cpu_required[ts_num]
@@ -182,7 +182,7 @@ svt_model <- function(ts_num, dataset, train_size, window_size, update_freq, pro
     
     ## Test Model
     result_foreground <- scheduling_foreground(test_set, coeffs, means, vars, window_size, prob_cut_off, cpu_required, granularity, schedule_policy)
-    result_model <- scheduling_model(test_set, coeffs, means, vars, window_size, prob_cut_off, granularity, schedule_policy)
+    result_model <- scheduling_model(test_set, coeffs, means, vars, window_size, prob_cut_off, granularity, schedule_policy, adjustment)
 
     ## Write Result
     scheduled_num <- scheduled_num + result_foreground$scheduled_num
@@ -204,7 +204,7 @@ svt_model <- function(ts_num, dataset, train_size, window_size, update_freq, pro
 }
 
 
-svt_stationary_model <- function(dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy="disjoint") {
+svt_stationary_model <- function(dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy="disjoint", adjustment) {
   
   scheduled_num <- c()
   unscheduled_num <- c()
@@ -219,7 +219,7 @@ svt_stationary_model <- function(dataset, train_size, window_size, update_freq, 
   
   ts_names <- colnames(dataset)
   
-  result <- mclapply(1:length(ts_names), svt_model, dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy, mc.cores=cores)
+  result <- mclapply(1:length(ts_names), svt_model, dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy, adjustment, mc.cores=cores)
   
   for (ts_num in 1:length(ts_names)) {
     scheduled_num <- c(scheduled_num, result[[ts_num]]$scheduled_num)
@@ -252,7 +252,7 @@ svt_stationary_model <- function(dataset, train_size, window_size, update_freq, 
 }
 
 
-wrapper.epoche <- function(parameter, dataset, cpu_required, output_dp, schedule_policy, write_result, write_result_path=NULL) {
+wrapper.epoche <- function(parameter, dataset, cpu_required, output_dp, schedule_policy, write_result, write_result_path, adjustment) {
   
   window_size <- as.numeric(parameter["window_size"])
   prob_cut_off <- as.numeric(parameter["prob_cut_off"])
@@ -266,7 +266,7 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, output_dp, schedule
   print(paste("Train Size:", train_size))
   print(paste("Update Freq:", update_freq))
   
-  print(system.time(output <- svt_stationary_model(dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy)))
+  print(system.time(output <- svt_stationary_model(dataset, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy, adjustment)))
   
   overall_evaluation <- find_overall_evaluation(output$avg_usage[,1], output$avg_usage[,2], output$job_survival[,1])
   
