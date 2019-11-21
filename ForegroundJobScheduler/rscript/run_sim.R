@@ -16,9 +16,11 @@ arg_checker <- function(check, args, mandatory=TRUE, default=NULL) {
 
 true_false_checker <- function(check, flag) {
   if (any(check == c("T", "True", "TRUE"))) {
-    adjustment <- TRUE
+    result <- TRUE
+    return(result)
   } else if (any(check == c("F", "False", "FALSE"))) {
-    adjustment <- FALSE
+    result <- FALSE
+    return(result)
   } else {
     stop(paste("Usage:", flag, "<True/False>"))
   }
@@ -40,6 +42,7 @@ schedule_policy <- arg_checker("--schedule", args)
 if (!any(schedule_policy == c("disjoint", "dynamic"))) {
   stop("Usage: -- schedule <disjoint/dynamic>")
 }
+adjustment <- true_false_checker(arg_checker("--adjust", args), "--adjust")
   
 if (action == "file") {
   ## File mandatory flags
@@ -70,11 +73,10 @@ if (action == "file") {
                 paste0("file_path=", file_path),
                 paste0("cpu_usage=", cpu_usage),
                 paste0("total_trace_length=", total_trace_length),
+                paste0("adjustment=", adjustment),
                 sep="\n")
-    define.inputs(model, param, sample_size, write_result, schedule_policy, cpu_usage=0.85, total_trace_length=8000)
+    define.inputs(model, param, sample_size, adjustment, write_result, schedule_policy, cpu_usage=0.85, total_trace_length=8000)
   } else if (simulation == "offline") {
-    ## Offline mandatory flags
-    adjustment <- true_false_checker(arg_checker("--adjust", args), "--adjust")
     ## Offline alternative flags
     max_run_length <- arg_checker("--max_run", args, FALSE, 37)
     initial_train_size <- arg_checker("--initial_train_size", args, FALSE, 6000)
@@ -147,12 +149,13 @@ if (action == "file") {
                 paste0("schedule_policy=", schedule_policy),
                 paste0("cpu_usage=", cpu_usage),
                 paste0("total_trace_length=", total_trace_length),
+                paste0("adjustment=", adjustment),
                 paste0("train_size=", train_size),
                 paste0("update_freq=", update_freq),
                 paste0("num_of_states=", num_of_states),
                 paste0("num_of_bins=", num_of_bins),
                 sep="\n")
-    define.inputs(model, param, sample_size, write_result, schedule_policy, cpu_usage, total_trace_length)
+    define.inputs(model, param, sample_size, adjustment, write_result, schedule_policy, cpu_usage, total_trace_length)
   } else if (simulation == "offline") {
     max_run_length <- arg_checker("--max_run", args, FALSE, 37)
     initial_train_size <- arg_checker("--initial_train_size", args, FALSE, 6000)

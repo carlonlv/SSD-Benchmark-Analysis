@@ -34,7 +34,7 @@ generate_default_df <- function(include.bin, include.state) {
   return(parameter.df)
 }
 
-define.inputs <- function(model_name, param, sample_size, write_result, schedule_policy, cpu_usage=0.85, total_trace_length=8000) {
+define.inputs <- function(model_name, param, sample_size, adjustment, write_result, schedule_policy, cpu_usage=0.85, total_trace_length=8000) {
   
   ## Read background job pool
   write_result_path <- NULL
@@ -94,21 +94,41 @@ define.inputs <- function(model_name, param, sample_size, write_result, schedule
   }
   
   output_dp <- NULL
-  if (schedule_policy == "dynamic") {
-    if (Sys.info()["sysname"] == "Windows") {
-      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary dynamic (windows,granularity).csv"
-    } else if (Sys.info()["sysname"] == "Darwin") {
-      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary dynamic (windows,granularity).csv"
+  if (adjustment) {
+    if (schedule_policy == "dynamic") {
+      if (Sys.info()["sysname"] == "Windows") {
+        output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary dynamic (windows,granularity) post adj.csv"
+      } else if (Sys.info()["sysname"] == "Darwin") {
+        output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary dynamic (windows,granularity) post adj.csv"
+      } else {
+        output_dp <- "/home/jialun/Research-Projects/ForegroundJobScheduler/results/offline results/summary dynamic (windows,granularity) post adj.csv"
+      }
     } else {
-      output_dp <- "/home/jialun/Research-Projects/ForegroundJobScheduler/results/online results/summary dynamic (windows,granularity).csv"
+      if (Sys.info()["sysname"] == "Windows") {
+        output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary disjoint (windows,granularity) post adj.csv"
+      } else if (Sys.info()["sysname"] == "Darwin") {
+        output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary disjoint (windows,granularity) post adj.csv"
+      } else {
+        output_dp <- "/home/jialun/Research-Projects/ForegroundJobScheduler/results/offline results/summary disjoint (windows,granularity) post adj.csv"
+      }
     }
   } else {
-    if (Sys.info()["sysname"] == "Windows") {
-      output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary disjoint (windows,granularity).csv"
-    } else if (Sys.info()["sysname"] == "Darwin") {
-      output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity).csv"
+    if (schedule_policy == "dynamic") {
+      if (Sys.info()["sysname"] == "Windows") {
+        output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary dynamic (windows,granularity).csv"
+      } else if (Sys.info()["sysname"] == "Darwin") {
+        output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary dynamic (windows,granularity).csv"
+      } else {
+        output_dp <- "/home/jialun/Research-Projects/ForegroundJobScheduler/results/offline results/summary dynamic (windows,granularity).csv"
+      }
     } else {
-      output_dp <- "/home/jialun/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity).csv"
+      if (Sys.info()["sysname"] == "Windows") {
+        output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary disjoint (windows,granularity).csv"
+      } else if (Sys.info()["sysname"] == "Darwin") {
+        output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary disjoint (windows,granularity).csv"
+      } else {
+        output_dp <- "/home/jialun/Research-Projects/ForegroundJobScheduler/results/offline results/summary disjoint (windows,granularity).csv"
+      }
     }
   }
   
@@ -124,7 +144,7 @@ define.inputs <- function(model_name, param, sample_size, write_result, schedule
     if (suppressWarnings(is.na(param))) {
       parameter.df <- generate_default_df(FALSE, FALSE)
     }
-    slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_max, (100-cpu_required), output_dp, schedule_policy, write_result, write_result_path)
+    slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_max, (100-cpu_required), output_dp, schedule_policy, write_result, write_result_path, adjustment)
   } else if (model_name == "VAR1") {
     if (Sys.info()["sysname"] == "Windows") {
       source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//online scripts//mvt_stationary_model_online.R")
@@ -137,7 +157,7 @@ define.inputs <- function(model_name, param, sample_size, write_result, schedule
     if (suppressWarnings(is.na(param))) {
       parameter.df <- generate_default_df(FALSE, FALSE)
     }
-    slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), output_dp, schedule_policy, write_result, write_result_path)
+    slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), output_dp, schedule_policy, write_result, write_result_path, adjustment)
   } else if (model_name == "Markov") {
     if (Sys.info()["sysname"] == "Windows") {
       source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//online scripts//markov_model_online.R")
@@ -150,7 +170,7 @@ define.inputs <- function(model_name, param, sample_size, write_result, schedule
     if (suppressWarnings(is.na(param))) {
       parameter.df <- generate_default_df(FALSE, TRUE)
     }
-    slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_max, (100-cpu_required), output_dp, schedule_policy, write_result, write_result_path)
+    slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_max, (100-cpu_required), output_dp, schedule_policy, write_result, write_result_path, adjustment)
   } else if (model_name == "AR1_Markov") {
     if (Sys.info()["sysname"] == "Windows") {
       source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//online scripts//ar1_markov_model_online.R")
@@ -163,7 +183,7 @@ define.inputs <- function(model_name, param, sample_size, write_result, schedule
     if (suppressWarnings(is.na(param))) {
       parameter.df <- generate_default_df(FALSE, TRUE)
     }
-    slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), output_dp, schedule_policy, write_result, write_result_path)
+    slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), output_dp, schedule_policy, write_result, write_result_path, adjustment)
   } else if (model_name == "AR1_logistic_lm") {
     if (Sys.info()["sysname"] == "Windows") {
       source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//online scripts//ar1_logistic_model_online.R")
@@ -176,7 +196,7 @@ define.inputs <- function(model_name, param, sample_size, write_result, schedule
     if (suppressWarnings(is.na(param))) {
       parameter.df <- generate_default_df(TRUE, FALSE)
     }
-    slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), output_dp, schedule_policy, "lm", write_result, write_result_path)
+    slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), output_dp, schedule_policy, "lm", write_result, write_result_path, adjustment)
   } else if (model_name == "AR1_logistic_glm") {
     if (Sys.info()["sysname"] == "Windows") {
       source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//online scripts//ar1_logistic_model_online.R")
@@ -189,7 +209,7 @@ define.inputs <- function(model_name, param, sample_size, write_result, schedule
     if (suppressWarnings(is.na(param))) {
       parameter.df <- generate_default_df(TRUE, FALSE)
     }
-    slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), output_dp, schedule_policy, "glm", write_result, write_result_path)
+    slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), output_dp, schedule_policy, "glm", write_result, write_result_path, adjustment)
   } else if (model_name == "AR1_state_based_logistic") {
     if (Sys.info()["sysname"] == "Windows") {
       source("C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//rscript//online scripts//ar1_state_based_logistic_model_online.R")
@@ -202,6 +222,6 @@ define.inputs <- function(model_name, param, sample_size, write_result, schedule
     if (suppressWarnings(is.na(param))) {
       parameter.df <- generate_default_df(FALSE, TRUE)
     }
-    slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), output_dp, schedule_policy, write_result, write_result_path)
+    slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), output_dp, schedule_policy, write_result, write_result_path, adjustment)
   }
 }
