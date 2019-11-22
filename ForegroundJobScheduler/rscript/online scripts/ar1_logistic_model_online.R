@@ -333,6 +333,7 @@ svt_stationary_model <- function(dataset_max, dataset_avg, train_size, window_si
   
   avg_usage <- data.frame("numerator"=util_numerator, "denominator"=util_denominator)
   rownames(avg_usage) <- ts_names
+  
   job_survival <- data.frame("numerator"=sur_numerator, "denominator"=sur_denominator)
   rownames(job_survival) <- ts_names
   
