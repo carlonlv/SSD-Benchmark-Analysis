@@ -338,6 +338,7 @@ wrapper.epoche <- function(parameter, dataset_max, dataset_avg, cpu_required, ou
   print(paste("Granularity:", granularity))
   print(paste("Train Size:", train_size))
   print(paste("Update Freq:", update_freq))
+  print(paste("State Num:", num_of_states))
   
   print(system.time(output <- svt_stationary_model(dataset_max, dataset_avg, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy, num_of_states, adjustment)))
     
