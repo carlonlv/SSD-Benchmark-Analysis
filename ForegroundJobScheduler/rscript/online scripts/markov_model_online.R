@@ -281,8 +281,7 @@ svt_stationary_model <- function(dataset, train_size, window_size, update_freq, 
   job_survival <- data.frame("numerator"=sur_numerator, "denominator"=sur_denominator)
   rownames(job_survival) <- ts_names
   
-  result <- list('usage'=avg_usage, 'survival'=job_survival, 'schedule'=schedule_decision)
-  return(result)  
+  return(list('usage'=avg_usage, 'survival'=job_survival, 'schedule'=schedule_decision))  
 }
 
 
