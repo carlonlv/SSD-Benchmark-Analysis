@@ -8,8 +8,11 @@ window_size <- c(12, 36)
 sample_size <- c(100, 3000)
 bin_num <- c(1000, 500)
 
-mode <- "offline"
-schedule_policy <- "disjoint"
+train_size <- c(2000, 4000)
+update_freq <- 3 * window_size
+
+mode <- "online"
+schedule_policy <- "dynamic"
 
 result.dp1 <- NULL
 result.dp2 <- NULL
@@ -24,8 +27,16 @@ if (Sys.info()["sysname"] == "Windows") {
   result.dp2 <- paste0("/home/jialun/Research-Projects/ForegroundJobScheduler/results/", paste(mode, "results"), "/", paste("summary", schedule_policy, "post adj"), ".csv")
 }
 
-result.df <- expand.grid(models, statenum, prob_cut_offs, granularity, window_size, sample_size, bin_num, KEEP.OUT.ATTRS=FALSE, stringsAsFactors=FALSE)
-colnames(result.df) <- c("Model", "StateNum", "Probability.Cut.Off", "Granularity", "Window.Size", "Sample.Size", "BinNum")
+
+if (mode == "online") {
+  result.df <- expand.grid(models, statenum, prob_cut_offs, granularity, window_size, sample_size, bin_num, train_size, update_freq, KEEP.OUT.ATTRS=FALSE, stringsAsFactors=FALSE)
+  colnames(result.df) <- c("Model", "StateNum", "Probability.Cut.Off", "Granularity", "Window.Size", "Sample.Size", "BinNum", "Training.Size", "Update.Freq")
+} else {
+  result.df <- expand.grid(models, statenum, prob_cut_offs, granularity, window_size, sample_size, bin_num, KEEP.OUT.ATTRS=FALSE, stringsAsFactors=FALSE)
+  colnames(result.df) <- c("Model", "StateNum", "Probability.Cut.Off", "Granularity", "Window.Size", "Sample.Size", "BinNum")
+}
+
+
 result.df$Avg.Cycle.Usage <- NA
 result.df$Agg.Cycle.Usage <- NA
 result.df$Avg.Survival.Rate <- NA

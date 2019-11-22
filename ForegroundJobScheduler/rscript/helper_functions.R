@@ -134,25 +134,21 @@ compute_utilization <- function(pi_ups, survivals, actual_obs, window_size, gran
     actual_available <- round_to_nearest(100 - actual_obs, granularity, TRUE)
     actual_obs <- 100 - actual_available
   }
-  total_available1 <- NULL
-  total_available2 <- NULL
   
+  total_available <- NULL
   if (schedule_policy == "overlap"){
-    total_available1 <- sapply(1:(length(actual_obs)-window_size), overlapping_total_utilization, actual_obs, window_size, 1)
-    total_available1 <- sum(total_available1) * window_size
-    total_available2 <- sapply(1:(length(actual_obs)-window_size), overlapping_total_utilization, actual_obs, window_size, 2)
-    total_available2 <- sum(total_available2)
+    total_available <- sapply(1:(length(actual_obs)-window_size), overlapping_total_utilization, actual_obs, window_size, 2)
+    total_available <- sum(total_available)
   } else {
     new_max <- convert_frequency_dataset(actual_obs, window_size, 'max')
-    total_available1 <- sum(100 - new_max) * window_size
-    total_available2 <- sum(100 - actual_obs)
+    total_available <- sum(100 - actual_obs)
   }
   actual_used <- ifelse(is.na(survivals) | survivals!=0, 0, 100-pi_ups) * window_size
-  return(list("utilization1"=(sum(actual_used) / total_available1), "utilization2"=(sum(actual_used) / total_available2), "numerator"=sum(actual_used), "denominator1"=total_available1, "denominator2"=total_available2))
+  return(list("utilization"=(sum(actual_used) / total_available), "numerator"=sum(actual_used), "denominator"=total_available))
 }
 
 
-update.df <- function(file, model_name, prob_cut_off, state_num=0, sample_size, window_size, granularity, bin_num=0, utilization1, utilization2, survival, correct_scheduled_rate, correct_unscheduled_rate) {
+update.df.offline <- function(file, model_name, prob_cut_off, state_num, sample_size, window_size, granularity, bin_num, avg_utilization, agg_utilization, avg_survival, agg_survival, correct_scheduled_rate, correct_unscheduled_rate) {
   
   ## See if this update is addition or update
   checker <- file %>%
@@ -173,37 +169,46 @@ update.df <- function(file, model_name, prob_cut_off, state_num=0, sample_size, 
               Granularity = granularity,
               StateNum = state_num,
               BinNum = bin_num,
-              Avg.Cycle.Usage1 = utilization1,
-              Avg.Cycle.Usage2 = utilization2,
-              Survival.Rate = survival,
+              Avg.Cycle.Usage = avg_utilization,
+              Agg.Cycle.Usage = agg_utilization,
+              Avg.Survival.Rate = avg_survival,
+              Agg.Survival.Rate = agg_survival,
               Correctly.Scheduled = correct_scheduled_rate,
               Correctly.Unscheduled = correct_unscheduled_rate)
   } else {
     file <- file %>%
-      mutate(Avg.Cycle.Usage1 = ifelse(Model == model_name & 
+      mutate(Avg.Cycle.Usage = ifelse(Model == model_name & 
                                          Probability.Cut.Off == prob_cut_off & 
                                          Sample.Size == sample_size &
                                          Window.Size == window_size &
                                          Granularity == granularity &
                                          StateNum == state_num &
                                          BinNum == bin_num,
-                                       utilization1, Avg.Cycle.Usage1)) %>%
-      mutate(Avg.Cycle.Usage2 = ifelse(Model == model_name & 
+                                       avg_utilization, Avg.Cycle.Usage)) %>%
+      mutate(Agg.Cycle.Usage = ifelse(Model == model_name & 
                                          Probability.Cut.Off == prob_cut_off & 
                                          Sample.Size == sample_size &
                                          Window.Size == window_size &
                                          Granularity == granularity &
                                          StateNum == state_num &
                                          BinNum == bin_num,
-                                       utilization2, Avg.Cycle.Usage2)) %>%
-      mutate(Survival.Rate = ifelse(Model == model_name & 
+                                       agg_utilization, Agg.Cycle.Usage)) %>%
+      mutate(Avg.Survival.Rate = ifelse(Model == model_name & 
                                       Probability.Cut.Off == prob_cut_off & 
                                       Sample.Size == sample_size &
                                       Window.Size == window_size &
                                       Granularity == granularity &
                                       StateNum == state_num &
                                       BinNum == bin_num,
-                                    survival, Survival.Rate)) %>%
+                                    avg_survival, Avg.Survival.Rate)) %>%
+      mutate(Agg.Survival.Rate = ifelse(Model == model_name & 
+                                          Probability.Cut.Off == prob_cut_off & 
+                                          Sample.Size == sample_size &
+                                          Window.Size == window_size &
+                                          Granularity == granularity &
+                                          StateNum == state_num &
+                                          BinNum == bin_num,
+                                        agg_survival, Agg.Survival.Rate)) %>%
       mutate(Correctly.Scheduled = ifelse(Model == model_name & 
                                             Probability.Cut.Off == prob_cut_off & 
                                             Sample.Size == sample_size &
@@ -227,7 +232,7 @@ update.df <- function(file, model_name, prob_cut_off, state_num=0, sample_size, 
 }
 
 
-update.df.online <- function(file, model_name, prob_cut_off, state_num=0, sample_size, window_size, granularity, bin_num=0, train_size, update_freq, utilization1, utilization2, survival, correct_scheduled_rate, correct_unscheduled_rate) {
+update.df.online <- function(file, model_name, prob_cut_off, state_num, sample_size, window_size, granularity, bin_num, train_size, update_freq, avg_utilization, agg_utilization, avg_survival, agg_survival, correct_scheduled_rate, correct_unscheduled_rate) {
   
   checker <- file %>%
     filter(Model == model_name & 
@@ -251,14 +256,15 @@ update.df.online <- function(file, model_name, prob_cut_off, state_num=0, sample
               Update.Freq = update_freq,
               StateNum = state_num,
               BinNum = bin_num,
-              Avg.Cycle.Usage1 = utilization1,
-              Avg.Cycle.Usage2 = utilization2,
-              Survival.Rate = survival,
+              Avg.Cycle.Usage = avg_utilization,
+              Agg.Cycle.Usage = agg_utilization,
+              Avg.Survival.Rate = avg_survival,
+              Agg.Survival.Rate = agg_survival,
               Correctly.Scheduled = correct_scheduled_rate,
               Correctly.Unscheduled = correct_unscheduled_rate)
   } else {
     file <- file %>%
-      mutate(Avg.Cycle.Usage1 = ifelse(Model == model_name & 
+      mutate(Avg.Cycle.Usage = ifelse(Model == model_name & 
                                          Probability.Cut.Off == prob_cut_off & 
                                          Sample.Size == sample_size &
                                          Window.Size == window_size &
@@ -267,8 +273,8 @@ update.df.online <- function(file, model_name, prob_cut_off, state_num=0, sample
                                          Update.Freq == update_freq &
                                          StateNum == state_num &
                                          BinNum == bin_num,
-                                       utilization1, Avg.Cycle.Usage1)) %>%
-      mutate(Avg.Cycle.Usage2 = ifelse(Model == model_name & 
+                                       avg_utilization, Avg.Cycle.Usage)) %>%
+      mutate(Agg.Cycle.Usage = ifelse(Model == model_name & 
                                          Probability.Cut.Off == prob_cut_off & 
                                          Sample.Size == sample_size &
                                          Window.Size == window_size &
@@ -277,8 +283,8 @@ update.df.online <- function(file, model_name, prob_cut_off, state_num=0, sample
                                          Update.Freq == update_freq &
                                          StateNum == state_num &
                                          BinNum == bin_num,
-                                       utilization2, Avg.Cycle.Usage2)) %>%
-      mutate(Survival.Rate = ifelse(Model == model_name & 
+                                       agg_utilization, Agg.Cycle.Usage)) %>%
+      mutate(Avg.Survival.Rate = ifelse(Model == model_name & 
                                       Probability.Cut.Off == prob_cut_off & 
                                       Sample.Size == sample_size &
                                       Window.Size == window_size &
@@ -287,7 +293,17 @@ update.df.online <- function(file, model_name, prob_cut_off, state_num=0, sample
                                       Update.Freq == update_freq &
                                       StateNum == state_num &
                                       BinNum == bin_num,
-                                    survival, Survival.Rate)) %>%
+                                    avg_survival, Avg.Survival.Rate)) %>%
+      mutate(Agg.Survival.Rate = ifelse(Model == model_name & 
+                                      Probability.Cut.Off == prob_cut_off & 
+                                      Sample.Size == sample_size &
+                                      Window.Size == window_size &
+                                      Granularity == granularity &
+                                      Training.Size == train_size &
+                                      Update.Freq == update_freq &
+                                      StateNum == state_num &
+                                      BinNum == bin_num,
+                                    agg_survival, Agg.Survival.Rate)) %>%
       mutate(Correctly.Scheduled = ifelse(Model == model_name & 
                                             Probability.Cut.Off == prob_cut_off & 
                                             Sample.Size == sample_size &
@@ -315,12 +331,15 @@ update.df.online <- function(file, model_name, prob_cut_off, state_num=0, sample
 }
 
 
-find_overall_evaluation <- function(avg_usages1, avg_usages2, survivals) {
+find_overall_evaluation <- function(util_numerator, util_denominator, sur_numerator, sur_denominator) {
   
-  avg_utilization1 <- mean(as.matrix(avg_usages1), na.rm = TRUE)
-  avg_utilization2 <- mean(as.matrix(avg_usages2), na.rm = TRUE)
-  survival <- sum(as.matrix(survivals), na.rm = TRUE) / (length(as.matrix(survivals)[!is.na(as.matrix(survivals))]))
-  return(list("utilization_rate1"=avg_utilization1, "utilization_rate2"=avg_utilization2, "survival_rate"=survival))
+  avg_usages <- util_numerator / util_denominator
+  avg_utilization <- mean(avg_usages, na.rm = TRUE)
+  agg_utilization <- sum(util_numerator, na.rm = TRUE) / sum(util_denominator, na.rm = TRUE)
+  survivals <- sur_numerator / sur_denominator
+  avg_survival <- mean(survivals, na.rm = TRUE)
+  agg_survival <- sum(sur_numerator, na.rm = TRUE) / sum(sur_denominator, na.rm = TRUE)
+  return(list("avg_utilization"=avg_utilization, "avg_survival"=avg_survival, "agg_utilization"=agg_utilization, "agg_survival"=agg_survival))
 }
 
 
