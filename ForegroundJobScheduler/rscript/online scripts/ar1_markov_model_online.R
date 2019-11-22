@@ -278,7 +278,8 @@ svt_model <- function(ts_num, dataset_max, dataset_avg, train_size, window_size,
     current <- current + update_freq
   }
   
-  return(list("scheduled_num"=scheduled_num, "unscheduled_num"=unscheduled_num, "correct_scheduled_num"=correct_scheduled_num, "correct_unscheduled_num"=correct_unscheduled_num, "util_numerator"=util_numerator, "util_denominator"=util_denominator, "sur_numerator"=sur_numerator, "sur_denominator"=sur_denominator))}
+  return(list("scheduled_num"=scheduled_num, "unscheduled_num"=unscheduled_num, "correct_scheduled_num"=correct_scheduled_num, "correct_unscheduled_num"=correct_unscheduled_num, "util_numerator"=util_numerator, "util_denominator"=util_denominator, "sur_numerator"=sur_numerator, "sur_denominator"=sur_denominator))
+}
 
 
 svt_stationary_model <- function(dataset_max, dataset_avg, train_size, window_size, update_freq, prob_cut_off, cpu_required, granularity, schedule_policy="disjoint", num_of_states, adjustment) {
