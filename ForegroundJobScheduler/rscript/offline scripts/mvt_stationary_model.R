@@ -416,6 +416,7 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
                              "correct_scheduled_rate"=(output$schedule$correct_scheduled_num / (output$schedule$scheduled_num)),
                              "correct_unscheduled_rate"=(output$schedule$correct_unscheduled_num / (output$schedule$unscheduled_num)))
     rownames(ts_results) <- colnames(dataset_max)
+    ts_results <- cbind(ts_results, output$overall_runs)
     result_file_name <- paste("VAR1", schedule_policy, adjustment, 0, prob_cut_off, granularity, window_size, 0)
     write.csv(ts_results, file = paste0(write_result_path, result_file_name, ".csv"), row.names = TRUE)
   }
