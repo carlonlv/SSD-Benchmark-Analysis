@@ -228,7 +228,7 @@ scheduling_model <- function(ts_num, test_dataset_max, test_dataset_avg, coeffs,
   
   overall_survival <- compute_survival(ifelse(is.na(survival), NA, ifelse(survival == 0, 1, 0)))
   overall_utilization <- compute_utilization(pi_ups, survival, test_dataset_max[(window_size+1):(current_end-update_policy+window_size-1), ts_num], window_size, granularity, schedule_policy)
-  return(list("utilization1"=overall_utilization$utilization1, "utilization2"=overall_utilization$utilization2, "survival"=overall_survival$survival, "run"=runs))
+  return(list("util_numerator"=overall_utilization$numerator, "util_denominator"=overall_utilization$denominator, "sur_numerator"=overall_survival$numerator, "sur_denominator"=overall_survival$denominator, "run"=runs))
 }
 
 
@@ -241,13 +241,16 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   
   ts_names <- colnames(dataset_avg)
   
-  scheduled_num <- data.frame()
-  unscheduled_num <- data.frame()
-  correct_scheduled_num <- data.frame()
-  correct_unscheduled_num <- data.frame()
+  scheduled_num <- c()
+  unscheduled_num <- c()
+  correct_scheduled_num <- c()
+  correct_unscheduled_num <- c()
   
-  avg_usage <- data.frame()
-  job_survival <- data.frame()
+  util_numerator <- c()
+  util_denominator <- c()
+  sur_numerator <- c()
+  sur_denominator <- c()
+  
   overall_runs <- data.frame()
   
   ## Two Level Lists
@@ -271,10 +274,15 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   
   ## Training AR1 Model
   print("Training: AR1.")
-  train_result <- sapply(1:length(ts_names), train_ar1_model, new_trainset_avg)
-  coeffs <- unlist(train_result[1,])
-  means <- unlist(train_result[2,])
-  vars <- unlist(train_result[3,])
+  train_result <- mclapply(1:length(ts_names), train_ar1_model, new_trainset_avg)
+  coeffs <- c()
+  means <- c()
+  vars <- c()
+  for (ts_num in 1:length(ts_names)) {
+    coeffs <- c(coeffs, train_result[[ts_num]]$coeffs)
+    means <- c(means, train_result[[ts_num]]$means)
+    vars <- c(vars, train_result[[ts_num]]$vars)
+  }
   
   ## Training State Based Logistic Model
   print("Training: Logistic.")
@@ -291,40 +299,36 @@ ar_logistic_model <- function(dataset_avg, dataset_max, initial_train_size, prob
   result_model <- mclapply(1:length(ts_names), scheduling_model, test_dataset_max, test_dataset_avg, coeffs, means, vars, logistic_models, window_size, prob_cut_off, granularity, max_run_length, num_of_states, schedule_policy, adjustment, mc.cores=cores)
   
   for (ts_num in 1:length(ts_names)) {
-    scheduled_num <- rbind(scheduled_num, result_foreground[[ts_num]]$scheduled_num)
-    unscheduled_num <- rbind(unscheduled_num, result_foreground[[ts_num]]$unscheduled_num)
-    correct_scheduled_num <- rbind(correct_scheduled_num, result_foreground[[ts_num]]$correct_scheduled_num)
-    correct_unscheduled_num <- rbind(correct_unscheduled_num, result_foreground[[ts_num]]$correct_unscheduled_num)
+    scheduled_num <- c(scheduled_num, result_foreground[[ts_num]]$scheduled_num)
+    unscheduled_num <- c(unscheduled_num, result_foreground[[ts_num]]$unscheduled_num)
+    correct_scheduled_num <- c(correct_scheduled_num, result_foreground[[ts_num]]$correct_scheduled_num)
+    correct_unscheduled_num <- c(correct_unscheduled_num, result_foreground[[ts_num]]$correct_unscheduled_num)
     
-    avg_usage <- rbind(avg_usage, c(result_model[[ts_num]]$utilization1, result_model[[ts_num]]$utilization2))
-    job_survival <- rbind(job_survival, result_model[[ts_num]]$survival)
+    util_numerator <- c(util_numerator, result_model[[ts_num]]$util_numerator)
+    util_denominator <- c(util_denominator, result_model[[ts_num]]$util_denominator)
+    sur_numerator <- c(sur_numerator, result_model[[ts_num]]$sur_numerator)
+    sur_denominator <- c(sur_denominator, result_model[[ts_num]]$sur_denominator)
+    
     if (schedule_policy == "dynamic") {
       overall_runs <- rbind(overall_runs, result_model[[ts_num]]$run)
     }
   }
   
-  ## Change column and row names, N by M
-  rownames(scheduled_num) <- ts_names
-  colnames(scheduled_num) <- "scheduled_num"
-  rownames(unscheduled_num) <- ts_names
-  colnames(unscheduled_num) <- "unscheduled_num"
-  rownames(correct_scheduled_num) <- ts_names
-  colnames(correct_scheduled_num) <- "correct_scheduled_num"
-  rownames(correct_unscheduled_num) <- ts_names
-  colnames(correct_unscheduled_num) <- "correct_unscheduled_num"
+  schedule_decision <- data.frame("scheduled_num"=scheduled_num, "unscheduled_num"=unscheduled_num, "correct_scheduled_num"=correct_scheduled_num, "correct_unscheduled_num"=correct_unscheduled_num)
+  rownames(schedule_decision) <- ts_names
+  
+  avg_usage <- data.frame("numerator"=util_numerator, "denominator"=util_denominator)  
   rownames(avg_usage) <- ts_names
-  colnames(avg_usage) <- c("avg_usage1", "avg_usage2")
+  
+  job_survival <- data.frame("numerator"=sur_numerator, "denominator"=sur_denominator)
   rownames(job_survival) <- ts_names
-  colnames(job_survival) <- "survival"
+  
   if (schedule_policy == "dynamic") {
     rownames(overall_runs) <- ts_names
     colnames(overall_runs) <- sapply(1:max_run_length, function(i) as.character(i))
-    result <- list('avg_usage'=avg_usage, 'job_survival'=job_survival, 'scheduled_num'=scheduled_num, "unscheduled_num"=unscheduled_num, "correct_scheduled_num"=correct_scheduled_num, "correct_unscheduled_num"=correct_unscheduled_num, "overall_runs"=overall_runs)
-    return(result)  
-  } else {
-    result <- list('avg_usage'=avg_usage, 'job_survival'=job_survival, 'scheduled_num'=scheduled_num, "unscheduled_num"=unscheduled_num, "correct_scheduled_num"=correct_scheduled_num, "correct_unscheduled_num"=correct_unscheduled_num)
-    return(result)
-  }
+  } 
+  
+  return(list('usage'=avg_usage, 'survival'=job_survival, 'schedule'=schedule_decision, "overall_runs"=overall_runs))
 }
 
 
@@ -342,37 +346,50 @@ wrapper.epoche <- function(parameter, dataset_avg, dataset_max, cpu_required, in
   
   print(system.time(output <- ar_logistic_model(dataset_avg, dataset_max, initial_train_size, prob_cut_off, max_run_length, window_size, cpu_required, num_of_states, granularity, adjustment)))
   
-  overall_evaluation <- find_overall_evaluation(output$avg_usage[,1], output$avg_usage[,2], output$job_survival[,1])
+  overall_evaluation <- find_overall_evaluation(output$usage$numerator, output$usage$denominator, output$survival$numerator, output$survival$denominator)
   
-  utilization_rate1 <- overall_evaluation$utilization_rate1
-  utilization_rate2 <- overall_evaluation$utilization_rate2
-  survival_rate <- overall_evaluation$survival_rate
+  avg_utilization <- overall_evaluation$avg_utilization
+  avg_survival <- overall_evaluation$avg_survival
+  agg_utilization <- overall_evaluation$agg_utilization
+  agg_survival <- overall_evaluation$agg_survival
   
-  scheduled_num <- sum(output$scheduled_num[,1])
-  unscheduled_num <- sum(output$unscheduled_num[,1])
-  correct_scheduled_num <- sum(output$correct_scheduled_num[,1])
-  correct_unscheduled_num <- sum(output$correct_unscheduled_num[,1])
+  scheduled_num <- sum(output$schedule$scheduled_num)
+  unscheduled_num <- sum(output$schedule$unscheduled_num)
+  correct_scheduled_num <- sum(output$schedule$correct_scheduled_num)
+  correct_unscheduled_num <- sum(output$schedule$correct_unscheduled_num)
   
   correct_scheduled_rate <- correct_scheduled_num / scheduled_num
   correct_unscheduled_rate <- correct_unscheduled_num / unscheduled_num
   
-  print(paste("Avg cycle used mode 1:", "job length", window_size, utilization_rate1))
-  print(paste("Avg cycle used mode 2:", "job length", window_size, utilization_rate2))
-  print(paste("Job survival rate:", "job length", window_size, survival_rate))
-  print(paste("Scheduling summary:", "Correct scheduled rate:", correct_scheduled_rate, "Correct unscheduled rate:", correct_unscheduled_rate))
+  print(paste("Avg cycle used mode:", "job length", window_size, avg_utilization))
+  print(paste("Agg cycle used mode:", "job length", window_size, agg_utilization))
+  print(paste("Avg job survival rate:", "job length", window_size, avg_survival))
+  print(paste("Agg job survival rate:", "job length", window_size, agg_survival))
   
   if (write_result == TRUE) {
-    ts_results <- data.frame("utilization_rate1"=output$avg_usage[,1],
-                             "utilization_rate2"=output$avg_usage[,2],
-                             "survival_rate"=output$job_survival[,1],
-                             "correct_scheduled_rate"=(output$correct_scheduled_num[,1] / output$scheduled_num[,1]),
-                             "correct_unscheduled_rate"=(output$correct_unscheduled_num[,1] / output$unscheduled_num[,1]))
+    ts_results <- data.frame("utilization"=(output$usage$numerator/output$usage$denominator),
+                             "survival"=(output$survival$numerator/output$survival$denominator),
+                             "correct_scheduled_rate"=(output$schedule$correct_scheduled_num / (output$schedule$scheduled_num)),
+                             "correct_unscheduled_rate"=(output$schedule$correct_unscheduled_num / (output$schedule$unscheduled_num)))
     rownames(ts_results) <- colnames(dataset_max)
-    result_file_name <- paste("AR1_state_based_logistic", schedule_policy, num_of_states, prob_cut_off, granularity, window_size, 0)
+    result_file_name <- paste("AR1_state_based_logistic", schedule_policy, adjustment, num_of_states, prob_cut_off, granularity, window_size, 0)
     write.csv(ts_results, file = paste0(write_result_path, result_file_name, ".csv"), row.names = TRUE)
   }
   
   result_path.csv <- read.csv(output_dp)
-  result_path.csv <- update.df(result_path.csv, "AR1_state_based_logistic", prob_cut_off, num_of_states, sample_size, window_size, granularity, 0, utilization_rate1, utilization_rate2, survival_rate, correct_scheduled_rate, correct_unscheduled_rate)
+  result_path.csv <- update.df.offline(result_path.csv, 
+                                      "AR1_state_based_logistic", 
+                                      prob_cut_off, 
+                                      num_of_states, 
+                                      sample_size, 
+                                      window_size, 
+                                      granularity, 
+                                      0, 
+                                      avg_utilization, 
+                                      agg_utilization, 
+                                      avg_survival,
+                                      agg_survival,
+                                      correct_scheduled_rate, 
+                                      correct_unscheduled_rate)
   write.csv(result_path.csv, file = output_dp, row.names = FALSE)
 }

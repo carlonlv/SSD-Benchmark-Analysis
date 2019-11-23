@@ -94,37 +94,37 @@ define.inputs <- function(model_name, param, sample_size, adjustment, write_resu
   if (adjustment) {
     if (schedule_policy == "dynamic") {
       if (Sys.info()["sysname"] == "Windows") {
-        output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary dynamic (windows,granularity) post adj.csv"
+        output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary dynamic post adj.csv"
       } else if (Sys.info()["sysname"] == "Darwin") {
-        output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary dynamic (windows,granularity) post adj.csv"
+        output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary dynamic post adj.csv"
       } else {
-        output_dp <- "/home/jialun/Research-Projects/ForegroundJobScheduler/results/offline results/summary dynamic (windows,granularity) post adj.csv"
+        output_dp <- "/home/jialun/Research-Projects/ForegroundJobScheduler/results/offline results/summary dynamic post adj.csv"
       }
     } else {
       if (Sys.info()["sysname"] == "Windows") {
-        output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary disjoint (windows,granularity) post adj.csv"
+        output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary disjoint post adj.csv"
       } else if (Sys.info()["sysname"] == "Darwin") {
-        output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary disjoint (windows,granularity) post adj.csv"
+        output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary disjoint post adj.csv"
       } else {
-        output_dp <- "/home/jialun/Research-Projects/ForegroundJobScheduler/results/offline results/summary disjoint (windows,granularity) post adj.csv"
+        output_dp <- "/home/jialun/Research-Projects/ForegroundJobScheduler/results/offline results/summary disjoint post adj.csv"
       }
     }
   } else {
     if (schedule_policy == "dynamic") {
       if (Sys.info()["sysname"] == "Windows") {
-        output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary dynamic (windows,granularity).csv"
+        output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary dynamic.csv"
       } else if (Sys.info()["sysname"] == "Darwin") {
-        output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary dynamic (windows,granularity).csv"
+        output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary dynamic.csv"
       } else {
-        output_dp <- "/home/jialun/Research-Projects/ForegroundJobScheduler/results/offline results/summary dynamic (windows,granularity).csv"
+        output_dp <- "/home/jialun/Research-Projects/ForegroundJobScheduler/results/offline results/summary dynamic.csv"
       }
     } else {
       if (Sys.info()["sysname"] == "Windows") {
-        output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary disjoint (windows,granularity).csv"
+        output_dp <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary disjoint.csv"
       } else if (Sys.info()["sysname"] == "Darwin") {
-        output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary disjoint (windows,granularity).csv"
+        output_dp <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary disjoint.csv"
       } else {
-        output_dp <- "/home/jialun/Research-Projects/ForegroundJobScheduler/results/offline results/summary disjoint (windows,granularity).csv"
+        output_dp <- "/home/jialun/Research-Projects/ForegroundJobScheduler/results/offline results/summary disjoint.csv"
       }
     }
   }
@@ -222,4 +222,3 @@ define.inputs <- function(model_name, param, sample_size, adjustment, write_resu
     slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment, write_result, write_result_path)
   }
 }
-
