@@ -52,7 +52,7 @@ define.inputs <- function(model_name, param, sample_size, adjustment, write_resu
   } else if (Sys.info()["sysname"] == "Darwin") {
     bg_jobs_path <- "/Users/carlonlv/Documents/microsoft traces/"
   } else {
-    bg_jobs_path <- "/home/jialun/Documents/microsoft traces/"
+    bg_jobs_path <- "/home/jialun/microsoft traces/"
   }
   
   bg_job_pool <- NULL
