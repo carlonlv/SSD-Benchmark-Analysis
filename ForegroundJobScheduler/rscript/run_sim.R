@@ -98,7 +98,7 @@ if (action == "file") {
                 paste0("file_path=", file_path),
                 paste0("cpu_usage=", cpu_usage),
                 paste0("total_trace_length=", total_trace_length),
-                paste0("adjustment", adjustment),
+                paste0("adjustment=", adjustment),
                 paste0("max_run_length=", max_run_length),
                 paste0("initial_train_size=", initial_train_size),
                 sep="\n")
@@ -191,7 +191,7 @@ if (action == "file") {
                 paste0("schedule_policy=", schedule_policy),
                 paste0("cpu_usage=", cpu_usage),
                 paste0("total_trace_length=", total_trace_length),
-                paste0("adjustment", adjustment),
+                paste0("adjustment=", adjustment),
                 paste0("max_run_length=", max_run_length),
                 paste0("initial_train_size=", initial_train_size),
                 paste0("num_of_states=", num_of_states),
