@@ -1,9 +1,9 @@
 
 generate_default_df <- function(include.bin, include.state) {
   window_sizes <- c(12, 36)
-  prob_cut_offs <- c(0.01, 0.1)
-  granularity <- c(100/32, 0)
-  train_size <- c(2000, 4000)
+  prob_cut_offs <- c(0.005, 0.01, 0.1)
+  granularity <- c(100/32, 100/64, 0)
+  train_size <- c(2000, 3000, 4000)
   
   num_of_bins <- c(1000, 500)
   num_of_states <- c(8, 16, 32, 64)
