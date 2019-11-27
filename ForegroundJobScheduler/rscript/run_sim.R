@@ -27,7 +27,6 @@ true_false_checker <- function(check, flag) {
 }
 
 
-## Defaults to run without command line arguments
 args <- commandArgs(trailingOnly = TRUE)
 
 action <- arg_checker("--action", args)

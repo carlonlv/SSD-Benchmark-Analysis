@@ -1,6 +1,21 @@
-library("xlsx")
-library("readxl")
 library("dplyr")
+
+
+arg_checker <- function(check, args, mandatory=TRUE, default=NULL) {
+  idx <- which(check == args)
+  if (length(idx) == 0) {
+    if (mandatory) {
+      stop(paste("Error: flag", check, "not found."))
+    } else {
+      return(default)
+    }
+  }
+  content <- args[idx + 1]
+  if (is.na(content) | grepl("--", content)) {
+    stop(paste("Error: content", check, "not found, but flag is provided."))
+  }
+  return(content)
+}
 
 
 merge_row <- function(rownum, file_from, file_to) {
@@ -26,11 +41,12 @@ merge_result <- function(file_from, file_to) {
 
 
 ## Script
-file_from.dp <- file.choose()
-file_to.dp <- file.choose()
+args <- commandArgs(trailingOnly = TRUE)
+from <- arg_checker("--from", args)
+to <- arg_checker("--to", args)
 
-file_from <- read.xlsx(file = file_from.dp, sheetIndex = 1)
-file_to <- read.xlsx(file = file_to.dp, sheetIndex = 1)
+file_from <- read.csv(from)
+file_to <- read.xlsx(to)
 
 result_to <- merge_result(file_from, file_to)
-write.xlsx(result_to, showNA = FALSE, file = file_to.dp, row.names = FALSE)
+write.csv(result_to, file = file_to, row.names = FALSE)
