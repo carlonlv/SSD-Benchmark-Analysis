@@ -421,7 +421,7 @@ wrapper.epoche <- function(parameter, dataset_max, dataset_avg, cpu_required, ou
     
     result_path.csv <- read.csv(output_dp)
     result_path.csv <- update.df.online(result_path.csv, 
-                                        "AR1_logistic_lm", 
+                                        "AR1_logistic_glm", 
                                         prob_cut_off, 
                                         0, 
                                         sample_size, 
