@@ -277,7 +277,7 @@ markov_model <- function(dataset, initial_train_size, window_size, prob_cut_off,
 	return(list('usage'=avg_usage, 'survival'=job_survival, 'schedule'=schedule_decision, "overall_runs"=overall_runs))
 }
 
-wrapper.epoche <- function(parameter, dataset, cpu_required, initial_train_size, max_run_length, output_dp, schedule_policy, adjustment, write_result, write_result_path) {
+wrapper.epoche <- function(parameter, dataset, cpu_required, initial_train_size, max_run_length, output_dp, schedule_policy, adjustment, sample_size, write_result, write_result_path) {
 	
 	window_size <- as.numeric(parameter["window_size"])
 	prob_cut_off <- as.numeric(parameter["prob_cut_off"])

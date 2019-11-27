@@ -322,7 +322,7 @@ svt_stationary_model <- function(dataset_max, dataset_avg, train_size, window_si
 }
 
 
-wrapper.epoche <- function(parameter, dataset_max, dataset_avg, cpu_required, output_dp, schedule_policy, write_result, write_result_path, adjustment) {
+wrapper.epoche <- function(parameter, dataset_max, dataset_avg, cpu_required, output_dp, schedule_policy, sample_size, write_result, write_result_path, adjustment) {
   
   window_size <- as.numeric(parameter["window_size"])
   prob_cut_off <- as.numeric(parameter["prob_cut_off"])
