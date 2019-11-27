@@ -164,7 +164,7 @@ scheduling_model <- function(ts_num, test_dataset, coeffs, means, vars, window_s
 }
 
 
-svt_stationary_model <- function(dataset, initial_train_size, window_size, prob_cut_off, max_run_length, cpu_required, granularity, mode, schedule_policy="disjoint", adjustment) {
+svt_stationary_model <- function(dataset, initial_train_size, window_size, prob_cut_off, max_run_length, cpu_required, granularity, mode, schedule_policy, adjustment) {
   #### input dataset: N by M matrix, N being number of observations, M being number of time series
   #### input initial_train_size: The number of first observations used to train the model
   #### input window_size: The number of observations used to train and predict

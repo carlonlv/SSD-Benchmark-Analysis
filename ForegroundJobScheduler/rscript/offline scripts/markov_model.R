@@ -204,7 +204,7 @@ scheduling_model <- function(ts_num, test_set, transition, window_size, prob_cut
 }
 
 
-markov_model <- function(dataset, initial_train_size, window_size, prob_cut_off, max_run_length, cpu_required, granularity, num_of_states, schedule_policy="disjoint", adjustment) {
+markov_model <- function(dataset, initial_train_size, window_size, prob_cut_off, max_run_length, cpu_required, granularity, num_of_states, schedule_policy, adjustment) {
 	
 	ts_names <- colnames(dataset)
 	
