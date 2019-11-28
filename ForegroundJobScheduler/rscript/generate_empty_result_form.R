@@ -11,7 +11,7 @@ bin_num <- c(1000, 500)
 train_size <- c(2000, 4000)
 update_freq <- 3 * window_size
 
-mode <- "online"
+mode <- "offline"
 schedule_policy <- "dynamic"
 
 result.dp1 <- NULL
@@ -48,7 +48,12 @@ result.df <- result.df %>%
   mutate(StateNum=ifelse(Model %in% c("AR1_state_based_logistic", "Markov", "AR1_Markov"), StateNum, 0)) %>%
   mutate(BinNum=ifelse(Model %in% c("AR1_logistic_lm", "AR1_logistic_glm"), BinNum, 0)) %>%
   distinct() %>%
-  arrange(Model, StateNum, Probability.Cut.Off, Granularity, Window.Size, Sample.Size)
+  arrange(Update.Freq >= 2 * Window.Size)
+
+if (mode == "offline") {
+  result.df <- result.df %>%
+    filter()
+}
 
 write.csv(result.df, file = result.dp1, row.names = FALSE)
 write.csv(result.df, file = result.dp2, row.names = FALSE)
