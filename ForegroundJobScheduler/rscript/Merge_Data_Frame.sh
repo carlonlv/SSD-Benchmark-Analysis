@@ -19,3 +19,5 @@ rm ../results/offline\ results/temp_dynamic.csv
 rm ../results/offline\ results/temp_dynamic_post.csv
 rm ../results/offline\ results/temp_disjoint.csv
 git status
+git add ../results/online\ results/*.csv
+git add ../results/offline\ results/*.csv
