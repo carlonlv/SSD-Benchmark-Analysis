@@ -20,7 +20,7 @@ arg_checker <- function(check, args, mandatory=TRUE, default=NULL) {
 
 merge_row <- function(rownum, file_from, file_to) {
   row_from <- file_from[rownum,]
-  row_to <- file_to[rownum,]
+  row_to <- file_to[,names(row_from)]
   if (all(!is.na(row_from))) {
     row_to <- row_from
   }
