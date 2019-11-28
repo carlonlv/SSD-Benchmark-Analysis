@@ -1,7 +1,7 @@
 library("ggplot2")
 library("dplyr")
 
-plot_results <- function(model_results, sample_size, window_size, model_name, utilization_type=2, schedule_policy, simulation, adjustment) {
+plot_results <- function(model_results, sample_size, window_size, model_name, type=2, schedule_policy, simulation, adjustment) {
   model_results <- model_results %>% 
     filter(Sample.Size== sample_size & Window.Size == window_size & Model %in% model_name)
   
@@ -20,36 +20,36 @@ plot_results <- function(model_results, sample_size, window_size, model_name, ut
     
     model_results$Training.Size <- factor(model_results$Training.Size)
     model_results$Update.Freq <- factor(model_results$Update.Freq)
-    if (utilization_type == 1) {
+    if (type == 1) {
       if (contains_bin_num & contains_state_num) {
         stop("Not enough spaces.")
       } else if (contains_bin_num) {
-        plt <- ggplot(model_results, aes(x=Survival.Rate, y=Avg.Cycle.Usage1)) +
-          geom_point(na.rm=TRUE, aes(fill=factor(Model), shape=factor(BinNum), alpha=factor(Granularity)), colour=factor(Training.Size))
+        plt <- ggplot(model_results, aes(x=Avg.Survival.Rate, y=Avg.Cycle.Usage)) +
+          geom_point(na.rm=TRUE, aes(fill=Model, shape=factor(BinNum), alpha=factor(Granularity), colour=factor(Training.Size)))
       } else if (contains_state_num) {
-        plt <- ggplot(model_results, aes(x=Survival.Rate, y=Avg.Cycle.Usage1)) +
-          geom_point(na.rm=TRUE, aes(fill=factor(Model), shape=factor(StateNum), alpha=factor(Granularity)), colour=factor(Training.Size))
+        plt <- ggplot(model_results, aes(x=Avg.Survival.Rate, y=Avg.Cycle.Usage)) +
+          geom_point(na.rm=TRUE, aes(fill=Model, shape=factor(StateNum), alpha=factor(Granularity), colour=factor(Training.Size)))
       } else {
-        plt <- ggplot(model_results, aes(x=Survival.Rate, y=Avg.Cycle.Usage1)) +
-          geom_point(na.rm=TRUE, aes(fill=factor(Model), alpha=factor(Granularity)), colour=factor(Training.Size))
+        plt <- ggplot(model_results, aes(x=Avg.Survival.Rate, y=Avg.Cycle.Usage)) +
+          geom_point(na.rm=TRUE, aes(fill=Model, alpha=Granularity, colour=Training.Size))
       }
     } else {
       if (contains_bin_num & contains_state_num) {
         stop("Not enough spaces.")
       } else if (contains_bin_num) {
-        plt <- ggplot(model_results, aes(x=Survival.Rate, y=Avg.Cycle.Usage2)) +
-          geom_point(na.rm=TRUE, aes(fill=factor(Model), shape=factor(BinNum), alpha=factor(Granularity), colour=factor(Training.Size)))
+        plt <- ggplot(model_results, aes(x=Agg.Survival.Rate, y=Agg.Cycle.Usage)) +
+          geom_point(na.rm=TRUE, aes(fill=Model, shape=BinNum, alpha=Granularity, colour=Training.Size))
       } else if (contains_state_num) {
-        plt <- ggplot(model_results, aes(x=Survival.Rate, y=Avg.Cycle.Usage2)) +
-          geom_point(na.rm=TRUE, aes(fill=factor(Model), shape=factor(StateNum), alpha=factor(Granularity), colour=factor(Training.Size)))
+        plt <- ggplot(model_results, aes(x=Agg.Survival.Rate, y=Agg.Cycle.Usage)) +
+          geom_point(na.rm=TRUE, aes(fill=Model, shape=StateNum, alpha=Granularity, colour=Training.Size))
       } else {
-        plt <- ggplot(model_results, aes(x=Survival.Rate, y=Avg.Cycle.Usage2)) +
-          geom_point(na.rm=TRUE, aes(fill=factor(Model), alpha=factor(Granularity), colour=factor(Training.Size)))
+        plt <- ggplot(model_results, aes(x=Agg.Survival.Rate, y=Agg.Cycle.Usage)) +
+          geom_point(na.rm=TRUE, aes(fill=Model, alpha=Granularity, colour=Training.Size))
       }
     }
     plt <- plt + 
       scale_shape_manual(values=21:25) +
-      scale_colour_manual(values=c("black", "white")) +
+      scale_colour_manual(values=c("black", "grey", "white")) +
       guides(fill = guide_legend(override.aes=list(shape=21))) +
       geom_vline(xintercept=0.99, linetype="dashed", color="red") + 
       ylab("Utilization") +
@@ -58,30 +58,30 @@ plot_results <- function(model_results, sample_size, window_size, model_name, ut
     
   } else {
   
-    if (utilization_type == 1) {
+    if (type == 1) {
       if (contains_bin_num & contains_state_num) {
         stop("Not enough spaces.")
       } else if (contains_bin_num) {
-        plt <- ggplot(model_results, aes(x=Survival.Rate, y=Avg.Cycle.Usage1)) +
+        plt <- ggplot(model_results, aes(x=Avg.Survival.Rate, y=Avg.Cycle.Usage)) +
           geom_point(na.rm=TRUE, aes(fill=factor(Model), shape=factor(BinNum), alpha=factor(Granularity)))
       } else if (contains_state_num) {
-        plt <- ggplot(model_results, aes(x=Survival.Rate, y=Avg.Cycle.Usage1)) +
+        plt <- ggplot(model_results, aes(x=Avg.Survival.Rate, y=Avg.Cycle.Usage)) +
           geom_point(na.rm=TRUE, aes(fill=factor(Model), shape=factor(StateNum), alpha=factor(Granularity)))
       } else {
-        plt <- ggplot(model_results, aes(x=Survival.Rate, y=Avg.Cycle.Usage1)) +
+        plt <- ggplot(model_results, aes(x=Avg.Survival.Rate, y=Avg.Cycle.Usage)) +
           geom_point(na.rm=TRUE, aes(fill=factor(Model), alpha=factor(Granularity)))
       }
     } else {
       if (contains_bin_num & contains_state_num) {
         stop("Not enough spaces.")
       } else if (contains_bin_num) {
-        plt <- ggplot(model_results, aes(x=Survival.Rate, y=Avg.Cycle.Usage2)) +
+        plt <- ggplot(model_results, aes(x=Agg.Survival.Rate, y=Agg.Cycle.Usage)) +
           geom_point(na.rm=TRUE, aes(fill=factor(Model), shape=factor(BinNum), alpha=factor(Granularity)))
       } else if (contains_state_num) {
-        plt <- ggplot(model_results, aes(x=Survival.Rate, y=Avg.Cycle.Usage2)) +
+        plt <- ggplot(model_results, aes(x=Agg.Survival.Rate, y=Agg.Cycle.Usage)) +
           geom_point(na.rm=TRUE, aes(fill=factor(Model), shape=factor(StateNum), alpha=factor(Granularity)))
       } else {
-        plt <- ggplot(model_results, aes(x=Survival.Rate, y=Avg.Cycle.Usage2)) +
+        plt <- ggplot(model_results, aes(x=Agg.Survival.Rate, y=Agg.Cycle.Usage)) +
           geom_point(na.rm=TRUE, aes(fill=factor(Model), alpha=factor(Granularity)))
       }
     }
@@ -100,38 +100,40 @@ plot_results <- function(model_results, sample_size, window_size, model_name, ut
 
 sample_size <- 100
 window_size <- 12
-adjustment <- FALSE
+adjustment <- T
 schedule_policy <- "dynamic"
-simulation <- "offline"
+simulation <- "online"
+type <- 1
+pt <- 1
 
 data_path <- NULL
 if (adjustment) {
   if (schedule_policy == "dynamic") {
     if (simulation == "online") {
       if (Sys.info()["sysname"] == "Windows") {
-        data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary dynamic (windows,granularity) post adj.csv"
+        data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary dynamic post adj.csv"
       } else {
-        data_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary dynamic (windows,granularity) post adj.csv"
+        data_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary dynamic post adj.csv"
       }
     } else {
       if (Sys.info()["sysname"] == "Windows") {
-        data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary dynamic (windows,granularity) post adj.csv"
+        data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary dynamic post adj.csv"
       } else {
-        data_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary dynamic (windows,granularity) post adj.csv"
+        data_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary dynamic post adj.csv"
       }
     }
   } else {
     if (simulation == "online") {
       if (Sys.info()["sysname"] == "Windows") {
-        data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary disjoint (windows,granularity) post adj.csv"
+        data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary disjoint post adj.csv"
       } else {
-        data_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity) post adj.csv"
+        data_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint post adj.csv"
       }
     } else {
       if (Sys.info()["sysname"] == "Windows") {
-        data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary disjoint (windows,granularity) post adj.csv"
+        data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary disjoint post adj.csv"
       } else {
-        data_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary disjoint (windows,granularity) post adj.csv"
+        data_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary disjoint post adj.csv"
       }
     }
   }
@@ -139,29 +141,29 @@ if (adjustment) {
   if (simulation == "online") {
     if (schedule_policy == "dynamic") {
       if (Sys.info()["sysname"] == "Windows") {
-        data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary dynamic (windows,granularity).csv"
+        data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary dynamic.csv"
       } else {
-        data_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary dynamic (windows,granularity).csv"
+        data_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary dynamic.csv"
       }
     } else {
       if (Sys.info()["sysname"] == "Windows") {
-        data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary disjoint (windows,granularity).csv"
+        data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//online results//summary disjoint.csv"
       } else {
-        data_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint (windows,granularity).csv"
+        data_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/online results/summary disjoint.csv"
       }
     }
   } else {
     if (schedule_policy == "dynamic") {
       if (Sys.info()["sysname"] == "Windows") {
-        data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary dynamic (windows,granularity).csv"
+        data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary dynamic.csv"
       } else {
-        data_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary dynamic (windows,granularity).csv"
+        data_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary dynamic.csv"
       }
     } else {
       if (Sys.info()["sysname"] == "Windows") {
-        data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary disjoint (windows,granularity).csv"
+        data_path <- "C://Users//carlo//Documents//GitHub//Research-Projects//ForegroundJobScheduler//results//offline results//summary disjoint.csv"
       } else {
-        data_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary disjoint (windows,granularity).csv"
+        data_path <- "/Users/carlonlv/Documents/Github/Research-Projects/ForegroundJobScheduler/results/offline results/summary disjoint.csv"
       }
     }
   }
@@ -169,7 +171,12 @@ if (adjustment) {
 
 
 model_names <- c("AR1", "VAR1", "Markov", "AR1_Markov", "AR1_state_based_logistic", "AR1_logistic_lm", "AR1_logistic_glm")
+if (pt == 1) {
+  selected <- c(1,2,3,4,5)
+} else {
+  selected <- c(1,2,6,7)
+}
 
 ar_results <- read.csv(data_path)
-plot_results(ar_results, sample_size, window_size, model_name = model_names[c(1,2,6,7)], 2, schedule_policy, simulation, adjustment)
+plot_results(ar_results, sample_size, window_size, model_name = model_names[selected], type, schedule_policy, simulation, adjustment)
 
