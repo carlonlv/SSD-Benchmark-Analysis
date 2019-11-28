@@ -20,7 +20,7 @@ arg_checker <- function(check, args, mandatory=TRUE, default=NULL) {
 
 merge_row <- function(rownum, file_from, file_to) {
   row_from <- file_from[rownum,]
-  row_to <- file_to[,names(row_from)]
+  row_to <- file_to[rownum,]
   if (all(!is.na(row_from))) {
     row_to <- row_from
   }
@@ -29,6 +29,8 @@ merge_row <- function(rownum, file_from, file_to) {
 
  
 merge_result <- function(file_from, file_to) {
+  file_from <- file_from %>% arrange()
+  file_to <- file_to %>% arrange()
   result <- sapply(1:nrow(file_to), merge_row, file_from, file_to, simplify = FALSE)
   result.df <- data.frame()
   for (i in 1:nrow(file_to)) {
