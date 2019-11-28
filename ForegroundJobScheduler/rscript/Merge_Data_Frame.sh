@@ -12,3 +12,10 @@ Rscript MergeResultForm.R --from ../results/online\ results/temp_disjoint.csv --
 Rscript MergeResultForm.R --from ../results/offline\ results/temp_dynamic.csv --to ../results/offline\ results/summary\ dynamic.csv
 Rscript MergeResultForm.R --from ../results/offline\ results/temp_dynamic_post.csv --to ../results/offline\ results/summary\ dynamic\ post\ adj.csv
 Rscript MergeResultForm.R --from ../results/offline\ results/temp_disjoint.csv --to ../results/offline\ results/summary\ disjoint.csv
+rm ../results/online\ results/temp_dynamic.csv
+rm ../results/online\ results/temp_dynamic_post.csv
+rm ../results/online\ results/temp_disjoint.csv
+rm ../results/offline\ results/temp_dynamic.csv
+rm ../results/offline\ results/temp_dynamic_post.csv
+rm ../results/offline\ results/temp_disjoint.csv
+git status
