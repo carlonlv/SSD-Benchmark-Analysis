@@ -46,7 +46,7 @@ from <- arg_checker("--from", args)
 to <- arg_checker("--to", args)
 
 file_from <- read.csv(from)
-file_to <- read.xlsx(to)
+file_to <- read.csv(to)
 
 result_to <- merge_result(file_from, file_to)
 write.csv(result_to, file = file_to, row.names = FALSE)
