@@ -335,7 +335,7 @@ wrapper.epoche <- function(parameter, dataset, cpu_required, output_dp, schedule
   
   result_path.csv <- read.csv(output_dp)
   result_path.csv <- update.df.online(result_path.csv, 
-                                      "AR1_Markov", 
+                                      "Markov", 
                                       prob_cut_off, 
                                       num_of_states, 
                                       sample_size, 
