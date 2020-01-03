@@ -222,8 +222,3 @@ define.inputs <- function(model_name, param, sample_size, adjustment, write_resu
     slt <- apply(parameter.df, 1, wrapper.epoche, data_matrix_avg, data_matrix_max, (100-cpu_required), initial_train_size, max_run_length, output_dp, schedule_policy, adjustment, sample_size, write_result, write_result_path)
   }
 }
-
-#define.inputs("AR1_state_based_logistic", NA, 100, T, T, "dynamic", cpu_usage=0.85, max_run_length=37, total_trace_length=8000, initial_train_size=6000)
-#define.inputs("AR1_state_based_logistic", NA, 100, F, T, "dynamic", cpu_usage=0.85, max_run_length=37, total_trace_length=8000, initial_train_size=6000)
-#define.inputs("AR1_state_based_logistic", NA, 100, F, T, "disjoint", cpu_usage=0.85, max_run_length=37, total_trace_length=8000, initial_train_size=6000)
-
