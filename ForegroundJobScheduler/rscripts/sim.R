@@ -8,7 +8,7 @@ bg_param_setting <- data.frame(name = "ARIMA", window_size = 12, cut_off_prob = 
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "paramwise", result_loc = "~/Documents/Model/AR1/")
 
 bg_param_setting <- data.frame(name = "ARIMA", window_size = 12, cut_off_prob = 0.01, granularity = 0, train_policy = "offline", train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
-d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),], cores = 8, write_type = c("charwise", "paramwise"), plot_type = "paramwise", result_loc = "~/Documents/Model/AR1X/")
+d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),])), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "paramwise", result_loc = "~/Documents/Model/AR1X/")
 
 ### 1.3.2
 bg_param_setting <- data.frame(name = "ARIMA", window_size = 12, cut_off_prob = 0.01, granularity = 0, train_policy = "offline", train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
@@ -17,13 +17,13 @@ d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL
 
 bg_param_setting <- data.frame(name = "ARIMA", window_size = 12, cut_off_prob = 0.01, granularity = 0, train_policy = "offline", train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 bg_param_setting$train_args <- list(order = c(1,1,0))
-d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),], cores = 8, write_type = c("charwise", "paramwise"), plot_type = "paramwise", result_loc = "~/Documents/Model/ARI11X/")
+d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "paramwise", result_loc = "~/Documents/Model/ARI11X/")
 
 bg_param_setting <- data.frame(name = "AUTO_ARIMA", window_size = 12, cut_off_prob = 0.01, granularity = 0, train_policy = "offline", train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "paramwise", result_loc = "~/Documents/Model/AUTOARIMA/")
 
 bg_param_setting <- data.frame(name = "AUTO_ARIMA", window_size = 12, cut_off_prob = 0.01, granularity = 0, train_policy = "offline", train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
-d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),], cores = 8, write_type = c("charwise", "paramwise"), plot_type = "paramwise", result_loc = "~/Documents/Model/AUTOARIMAX/")
+d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "paramwise", result_loc = "~/Documents/Model/AUTOARIMAX/")
 
 ### 1.3.3
 bg_param_setting <- data.frame(name = "ARIMA", window_size = 12, cut_off_prob = 0.01, granularity = 0, train_policy = "offline", train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, outlier_type = c("AO", "IO", "None", "All", "LS"), stringsAsFactors = FALSE)
@@ -38,13 +38,13 @@ bg_param_setting <- data.frame(name = "MARKOV", window_size = 12, cut_off_prob =
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "paramwise", result_loc = "~/Documents/Model/Markov/")
 
 bg_param_setting <- data.frame(name = "MARKOV", window_size = 12, cut_off_prob = 0.01, granularity = 0, train_policy = "offline", train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
-d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),], cores = 8, write_type = c("charwise", "paramwise"), plot_type = "paramwise", result_loc = "~/Documents/Model/MarkovX/")
+d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "paramwise", result_loc = "~/Documents/Model/MarkovX/")
 
 bg_param_setting <- data.frame(name = "MARKOV", window_size = 12, cut_off_prob = 0.01, granularity = 0, train_policy = "offline", train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, cluster_type = "quantile", stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "paramwise", result_loc = "~/Documents/Model/Markov/")
 
 bg_param_setting <- data.frame(name = "MARKOV", window_size = 12, cut_off_prob = 0.01, granularity = 0, train_policy = "offline", train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, cluster_type = "quantile", stringsAsFactors = FALSE)
-d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),], cores = 8, write_type = c("charwise", "paramwise"), plot_type = "paramwise", result_loc = "~/Documents/Model/MarkovX/")
+d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),])), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "paramwise", result_loc = "~/Documents/Model/MarkovX/")
 
 ### 1.3.6
 bg_param_setting <- data.frame(name = "MARKOV", window_size = 12, cut_off_prob = 0.01, granularity = 0, train_policy = "offline", train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", state_num = c(8, 10, 16, 20), extrap_step = 1, stringsAsFactors = FALSE)
@@ -110,7 +110,7 @@ bg_param_setting <- data.frame(name = "ARIMA", window_size = 12, cut_off_prob = 
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_avg_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "paramwise", result_loc = "~/Documents/Avg/Model/AR1/")
 
 bg_param_setting <- data.frame(name = "ARIMA", window_size = 12, cut_off_prob = 0.01, granularity = 0, train_policy = "offline", train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, response = "avg", stringsAsFactors = FALSE)
-d <- run_sim(bg_param_setting, DataCenterSim::microsoft_avg_100[-c(1:12),], dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_max_100), dplyr::lag, 12)[-c(1:12),], cores = 8, write_type = c("charwise", "paramwise"), plot_type = "paramwise", result_loc = "~/Documents/Avg/Model/AR1X/")
+d <- run_sim(bg_param_setting, DataCenterSim::microsoft_avg_100[-c(1:12),], as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_max_100), dplyr::lag, 12)[-c(1:12),]), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "paramwise", result_loc = "~/Documents/Avg/Model/AR1X/")
 
 bg_param_setting <- data.frame(name = "ARIMA", window_size = 12, cut_off_prob = 0.01, granularity = 0, train_policy = "offline", train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, response = "avg", stringsAsFactors = FALSE)
 bg_param_setting$train_args <- list(order = c(1,1,0))
