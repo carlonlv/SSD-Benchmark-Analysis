@@ -1,0 +1,2 @@
+"","name","window_size","extrap_step","response","target","train_policy","p","cut_off_prob","granularity","train_size","model_num","update_freq","react_speed","score1.n","score1.w","score1_adj.n","score1_adj.w","score2.n","score2.w","score2_adj.n","score2_adj.w"
+"1","VAR",6,1,"max",0.995,"fixed",1,0.005,0,840,1,3,"1,2",0.953205683000593,102833,0.963100297492563,94120,0.462991103099192,118942,0.428361366825095,118942
