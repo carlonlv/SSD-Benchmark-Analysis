@@ -112,20 +112,20 @@ bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, train_policy = trai
 bg_param_setting <- cbind(bg_param_setting, data.frame(name = "ARIMA", window_size = 12, granularity = 0, train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE))
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/TrainPolicy/AR1/")
 
-bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, train_policy = train_policy)
+bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, train_policy = train_policy, stringsAsFactors = FALSE)
 bg_param_setting <- cbind(bg_param_setting, data.frame(name = "MARKOV", window_size = 12, granularity = 0, train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE))
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/TrainPolicy/Markov/")
 
-bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, train_policy = train_policy)
+bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, train_policy = train_policy, stringsAsFactors = FALSE)
 bg_param_setting <- cbind(bg_param_setting, data.frame(name = "VAR", p = 1, window_size = 12, granularity = 0, train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE))
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], DataCenterSim::microsoft_avg_100[-c(1:12),], cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/TrainPolicy/VAR1/")
 
-bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, train_policy = train_policy)
-bg_param_setting <- data.frame(name = "NN", P = 0, window_size = 12, granularity = 0, train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, train_policy = train_policy, stringsAsFactors = FALSE)
+bg_param_setting <- cbind(bg_param_setting, data.frame(name = "NN", P = 0, window_size = 12, granularity = 0, train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE))
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/TrainPolicy/NN/")
 
-bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, train_policy = train_policy)
-bg_param_setting <- data.frame(name = "NN", P = 0, window_size = 12, granularity = 0, train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, train_policy = train_policy, stringsAsFactors = FALSE)
+bg_param_setting <- cbind(bg_param_setting, data.frame(name = "NN", P = 0, window_size = 12, granularity = 0, train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE))
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/TrainPolicy/NNX/")
 
 ## 1.6
