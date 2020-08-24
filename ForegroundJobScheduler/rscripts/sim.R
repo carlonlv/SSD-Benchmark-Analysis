@@ -246,7 +246,7 @@ cut_off_prob = c(0.01, 0.03)
 granularity = 0
 model_num = 1
 train_policy = "fixed"
-train_size = 840 * 300
+train_size = 840
 update_freq = 3
 extrap_step = 1
 react_speed = "1,2"
@@ -266,6 +266,16 @@ bg_param_setting$train_policy <- "fixed"
 bg_param_setting$train_args <- list("order" = c(1,1,0))
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/WindowSize/ARI11X/")
 
+bg_param_setting$name <- "NN"
+bg_param_setting$p <- 1
+bg_param_setting$train_policy <- "fixed"
+d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/WindowSize/NN/")
+
+bg_param_setting$name <- "NN"
+bg_param_setting$p <- 1
+bg_param_setting$train_policy <- "fixed"
+d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/WindowSize/NNX/")
+
 load("~/microsoft_generated_data_V2.rda")
 bg_param_setting$name <- "AUTOPILOT"
 bg_param_setting$statistics <- "j-quantile"
@@ -275,7 +285,8 @@ bg_param_setting$train_policy <- "fixed"
 bg_param_setting$half_life <- 36
 bg_param_setting$train_args <- NULL
 bg_param_setting$cut_off_weight <- 0.01
-d <- run_sim(bg_param_setting, microsoft_generated_data[-c(1:12) * 300,], NULL, cores = 3, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/WindowSize/Autopilot/")
+bg_param_setting$train_size <- 840 * 300
+d <- run_sim(bg_param_setting, microsoft_generated_data[-c(1:3600),], NULL, cores = 3, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/WindowSize/Autopilot/")
 
 ### 1.11.7
 load("~/microsoft_generated_data_V2.rda")
