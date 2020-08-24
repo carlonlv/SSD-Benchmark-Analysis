@@ -1,0 +1,2 @@
+"","name","window_size","extrap_step","response","target","train_policy","cut_off_prob","granularity","train_size","model_num","update_freq","react_speed","p","P","score1.n","score1.w","score1_adj.n","score1_adj.w","score2.n","score2.w","score2_adj.n","score2_adj.w"
+"1","NN",12,1,"max",0.99,"dynamic",0.01,0,840,1,3,"1,2",NA,0,0.918479932733127,48761,0.934929124793131,41693,0.424084842228994,59249,0.368435264690888,59249
