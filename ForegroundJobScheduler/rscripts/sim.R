@@ -57,7 +57,7 @@ d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.m
 ### 1.3.6
 cut_off_prob <- c(0.001, 0.003, 0.005, 0.01, 0.03, 0.05)
 state_num <- c(8, 10, 16, 20)
-bg_param_setting <- expand.grid(cut_off_prob, state_num)
+bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, state_num = state_num)
 bg_param_setting <- cbind(bg_param_setting, data.frame(name = "MARKOV", window_size = 12, granularity = 0, train_policy = "offline", train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE))
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/Model/Markov/StateNum/")
 
