@@ -96,6 +96,7 @@ cut_off_prob <- c(0.001, 0.003, 0.005, 0.01, 0.03, 0.05)
 train_policy <- c("offline", "fixed", "dynamic")
 bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, train_policy = train_policy, stringsAsFactors = FALSE)
 bg_param_setting <- cbind(bg_param_setting, data.frame(name = "ARIMA", window_size = 12, granularity = 0, train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE))
+bg_param_setting$target <- 1 - bg_param_setting$cut_off_prob
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/TrainPolicy/")
 
 ### 1.5.2
@@ -135,6 +136,7 @@ cut_off_prob <- c(0.001, 0.003, 0.005, 0.01, 0.03, 0.05)
 model_num <- 1:4
 bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, model_num = model_num)
 bg_param_setting <- cbind(bg_param_setting, data.frame(name = "ARIMA", window_size = 12, granularity = 0, train_policy = "offline", train_size = 840, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE))
+bg_param_setting$target <- 1 - bg_param_setting$cut_off_prob
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/ModelNum/")
 
 ### 1.6.2
@@ -142,6 +144,7 @@ cut_off_prob <- c(0.001, 0.003, 0.005, 0.01, 0.03, 0.05)
 model_num <- 1:4
 bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, model_num = model_num)
 bg_param_setting <- cbind(bg_param_setting, data.frame(name = "ARIMA", window_size = 12, granularity = 0, train_policy = "dynamic", train_size = 840, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE))
+bg_param_setting$target <- 1 - bg_param_setting$cut_off_prob
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/ModelNum/")
 
 ## 1.7
