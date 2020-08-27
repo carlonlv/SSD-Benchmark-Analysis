@@ -213,6 +213,7 @@ d <- run_sim(bg_param_setting, microsoft_generated_data, NULL, cores = 3, write_
 
 cut_off_prob <- c(0.0001, 0.0003, 0.0005, 0.001, 0.010, 0.050)
 load("~/Documents/Generateddata_V4/microsoft_generated_data_V4.rda")
+bg_param_setting <- data.frame(name = "AUTOPILOT", window_size = 300, cut_off_prob = cut_off_prob, granularity = 0, train_policy = "fixed", train_size = 840 * 300, statistics = "j-quantile", cut_off_weight = 0.01, model_num = 1, update_freq = 1, react_speed = "1,2", stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, microsoft_generated_data, NULL, cores = 3, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/Compare/Generateddata_V4/j/")
 
 ### 1.11.2
