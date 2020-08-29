@@ -258,27 +258,31 @@ bg_param_setting <- expand.grid(name = name, window_size = window_size, cut_off_
 bg_param_setting$target <- 1 - bg_param_setting$cut_off_prob
 
 bg_param_setting$train_policy <- "offline"
-d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/WindowSize/AR1/")
+d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/WindowSize/AR1/")
 
 bg_param_setting$train_policy <- "fixed"
-d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/WindowSize/AR1/")
+d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/WindowSize/AR1/")
 
 bg_param_setting$train_policy <- "fixed"
-d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/WindowSize/AR1X/")
+d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/WindowSize/AR1X/")
 
 bg_param_setting$train_policy <- "fixed"
 bg_param_setting$train_args <- list("order" = c(1,1,0))
-d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/WindowSize/ARI11X/")
+d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/WindowSize/ARI11X/")
+
+bg_param_setting$train_policy <- "fixed"
+bg_param_setting$train_args <- list("order" = c(1,1,0))
+d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/WindowSize/ARI11/")
 
 bg_param_setting$name <- "NN"
 bg_param_setting$p <- 1
 bg_param_setting$train_policy <- "fixed"
-d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/WindowSize/NN/")
+d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/WindowSize/NN/")
 
 bg_param_setting$name <- "NN"
 bg_param_setting$p <- 1
 bg_param_setting$train_policy <- "fixed"
-d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/WindowSize/NNX/")
+d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/WindowSize/NNX/")
 
 load("~/microsoft_generated_data_V2.rda")
 bg_param_setting$name <- "AUTOPILOT"
