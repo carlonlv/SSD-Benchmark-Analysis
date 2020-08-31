@@ -106,12 +106,19 @@ bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, update_freq = updat
 bg_param_setting <- cbind(bg_param_setting, data.frame(name = "ARIMA", window_size = 12, granularity = 0, train_policy = "dynamic", train_size = 840, model_num = 1, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE))
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/BatchSize/AR1/")
 
+bg_param_setting$train_policy <- "fixed"
+d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/BatchSize/AR1/")
+
 ### 1.5.3
 cut_off_prob <- c(0.001, 0.003, 0.005, 0.01, 0.03, 0.05)
 train_policy <- c("offline", "fixed")
 bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, train_policy = train_policy, stringsAsFactors = FALSE)
 bg_param_setting <- cbind(bg_param_setting, data.frame(name = "ARIMA", window_size = 12, granularity = 0, train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE))
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/TrainPolicy/AR1/")
+
+bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, train_policy = train_policy, stringsAsFactors = FALSE)
+bg_param_setting <- cbind(bg_param_setting, data.frame(name = "ARIMA", window_size = 12, granularity = 0, train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE))
+d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/TrainPolicy/AR1X/")
 
 bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, train_policy = train_policy, stringsAsFactors = FALSE)
 bg_param_setting <- cbind(bg_param_setting, data.frame(name = "MARKOV", window_size = 12, granularity = 0, train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE))
@@ -161,6 +168,12 @@ cut_off_prob <- c(0.001, 0.003, 0.005, 0.01, 0.03, 0.05)
 react_speed <- c("1,1", "1,2", "1,3", "2,1", "2,2", "2,3")
 bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, react_speed = react_speed, stringsAsFactors = FALSE)
 bg_param_setting <- cbind(bg_param_setting, data.frame(name = "ARIMA", window_size = 12, granularity = 0, train_policy = "offline", train_size = 840, model_num = 1, update_freq = 3, extrap_step = 1, stringsAsFactors = FALSE))
+d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/ReactSpeed/")
+
+cut_off_prob <- c(0.001, 0.003, 0.005, 0.01, 0.03, 0.05)
+react_speed <- c("1,1", "1,2", "1,3", "2,1", "2,2", "2,3")
+bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, react_speed = react_speed, stringsAsFactors = FALSE)
+bg_param_setting <- cbind(bg_param_setting, data.frame(name = "ARIMA", window_size = 12, granularity = 0, train_policy = "fixed", train_size = 840, model_num = 1, update_freq = 3, extrap_step = 1, stringsAsFactors = FALSE))
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/ReactSpeed/")
 
 ## 1.9
