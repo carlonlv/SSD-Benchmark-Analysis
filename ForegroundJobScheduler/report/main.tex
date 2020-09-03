@@ -257,8 +257,9 @@ A great proportion of the model has at least one significant change of behaviour
 The automatic order detection adds a small complexity to the simulation. However, Fig \ref{fig:fig1.3.1} and Table \ref{tab:tab1.3.1} show that for offline training, Auto-detect ARIMA model does not yield better trade-off curve than AR1 model. But by including average trace as an external regressor brings more significant improve on Auto-detect ARIMA model than AR1 model.
 \end{flushleft}
 
-\textbf{Overhead of ARIMA-like Models}:
 \begin{flushleft}
+\textbf{Overhead of ARIMA-like Models}:
+
 \textbf{Memory Consumption}: Since AR1 model, ARI11 model are simple models with only three parameters to be estimated and kept track of (intercept, slope and variance of residuals), using them are very light weighted in terms of memory consumption. 
 
 \textbf{Training and Updating Models}: There are two ways of training parameters for ARIMA-like models, one is using Maximum Likelihood under the assumption of observations follows conditional normal distribution, or by minimizing Conditional Sum of Squares(also called Conditional Least Squares). For simple AR1 model, it is easy to derive closed form of the parameters in terms of training data. Therefore, by using vector operations, the computational cost for training is very small. For general ARIMA models, it is somewhat more costly to train parameters since optimization algorithms such as gradient descent may be used. In terms of updating models, it is possible to use weighted sum of past trained parameter and new observations to update parameters. Hence, updating complicated ARIMA models or retraining simple AR1 model would be computationally cheap.
@@ -273,15 +274,17 @@ A Markov model requires a state number parameter to be trained. To predict the m
 \end{flushleft}
 
 \begin{flushleft}
-\textbf{Partitioning Methods}: There are two ways in the experiments that maximum or average observations are partitioned into states; Fixed partitioning from range 0 to 100 and dynamic partitioning according to the quantile of the training observations. 
+\textbf{Partitioning Methods}: There are two ways in the experiments that maximum or average observations are partitioned into states; Fixed partitioning from range 0 to 100 and quantile partitioning according to the quantile of the training observations. 
 
-Fig \ref{fig:fig1.3.4} and Table \ref{tab:tab1.3.4} indicate that using quantile partitioning method results in better survival score than using fixed partitioning method but lower utilization score for both Markov(max-to-max) and MarkovX(avg-to-max) models for lower cut off probabilities but not for higher cut off probabilities.
+Fig \ref{fig:fig1.3.4} and Table \ref{tab:tab1.3.4} indicate that using quantile partitioning method results in better trade-off curve than using fixed partitioning method, since using quantile partitioning method results in much fewer untraiend or undertrained states.
 \end{flushleft}
 
 \begin{flushleft}
 \textbf{Use of External Regressor}: Aside of training the traditional past window max to current window max transition matrix, we also trained past window average to current window average transition matrix and made predictions. 
 
-Fig \ref{fig:fig1.3.4} and Table \ref{tab:tab1.3.4} shows that by using fixed partitioning method, MarkovX(avg-to-max) model yields much higher survival rate and lower utilization rate. This is because past average values may transit to wider range of states than past maximum values, which results in more conservative decisions for a given cut off probability. Another observation from Table \ref{tab:tab1.3.4} is that when reducing cut off probability to more extreme values, using Markov-like models eventually fails to trade utilization rate for survival rate unlike ARIMA-like models. This is because of the limit in granularity of states when using Markov-like models, and it shows lesser flexibility when Markov-like models cannot reach a pre-specified survival rate no matter how extreme the cut off probability is.
+Fig \ref{fig:fig1.3.4} and Table \ref{tab:tab1.3.4} shows that by using fixed partitioning method, MarkovX(avg-to-max) model yields much higher survival rate and lower utilization rate. This is because past average values may transit to wider range of states than past maximum values, which results in more conservative decisions for a given cut off probability. Another observation from Table \ref{tab:tab1.3.4} is that when reducing cut off probability to more extreme values, using Markov-like models eventually fails to trade utilization rate for survival rate unlike ARIMA-like models. This is because of the limit in granularity of states when using Markov-like models, and it shows lesser flexibility when Markov-like models cannot reach a pre-specified survival rate no matter how extreme the cut off probability is. 
+
+Another observation is that using MarkovX(avg-to-max) models results in better trade-off curve than using Markov(max-to-max) models, also MarkovX model has higher survival rate but lower utilization rate comparing to Markov models. This is because maximum observations has range much wider than average observations, when usi 
 \end{flushleft}
 
 \begin{flushleft}
@@ -742,7 +745,7 @@ Ref to Section 1.3, include Fig \ref{fig:fig1.3.1}, Table \ref{tab:tab1.3.1}, Fi
 \begin{figure}[htbp]
     \caption{Trade-off Curves for Different Markov Models}
     \centering
-    \includegraphics[width = 0.8\textwidth]{images/ModelPerformanceatDifferentClucterTypewithMarkovModels.png}
+    \includegraphics[width = 0.8\textwidth]{images/ModelPerformanceatDifferentClusterTypeforDifferentMarkovModels.png}
     \label{fig:fig1.3.4}
 \end{figure}
 
@@ -751,44 +754,31 @@ Ref to Section 1.3, include Fig \ref{fig:fig1.3.1}, Table \ref{tab:tab1.3.1}, Fi
     \label{tab:tab1.3.4}\\
     \textbf{model name} & \textbf{partitioning type} & \textbf{cut off prob} & \textbf{score 1} & \textbf{score 1 weight} & \textbf{score 2} & \textbf{score 2 weight} \\
     \hline
-    MARKOV & fixed & 0.0003 & 0.9225 & 36075 & 0.2870 & 59249\\
-    MARKOV & fixed & 0.0005 & 0.9225 & 36075 & 0.2870 & 59249\\
-    MARKOV & fixed & 0.0010 & 0.9225 & 36075 & 0.2870 & 59249\\
-    MARKOV & fixed & 0.0030 & 0.9193 & 40043 & 0.3256 & 59249\\
-    MARKOV & fixed & 0.0050 & 0.9101 & 41985 & 0.3689 & 59249\\
-    MARKOV & fixed & 0.0100 & 0.8792 & 45459 & 0.4231 & 59249\\
-    MARKOV & fixed & 0.0300 & 0.8139 & 49858 & 0.4873 & 59249\\
-    MARKOV & fixed & 0.0500 & 0.7913 & 51268 & 0.4983 & 59249\\
-    MARKOVX & fixed & 0.0003 & 0.9343 & 16790 & 0.1108 & 59249\\
-    MARKOVX & fixed & 0.0005 & 0.9343 & 16790 & 0.1108 & 59249\\
-    MARKOVX & fixed & 0.0010 & 0.9343 & 16790 & 0.1108 & 59249\\
-    MARKOVX & fixed & 0.0030 & 0.9365 & 17384 & 0.1123 & 59249\\
-    MARKOVX & fixed & 0.0050 & 0.9365 & 17384 & 0.1123 & 59249\\
-    MARKOVX & fixed & 0.0100 & 0.9365 & 17384 & 0.1123 & 59249\\
-    MARKOVX & fixed & 0.0300 & 0.9233 & 32289 & 0.2348 & 59249\\
-    MARKOVX & fixed & 0.0500 & 0.9139 & 37182 & 0.2944 & 59249\\
-    MARKOVX & fixed & 0.0600 & 0.9069 & 41424 & 0.3227 & 59249\\
-    MARKOVX & fixed & 0.0700 & 0.9006 & 42018 & 0.3294 & 59249\\
-    MARKOVX & fixed & 0.0800 & 0.8874 & 44317 & 0.3492 & 59249\\
-    MARKOV & quantile & 0.0003 & 0.9358 & 57041 & 0.2634 & 59249\\
-    MARKOV & quantile & 0.0005 & 0.9358 & 57041 & 0.2634 & 59249\\
-    MARKOV & quantile & 0.0010 & 0.9358 & 57041 & 0.2634 & 59249\\
-    MARKOV & quantile & 0.0030 & 0.9358 & 57041 & 0.2634 & 59249\\
-    MARKOV & quantile & 0.0050 & 0.9358 & 57041 & 0.2634 & 59249\\
-    MARKOV & quantile & 0.010 & 0.8945 & 57589 & 0.3741 & 59249\\
-    MARKOV & quantile & 0.030 & 0.8182 & 58559 & 0.4664 & 59249\\
-    MARKOV & quantile & 0.050 & 0.7640 & 58699 & 0.4720 & 59249\\
-    MARKOVX & quantile & 0.0003 & 0.9653 & 56648 & 0.1947 & 59249\\
-    MARKOVX & quantile & 0.0005 & 0.9653 & 56648 & 0.1947 & 59249\\
-    MARKOVX & quantile & 0.0010 & 0.9653 & 56648 & 0.1947 & 59249\\
-    MARKOVX & quantile & 0.0030 & 0.9653 & 56648 & 0.1947 & 59249\\
-    MARKOVX & quantile & 0.0050 & 0.9653 & 56648 & 0.1947 & 59249\\
-    MARKOVX & quantile & 0.010 & 0.9634 & 56648 & 0.2066 & 59249\\
-    MARKOVX & quantile & 0.030 & 0.9611 & 56648 & 0.2168 & 59249\\
-    MARKOVX & quantile & 0.050 & 0.9554 & 56648 & 0.2311 & 59249\\
-    MARKOVX & quantile & 0.060 & 0.9478 & 56697 & 0.2480 & 59249\\
-    MARKOVX & quantile & 0.070 & 0.9449 & 56756 & 0.2606 & 59249\\
-    MARKOVX & quantile & 0.080 & 0.9412 & 56834 & 0.2708 & 59249\\
+    MARKOV & fixed & 0.001 & 0.9046 & 29990 & 0.2349 & 59249\\
+    MARKOV & fixed & 0.003 & 0.9045 & 30082 & 0.2360 & 59249\\
+    MARKOV & fixed & 0.005 & 0.9045 & 30195 & 0.2381 & 59249\\
+    MARKOV & fixed & 0.010 & 0.9052 & 31233 & 0.2439 & 59249\\
+    MARKOV & fixed & 0.030 & 0.9014 & 37994 & 0.3025 & 59249\\
+    MARKOV & fixed & 0.050 & 0.8930 & 41058 & 0.3497 & 59249\\
+    MARKOVX & fixed & 0.001 & 0.9339 & 16849 & 0.1115 & 59249\\
+    MARKOVX & fixed & 0.003 & 0.9339 & 16849 & 0.1115 & 59249\\
+    MARKOVX & fixed & 0.005 & 0.9361 & 17443 & 0.1131 & 59249\\
+    MARKOVX & fixed & 0.010 & 0.9361 & 17443 & 0.1131 & 59249\\
+    MARKOVX & fixed & 0.030 & 0.9233 & 32287 & 0.2347 & 59249\\
+    MARKOVX & fixed & 0.050 & 0.9126 & 36591 & 0.2906 & 59249\\
+    MARKOV & quantile & 0.001 & 0.9598 & 56899 & 0.2096 & 59249\\
+    MARKOV & quantile & 0.003 & 0.9598 & 56899 & 0.2096 & 59249\\
+    MARKOV & quantile & 0.005 & 0.9598 & 56899 & 0.2096 & 59249\\
+    MARKOV & quantile & 0.010 & 0.9573 & 56899 & 0.2168 & 59249\\
+    MARKOV & quantile & 0.030 & 0.9493 & 56918 & 0.2532 & 59249\\
+    MARKOV & quantile & 0.050 & 0.9436 & 56918 & 0.2705 & 59249\\
+    MARKOVX & quantile & 0.001 & 0.9663 & 56511 & 0.191 & 59249\\
+    MARKOVX & quantile & 0.003 & 0.9663 & 56511 & 0.191 & 59249\\
+    MARKOVX & quantile & 0.005 & 0.9663 & 56511 & 0.191 & 59249\\
+    MARKOVX & quantile & 0.010 & 0.9645 & 56650 & 0.1982 & 59249\\
+    MARKOVX & quantile & 0.030 & 0.9617 & 56650 & 0.2109 & 59249\\
+    MARKOVX & quantile & 0.050 & 0.9558 & 56650 & 0.2311 & 59249\\
+
 \end{longtable}
 
 \begin{figure}[htbp]

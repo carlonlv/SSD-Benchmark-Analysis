@@ -1,0 +1,61 @@
+\BOOKMARK [1][-]{section.1}{Prediction of Foreground Jobs}{}% 1
+\BOOKMARK [2][-]{subsection.1.1}{Statistics of Data}{section.1}% 2
+\BOOKMARK [3][-]{subsubsection.1.1.1}{Characteristics of Traces}{subsection.1.1}% 3
+\BOOKMARK [3][-]{subsubsection.1.1.2}{Correlations of Predictors}{subsection.1.1}% 4
+\BOOKMARK [2][-]{subsection.1.2}{Scoring System}{section.1}% 5
+\BOOKMARK [2][-]{subsection.1.3}{Cut-off Probability}{section.1}% 6
+\BOOKMARK [2][-]{subsection.1.4}{Models}{section.1}% 7
+\BOOKMARK [3][-]{subsubsection.1.4.1}{AR1}{subsection.1.4}% 8
+\BOOKMARK [3][-]{subsubsection.1.4.2}{ARI11}{subsection.1.4}% 9
+\BOOKMARK [3][-]{subsubsection.1.4.3}{General ARIMA}{subsection.1.4}% 10
+\BOOKMARK [3][-]{subsubsection.1.4.4}{Markov}{subsection.1.4}% 11
+\BOOKMARK [3][-]{subsubsection.1.4.5}{VAR}{subsection.1.4}% 12
+\BOOKMARK [3][-]{subsubsection.1.4.6}{More Compicated Models}{subsection.1.4}% 13
+\BOOKMARK [2][-]{subsection.1.5}{Aggregation VS Extrapolation}{section.1}% 14
+\BOOKMARK [2][-]{subsection.1.6}{Offline Training VS Online Training}{section.1}% 15
+\BOOKMARK [2][-]{subsection.1.7}{Parallel Models Policy}{section.1}% 16
+\BOOKMARK [2][-]{subsection.1.8}{Granularity}{section.1}% 17
+\BOOKMARK [2][-]{subsection.1.9}{Adjustment Policy}{section.1}% 18
+\BOOKMARK [2][-]{subsection.1.10}{Predicting Average of Next Window}{section.1}% 19
+\BOOKMARK [2][-]{subsection.1.11}{Comparing Against Autopilot}{section.1}% 20
+\BOOKMARK [3][-]{subsubsection.1.11.1}{Generate more granular traces}{subsection.1.11}% 21
+\BOOKMARK [3][-]{subsubsection.1.11.2}{jth-Quantile}{subsection.1.11}% 22
+\BOOKMARK [3][-]{subsubsection.1.11.3}{Choice of half-life}{subsection.1.11}% 23
+\BOOKMARK [3][-]{subsubsection.1.11.4}{Number of breaks}{subsection.1.11}% 24
+\BOOKMARK [3][-]{subsubsection.1.11.5}{Different Window Size}{subsection.1.11}% 25
+\BOOKMARK [2][-]{subsection.1.12}{Training Size}{section.1}% 26
+\BOOKMARK [3][-]{subsubsection.1.12.1}{AR1}{subsection.1.12}% 27
+\BOOKMARK [3][-]{subsubsection.1.12.2}{Markov}{subsection.1.12}% 28
+\BOOKMARK [3][-]{subsubsection.1.12.3}{VAR}{subsection.1.12}% 29
+\BOOKMARK [3][-]{subsubsection.1.12.4}{Neural Network}{subsection.1.12}% 30
+\BOOKMARK [3][-]{subsubsection.1.12.5}{Autopilot}{subsection.1.12}% 31
+\BOOKMARK [2][-]{subsection.1.13}{Appendix to Section 1}{section.1}% 32
+\BOOKMARK [3][-]{subsubsection.1.13.1}{Statistics of Data}{subsection.1.13}% 33
+\BOOKMARK [3][-]{subsubsection.1.13.2}{Cut-off Probability}{subsection.1.13}% 34
+\BOOKMARK [3][-]{subsubsection.1.13.3}{Models}{subsection.1.13}% 35
+\BOOKMARK [3][-]{subsubsection.1.13.4}{Aggregation VS Extrapolation}{subsection.1.13}% 36
+\BOOKMARK [3][-]{subsubsection.1.13.5}{Offline Training VS Online Training}{subsection.1.13}% 37
+\BOOKMARK [3][-]{subsubsection.1.13.6}{Parallel Models Policy}{subsection.1.13}% 38
+\BOOKMARK [3][-]{subsubsection.1.13.7}{Granularity}{subsection.1.13}% 39
+\BOOKMARK [3][-]{subsubsection.1.13.8}{Adjustment Policy}{subsection.1.13}% 40
+\BOOKMARK [3][-]{subsubsection.1.13.9}{Predicting Average of Next Window}{subsection.1.13}% 41
+\BOOKMARK [3][-]{subsubsection.1.13.10}{Comparison Against Autopilot}{subsection.1.13}% 42
+\BOOKMARK [1][-]{section.2}{Prediction of Background Jobs}{}% 43
+\BOOKMARK [2][-]{subsection.2.1}{Main Motivation for the problem}{section.2}% 44
+\BOOKMARK [2][-]{subsection.2.2}{Discretization}{section.2}% 45
+\BOOKMARK [2][-]{subsection.2.3}{Clustering of jobs}{section.2}% 46
+\BOOKMARK [3][-]{subsubsection.2.3.1}{Tree Method}{subsection.2.3}% 47
+\BOOKMARK [3][-]{subsubsection.2.3.2}{Gaussian Mixture Model Method}{subsection.2.3}% 48
+\BOOKMARK [2][-]{subsection.2.4}{Building probability vector}{section.2}% 49
+\BOOKMARK [2][-]{subsection.2.5}{Diagnosis and Updating}{section.2}% 50
+\BOOKMARK [2][-]{subsection.2.6}{Appendix}{section.2}% 51
+\BOOKMARK [3][-]{subsubsection.2.6.1}{Discretization}{subsection.2.6}% 52
+\BOOKMARK [1][-]{section.3}{Combining Predictions of Two Parts}{}% 53
+\BOOKMARK [2][-]{subsection.3.1}{Overview of Current method}{section.3}% 54
+\BOOKMARK [2][-]{subsection.3.2}{Simulation Study}{section.3}% 55
+\BOOKMARK [3][-]{subsubsection.3.2.1}{Arrival Rate}{subsection.3.2}% 56
+\BOOKMARK [3][-]{subsubsection.3.2.2}{Cut off Probability}{subsection.3.2}% 57
+\BOOKMARK [3][-]{subsubsection.3.2.3}{Models for Background Jobs}{subsection.3.2}% 58
+\BOOKMARK [3][-]{subsubsection.3.2.4}{Models for Foreground Jobs}{subsection.3.2}% 59
+\BOOKMARK [2][-]{subsection.3.3}{Appendix}{section.3}% 60
+\BOOKMARK [3][-]{subsubsection.3.3.1}{Simulation Study}{subsection.3.3}% 61
