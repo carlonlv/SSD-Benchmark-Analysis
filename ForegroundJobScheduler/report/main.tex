@@ -280,6 +280,20 @@ Fig \ref{fig:fig1.3.4} and Table \ref{tab:tab1.3.4} indicate that using quantile
 \end{flushleft}
 
 \begin{flushleft}
+  \textbf{Limit of training size}: A Markov model essentially trains the transition matrix which contains the square of the state number. The training size needs to be sufficiently large to be fully saturated to all the states. In the experiments using Markov models, we are limited by the length of the traces being one month, therefore it is hard to train Markov models with large state number greater than 16 for large window sizes.
+  
+  A simple solution to the limit of training size is to aggregate by overlapping windows instead of disjoint windows to yield more data points for training. Taking maximum in aggregation by overlapping windows yields repetitive observations in training size.
+  \end{flushleft}
+  
+  \begin{flushleft}
+  \textbf{Untrained States}: It is common for some traces that some of the states are untrained in fixed partitioning method, that is, no observations in training set fall into those states. This may be the result of limit of training size or the states are too extreme for observations to fall into. 
+  
+  A simple solution to avoid testing observation to fall into the untrained states is to use unconditional distribution for the untrained states. Experiments show that using unconditional distribution for untrained states has better performance than using uniform distribution for untrained states.
+  
+  Untrained states are not considered to be a serious problem for a well trained Markov model, if enough observations are used in training step, it is extremely rare to have observations in testing batch to fall into one of the untrained states.
+  \end{flushleft}
+
+\begin{flushleft}
 \textbf{Use of External Regressor}: Aside of training the traditional past window max to current window max transition matrix, we also trained past window average to current window average transition matrix and made predictions. 
 
 Fig \ref{fig:fig1.3.4} and Table \ref{tab:tab1.3.4} shows that by using fixed partitioning method, MarkovX(avg-to-max) model yields much higher survival rate and lower utilization rate. This is because past average values may transit to wider range of states than past maximum values, which results in more conservative decisions for a given cut off probability. Another observation from Table \ref{tab:tab1.3.4} is that when reducing cut off probability to more extreme values, using Markov-like models eventually fails to trade utilization rate for survival rate unlike ARIMA-like models. This is because of the limit in granularity of states when using Markov-like models, and it shows lesser flexibility when Markov-like models cannot reach a pre-specified survival rate no matter how extreme the cut off probability is. 
@@ -288,27 +302,14 @@ Another observation is that using MarkovX(avg-to-max) models results in better t
 \end{flushleft}
 
 \begin{flushleft}
-\textbf{Limit of training size}: A Markov model essentially trains the transition matrix which contains the square of the state number. The training size needs to be sufficiently large to be fully saturated to all the states. In the experiments using Markov models, we are limited by the length of the traces being one month, therefore it is hard to train Markov models with large state number greater than 16 for large window sizes.
-
-A simple solution to the limit of training size is to aggregate by overlapping windows instead of disjoint windows to yield more data points for training. Taking maximum in aggregation by overlapping windows yields repetitive observations in training size.
-\end{flushleft}
-
-\begin{flushleft}
-\textbf{Untrained States}: It is common for some traces that some of the states are untrained in fixed partitioning method, that is, no observations in training set fall into those states. This may be the result of limit of training size or the states are too extreme for observations to fall into. 
-
-A simple solution to avoid testing observation to fall into the untrained states is to use unconditional distribution for the untrained states. Experiments show that using unconditional distribution for untrained states has better performance than using uniform distribution for untrained states.
-
-Untrained states are not considered to be a serious problem for a well trained Markov model, if enough observations are used in training step, it is extremely rare to have observations in testing batch to fall into one of the untrained states.
-\end{flushleft}
-
-\begin{flushleft}
 \textbf{Granularity of States}: For Markov model with larger number of state number, each state covers a smaller range of observation. If state number is small, then $\alpha$ with small differences may be inseparable, that is, different value of $\alpha$ results in exact same prediction interval upper bounds. Because of the granularity of states, the prediction interval upper bounds are overestimated resulting in more conservative decisions when scheduling.
 
 Fig \ref{fig:fig1.3.5} and Table \ref{tab:tab1.3.5} indicate that using smaller number of states, survival rate is slightly higher and utilization rate is slightly lower. It is also noticeable that with smaller state number, the scheduler tend to refuse to schedule more frequently. With smaller cut off probability, using $8$ states results in better trade-off curve.
 \end{flushleft}
 
-\textbf{Overhead of Markov-like Models}:
 \begin{flushleft}
+\textbf{Overhead of Markov-like Models}:
+
 \textbf{Memory Consumption}: The Markov models need to store one transition matrix, which contains the number of parameters equals to square of the number of states. This is significantly more than ARIMA-like models. However, experiments show that using larger number of states not necessarily increase the performance of the model.
 
 \textbf{Training and Updating Models}: To train the transition matrix, one needs to loop through all the training data, identifying the starting state and the ending state and then add them to the corresponding entry of the transition matrix. Hence, the computational cost of training Markov-like models is proportional to the training size. As for updating the transition matrix, there is no good way of updating the matrix with new observations and forgetting the oldest observations. But updating the matrix without forgetting would be simple and proportional to the number of new observations.
@@ -330,8 +331,9 @@ VAR models maximum and average of the same window simultaneously which is differ
 Comparing all the Multivariate series models, Fig \ref{fig:fig1.3.6} and Table \ref{tab:tab1.3.6} indicate that VAR1 model has better trade-off curve comparing with higher orders of VAR models, such as VAR2 and VAR3. However, AR1X model appears to have better trade-off curve comparing to VAR1 model, which suggests using a simpler structure of only one time series is a better choice than more complicated dual time series structure.
 \end{flushleft}
 
-\textbf{Overhead of VAR Models}:
 \begin{flushleft}
+\textbf{Overhead of VAR Models}:
+
 \textbf{Memory Consumption}: For a two-series VAR model described above, only two $2$ by $2$ matrices storing the parameters, and one $2$ by $2$ matrix storing variance-covariance matrix is needed. Therefore, memory overhead for VAR model is constant.
 
 \textbf{Training and Updating Models}: Training a simple VAR1 model is similar to training an AR1 model, only with matrix operations. Maximum Likelihood Estimation has complexity of $O(m^2)$ where $m$ is the number of training observations, since a matrix multiplication of $m$ by $2$ matrix, $2$ by $2$ matrix and $2$ by $m$ matrix is required. Ordinary Least Squares Estimation yields the same result with same complexity.
@@ -350,20 +352,15 @@ However, with more complicated VAR models, the complexity also scales with the n
 Under the setting of the number of neurons being half of the number of input nodes (including external regressors, if given) plus 1, Fig \ref{fig:fig1.3.7} and Table \ref{tab:tab1.3.7} show that using Neural Network with pure maximum traces is almost consistently better than using both maximum and average traces. Also, a neural network with only lag $1$ of maximum traces, containing the least number of parameters, has better trade-off curve than other neural networks with more input nodes and neurons. The lag marked as "auto" in the figure and table refers to automatically selected lags by minimizing AIC(Akaike Information Criterion).
 \end{flushleft}
 
-\textbf{Overhead of NN Models}:
 \begin{flushleft}
+\textbf{Overhead of NN Models}:
+
 \textbf{Memory Consumption}: For a Neural Network model with only lag $1$ maximum traces as input and no hidden layers, it is exactly the same as AR1 model. With only one hidden layer and only one neuron like the model described above, the number of parameters in total is $4$. For general Neural Network with lag $1$ up to lag $p$ as input, the total number of parameters will be $p + 1$ for input layer, and $floor(p / 2) + 1$ for hidden layer.
 
 \textbf{Training and Updating Models}: Training a simple VAR1 model is similar to training an AR1 model, only with matrix operations. Maximum Likelihood Estimation has complexity of $O(m^2)$ where $m$ is the number of training observations, since a matrix multiplication of $m$ by $2$ matrix, $2$ by $2$ matrix and $2$ by $m$ matrix is required. Ordinary Least Squares Estimation yields the same result with same complexity.
 However, with more complicated VAR models, the complexity also scales with the number of lags. 
 
 \textbf{Doing Predictions}: Doing predictions for NN models requires bootstrapping which is time consuming, and is proportional to the number of sample paths in a similar fashion as ARIMA models with empirical distribution as residual distribution estimations.  
-\end{flushleft}
-
-\begin{flushleft}
-\textbf{ARCH/GARCH Model}: ARCH and GARCH models are the only choice of models deliberately models the volatility of the trace. It is observed that some traces have variance dependent on time in short time intervals. ARCH1 and GARCH11 Model can be used to forecast the variance in the next window that can be used when constructing the prediction interval for the next window. ARCH and GARCH model can be combined with AR1 model with the residuals of AR1 model fitted with ARCH or GARCH model with small number of parameter. It is observed that most traces of residuals of AR1 model do not have complicated behaviours in variance that needs to be modeled by ARCH or GARCH model. However, the order of ARCH and GARCH model can be selected by minimizing AICc/FPE(Forecast Prediction Error) or other information criterions. If ARCH0 or GARCH00 model is selected, then it indicates that simple AR1 model would suffice. 
-
-The difference in the performance of the AR1 combined with ARCH/GARCH model and simple AR1 model in extrapolation remains to be \underline{inconclusive}.
 \end{flushleft}
 
 \subsection{Aggregation VS Extrapolation}
@@ -396,7 +393,7 @@ The intuition for developing online training strategy over simple offline traini
 \end{flushleft}
 
 \begin{flushleft}
-\textbf{AR1}: Fig \ref{fig:fig1.5.1} and Table \ref{tab:tab1.5.1} show that with parameter setting of using AR1 model with 840 data points for training and aggregation over window size of 12 to predict the next hour window (12 observations), even with simple strategy as Fixed Point Training results in better performance than offline training policy for most traces. This represents that change of behaviours are common for most traces and one model would not suffice for the whole trace.
+Fig \ref{fig:fig1.5.1} and Table \ref{tab:tab1.5.1} show that with parameter setting of using AR1 model with 840 data points for training and aggregation over window size of 12 to predict the next hour window (12 observations), even with simple strategy as Fixed Point Training results in better performance than offline training policy for most traces. This represents that change of behaviours are common for most traces and one model would not suffice for the whole trace.
 \end{flushleft}
 
 \begin{flushleft}
@@ -428,8 +425,6 @@ This training policy defines comparison operations between results of simulation
 \end{itemize}
 
 At a specific time, if the active model is not well performed on the previous batch, the scheduler sends a swap signal and check whether the other inactive models are well performed on the previous batch. If some of the models are well performed, the scheduler picks the best model using out performs comparison operation to be the active model for the next batch. If no models are well performed, the scheduler sends a retrain signal and replace the worst model using out performs comparison operation by newly trained model, and the newly trained model is automatically the active model for the next batch.
-
-Fig \ref{fig:fig1.6.1} and Table \ref{tab:tab1.6.1} show that using Offline Training Policy with AR1 model and training size of 840, the model number does not have much impact on the performance of most traces.
 
 Fig \ref{fig:fig1.6.1} and Table \ref{tab:tab1.6.1} show that using Dynamic Online Training Policy with AR1 model, with more model numbers, the survival rate increases to better achieve the goal set, same as the purpose of dynamic training policy, in expense of utilization rate. However, the increase of model number shows worse trade-off curve.
 
@@ -1134,18 +1129,6 @@ Ref to Section 1.5, include Fig \ref{fig:fig1.5.1}, Table \ref{tab:tab1.5.1}, Fi
     AR1 & offline & 0.010 & 0.9168 & 48124 & 0.3463 & 59249\\
     AR1 & offline & 0.030 & 0.8965 & 50300 & 0.4024 & 59249\\
     AR1 & offline & 0.050 & 0.8841 & 52904 & 0.4309 & 59249\\
-    NNX & fixed & 0.001 & 0.9018 & 49020 & 0.4311 & 59249\\
-    NNX & fixed & 0.003 & 0.9026 & 49001 & 0.4318 & 59249\\
-    NNX & fixed & 0.005 & 0.9022 & 49069 & 0.4328 & 59249\\
-    NNX & fixed & 0.010 & 0.8954 & 50160 & 0.4552 & 59249\\
-    NNX & fixed & 0.030 & 0.8724 & 52700 & 0.4979 & 59249\\
-    NNX & fixed & 0.050 & 0.8591 & 54006 & 0.5200 & 59249\\
-    NNX & offline & 0.001 & 0.8684 & 47008 & 0.3398 & 59249\\
-    NNX & offline & 0.003 & 0.8731 & 47033 & 0.3459 & 59249\\
-    NNX & offline & 0.005 & 0.8767 & 47326 & 0.3432 & 59249\\
-    NNX & offline & 0.010 & 0.8624 & 48996 & 0.3679 & 59249\\
-    NNX & offline & 0.030 & 0.8347 & 51149 & 0.4027 & 59249\\
-    NNX & offline & 0.050 & 0.8249 & 52589 & 0.4209 & 59249\\
     AR1X & fixed & 0.001 & 0.9680 & 42594 & 0.2916 & 59249\\
     AR1X & fixed & 0.003 & 0.9607 & 45379 & 0.3354 & 59249\\
     AR1X & fixed & 0.005 & 0.9567 & 46476 & 0.3586 & 59249\\

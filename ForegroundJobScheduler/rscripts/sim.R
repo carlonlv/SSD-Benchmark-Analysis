@@ -125,7 +125,7 @@ bg_param_setting <- cbind(bg_param_setting, data.frame(name = "MARKOV", window_s
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/TrainPolicy/Markov/")
 
 bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, train_policy = train_policy, cluster_type = c("fixed", "quantile"), stringsAsFactors = FALSE)
-bg_param_setting <- cbind(bg_param_setting, data.frame(name = "MARKOV", window_size = 12, granularity = 0, train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE))
+bg_param_setting <- cbind(bg_param_setting, data.frame(name = "MARKOV", window_size = 12, cluster_type = "quantile", granularity = 0, train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE))
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/TrainPolicy/MarkovX/")
 
 bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, train_policy = train_policy, stringsAsFactors = FALSE)
@@ -133,12 +133,8 @@ bg_param_setting <- cbind(bg_param_setting, data.frame(name = "VAR", p = 1, wind
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], DataCenterSim::microsoft_avg_100[-c(1:12),], cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/TrainPolicy/VAR1/")
 
 bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, train_policy = train_policy, stringsAsFactors = FALSE)
-bg_param_setting <- cbind(bg_param_setting, data.frame(name = "NN", P = 0, window_size = 12, granularity = 0, train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE))
+bg_param_setting <- cbind(bg_param_setting, data.frame(name = "NN", p = 1, P = 0, window_size = 12, granularity = 0, train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE))
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/TrainPolicy/NN/")
-
-bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, train_policy = train_policy, stringsAsFactors = FALSE)
-bg_param_setting <- cbind(bg_param_setting, data.frame(name = "NN", P = 0, window_size = 12, granularity = 0, train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE))
-d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/TrainPolicy/NNX/")
 
 ## 1.6
 
@@ -270,12 +266,9 @@ train_policy = "fixed"
 train_size = 840
 update_freq = 3
 extrap_step = 1
-react_speed = "1,2"
+react_speed = c("1,1", "1,2", "2,1")
 bg_param_setting <- expand.grid(name = name, window_size = window_size, cut_off_prob = cut_off_prob, granularity = granularity, model_num = model_num, train_policy = train_policy, train_size = train_size, update_freq = update_freq, extrap_step = extrap_step, react_speed = react_speed, stringsAsFactors = FALSE)
 bg_param_setting$target <- 1 - bg_param_setting$cut_off_prob
-
-bg_param_setting$train_policy <- "offline"
-d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/WindowSize/AR1/")
 
 bg_param_setting$train_policy <- "fixed"
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/WindowSize/AR1/")
@@ -285,21 +278,16 @@ d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.m
 
 bg_param_setting$train_policy <- "fixed"
 bg_param_setting$train_args <- list("order" = c(1,1,0))
-d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/WindowSize/ARI11X/")
+d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/WindowSize/ARI11/")
 
 bg_param_setting$train_policy <- "fixed"
 bg_param_setting$train_args <- list("order" = c(1,1,0))
-d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/WindowSize/ARI11/")
+d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/WindowSize/ARI11X/")
 
 bg_param_setting$name <- "NN"
 bg_param_setting$p <- 1
 bg_param_setting$train_policy <- "fixed"
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/WindowSize/NN/")
-
-bg_param_setting$name <- "NN"
-bg_param_setting$p <- 1
-bg_param_setting$train_policy <- "fixed"
-d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], as.matrix(dplyr::mutate_all(as.data.frame(DataCenterSim::microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/WindowSize/NNX/")
 
 load("~/microsoft_generated_data_V2.rda")
 bg_param_setting$name <- "AUTOPILOT"
