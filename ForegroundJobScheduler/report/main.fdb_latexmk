@@ -1,5 +1,5 @@
 # Fdb version 3
-["pdflatex"] 1599362037 "/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/main.tex" "/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/main.pdf" "main" 1599362057
+["pdflatex"] 1599369956 "/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/main.tex" "/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/main.pdf" "main" 1599369970
   "./images/ECDFofCVMaxValue.png" 1599055296 189997 398d46f547e0f3a7032e754a66f72e57 ""
   "./images/ECDFofEntropyMaxValue.png" 1599055296 185992 8ee2bccaf91bc452aea6ae1bdd0b531f ""
   "./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandAomofpreviouswindow.png" 1599055296 89117 7ca84ef8bfbc0efc50f1c34726c9499b ""
@@ -8,8 +8,8 @@
   "./images/ECDFofVarianceMaxValue.png" 1599055296 179500 629c1ff912ba4ab7b002b285a164914f ""
   "./images/sur_tree.pdf" 1599055296 4756 81484064d20cf7f0e2796b3da75baae3 ""
   "./images/uncondional_hist.pdf" 1599055296 4735 56d6242b4ddc0177cb18d192b02d9ea0 ""
-  "/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/main.aux" 1599362057 28860 acf03d851ba263e00b231e190cbc892e ""
-  "/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/main.tex" 1599362016 122907 cd35f491f26c5d0d78020958b7c81736 ""
+  "/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/main.aux" 1599369970 28860 d19d42391358298100577557b5ed04b8 ""
+  "/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/main.tex" 1599369941 123520 857adcfc823df4f4aa4ac19a7e7b6aea ""
   "/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc" 1254269338 2375 baa924870cfb487815765f9094cf3728 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/lm/lm-mathex.enc" 1202520719 3486 c7eadf5dcc57b3b2d11736679f6636ba ""
   "/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc" 1202520719 2405 5dcf2c1b967ee25cc46c58cd52244aed ""
@@ -190,13 +190,13 @@
   "images/Tracewise Plot of 1948107, AR1, offline.png" 1599055296 1114216 a08e724fcc1b8deebc2980ded08cf50d ""
   "images/sur_tree.pdf" 1599055296 4756 81484064d20cf7f0e2796b3da75baae3 ""
   "images/uncondional_hist.pdf" 1599055296 4735 56d6242b4ddc0177cb18d192b02d9ea0 ""
-  "main.aux" 1599362057 28860 acf03d851ba263e00b231e190cbc892e "pdflatex"
-  "main.out" 1599362057 4535 07e44057c2de770fa97dd44220e61510 "pdflatex"
-  "main.tex" 1599362016 122907 cd35f491f26c5d0d78020958b7c81736 ""
+  "main.aux" 1599369970 28860 d19d42391358298100577557b5ed04b8 "pdflatex"
+  "main.out" 1599369970 4535 bc3138cd02761e550eaf40681f6c7ebd "pdflatex"
+  "main.tex" 1599369941 123520 857adcfc823df4f4aa4ac19a7e7b6aea ""
   (generated)
-  "main.log"
-  "main.pdf"
   "main.out"
   "main.aux"
-  "/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/main.log"
+  "main.log"
   "/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/main.pdf"
+  "main.pdf"
+  "/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/main.log"

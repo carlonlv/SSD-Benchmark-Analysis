@@ -948,6 +948,13 @@ memory to keep track of hundreds of histograms, therefore the total number of
 parameters are number of histograms times number of breaks in each histogram.
 \end{flushleft}
 
+\subsubsection{jth-Quantile}
+It is obvious that the parameter "j", analogous to "cut off probability", is an
+important factor for trade-offs between survival rate and utilization.
+Naturally, due to the design of our experiments, both AR1 method and Autopilot
+method cannot reach desired goal, which is, $1 - \alpha$ for arbitrary cut off
+probability $\alpha$. 
+
 \subsubsection{Generate more granular traces}
 
 \begin{flushleft}
@@ -980,14 +987,16 @@ an approximate for $X(t)$ at one minute granularity(i.e: $X(k_i) = F(k_i) -
 F(k_{i-1})$).    
 \end{flushleft}
 
-\subsubsection{jth-Quantile}
-It is obvious that the parameter "j", analogous to "cut off probability", is an
-important factor for trade-offs between survival rate and utilization.
-Naturally, due to the design of our experiments, both AR1 method and Autopilot
-method cannot reach desired goal, which is, $1 - \alpha$ for arbitrary cut off
-probability $\alpha$. 
-
-Table \ref{tab:tab1.11.1}
+\begin{flushleft}
+Fig \ref{fig:fig1.11.1} and Table \ref{tab:tab1.11.1} show that Version 1 and
+Version 2 have very similar trade-off curve and performance. Although Version 3
+has poor performance with high cut off probabilitie, when cut off probabilities
+are high, it has very similar trade-off curve with Version 1 and Version 2. In a
+actual situation, only cut off proabilities in the lower right region would
+be practical. The reason for the poor perforamnce on upper left region for
+Version 3 is because the constraints on maixmum and averages normally would
+result in a few artifical observations that are outliers. 
+\end{flushleft}
 
 \subsubsection{Choice of half-life}
 

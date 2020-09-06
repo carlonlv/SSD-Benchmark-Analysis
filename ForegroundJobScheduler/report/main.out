@@ -18,8 +18,8 @@
 \BOOKMARK [2][-]{subsection.1.9}{Adjustment Policy}{section.1}% 18
 \BOOKMARK [2][-]{subsection.1.10}{Predicting Average of Next Window}{section.1}% 19
 \BOOKMARK [2][-]{subsection.1.11}{Comparing Against Autopilot}{section.1}% 20
-\BOOKMARK [3][-]{subsubsection.1.11.1}{Generate more granular traces}{subsection.1.11}% 21
-\BOOKMARK [3][-]{subsubsection.1.11.2}{jth-Quantile}{subsection.1.11}% 22
+\BOOKMARK [3][-]{subsubsection.1.11.1}{jth-Quantile}{subsection.1.11}% 21
+\BOOKMARK [3][-]{subsubsection.1.11.2}{Generate more granular traces}{subsection.1.11}% 22
 \BOOKMARK [3][-]{subsubsection.1.11.3}{Choice of half-life}{subsection.1.11}% 23
 \BOOKMARK [3][-]{subsubsection.1.11.4}{Number of breaks}{subsection.1.11}% 24
 \BOOKMARK [3][-]{subsubsection.1.11.5}{Different Window Size}{subsection.1.11}% 25
