@@ -186,6 +186,20 @@ d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL
 
 ### 1.10.1
 cut_off_prob <- c(0.001, 0.003, 0.005, 0.01, 0.03, 0.05)
+train_policy <- c("offline","fixed")
+bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, train_policy = train_policy, stringsAsFactors = FALSE)
+bg_param_setting <- cbind(bg_param_setting, data.frame(name = "ARIMA", window_size = 12, granularity = 0, train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, response = "avg", stringsAsFactors = FALSE))
+d <- run_sim(bg_param_setting, DataCenterSim::microsoft_avg_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/Avg/TrainPolicy/AR1/")
+
+cut_off_prob <- c(0.001, 0.003, 0.005, 0.01, 0.03, 0.05)
+train_policy <- c("offline","fixed")
+bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, train_policy = train_policy, stringsAsFactors = FALSE)
+bg_param_setting <- cbind(bg_param_setting, data.frame(name = "ARIMA", window_size = 12, granularity = 0, train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, response = "avg", stringsAsFactors = FALSE))
+bg_param_setting$train_args <- list(order = c(1,1,0))
+d <- run_sim(bg_param_setting, DataCenterSim::microsoft_avg_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/Avg/TrainPolicy/ARI11/")
+
+### 1.10.2
+cut_off_prob <- c(0.001, 0.003, 0.005, 0.01, 0.03, 0.05)
 bg_param_setting <- data.frame(name = "ARIMA", window_size = 12, cut_off_prob = cut_off_prob, granularity = 0, train_policy = "offline", train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, response = "avg", stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_avg_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/Avg/Model/AR1/")
 
@@ -198,20 +212,6 @@ d <- run_sim(bg_param_setting, DataCenterSim::microsoft_avg_100[-c(1:12),], NULL
 
 bg_param_setting <- data.frame(name = "VAR", p = 1, window_size = 12, cut_off_prob = cut_off_prob, granularity = 0, train_policy = "offline", train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, response = "avg", stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_avg_100[-c(1:12),], DataCenterSim::microsoft_max_100[-c(1:12),], cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/Avg/Model/VAR1/")
-
-### 1.10.2
-cut_off_prob <- c(0.001, 0.003, 0.005, 0.01, 0.03, 0.05)
-train_policy <- c("dynamic","fixed")
-bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, train_policy = train_policy, stringsAsFactors = FALSE)
-bg_param_setting <- cbind(bg_param_setting, data.frame(name = "ARIMA", window_size = 12, granularity = 0, train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, response = "avg", stringsAsFactors = FALSE))
-d <- run_sim(bg_param_setting, DataCenterSim::microsoft_avg_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/Avg/TrainPolicy/AR1/")
-
-cut_off_prob <- c(0.001, 0.003, 0.005, 0.01, 0.03, 0.05)
-train_policy <- c("dynamic","fixed")
-bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, train_policy = train_policy, stringsAsFactors = FALSE)
-bg_param_setting <- cbind(bg_param_setting, data.frame(name = "ARIMA", window_size = 12, granularity = 0, train_size = 840, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, response = "avg", stringsAsFactors = FALSE))
-bg_param_setting$train_args <- list(order = c(1,1,0))
-d <- run_sim(bg_param_setting, DataCenterSim::microsoft_avg_100[-c(1:12),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/Avg/TrainPolicy/ARI11/")
 
 ## 1.11
 
