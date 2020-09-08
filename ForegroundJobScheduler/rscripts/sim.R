@@ -250,12 +250,6 @@ d <- run_sim(bg_param_setting, microsoft_generated_data, NULL, cores = 3, write_
 load("~/Documents/Generateddata_V3/microsoft_generated_data_V3.rda")
 d <- run_sim(bg_param_setting, microsoft_generated_data, NULL, cores = 3, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/Compare/Generateddata_V3/breaks/")
 
-### 1.11.4
-load("~/Documents/Generateddata_V2/microsoft_generated_data_V2.rda")
-window_size <- c(12, 36)
-
-load("~/Documents/Generateddata_V3/microsoft_generated_data_V3.rda")
-
 ### 1.11.5
 name = "ARIMA"
 window_size = c(2, 3, 6, 12, 36)

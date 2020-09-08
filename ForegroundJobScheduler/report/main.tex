@@ -918,21 +918,28 @@ the performance of ARI11 model is better than other models in both survival
 score and utilization score.
 
 With slightly more complicated online strategy, Fig \ref{fig:fig1.10.1} and
-Table \ref{tab:tab1.10.1} shows that the performance on both utilization and
-survival rate would be much higher than using offline strategy. Comparing to
-predicting the maximum value of next windows, predictioning average of next
-windows with same model typically results in both higher utilization rate and
-higher survival rate. The reason is that average traces, comparing to maximum
-traces, are less volatile and contains fewer outliers and irregular behaviours.
-Therefore, the former results in much more narrow prediction interval and hence
-higher utilization, and the latter results in higher survival rate.
+Table \ref{tab:tab1.10.1} shows that the performance using online fixed point
+training results in higher utilization and survival rate than using offline
+training. Even though most average traces are very smooth comparing to 
 
-However, using more carefully chosen parameters such as cut-off probability may
-result in better trade-off of survival rate and utilization rate. As shown in
-Fig \ref{fig:fig1.10.1} and \ref{tab:tab1.10.1}, decreasing cut off probability
-results in higher survival rate without losing too much utilization. Similarly,
-user can change other parameter settings to push survival rate to 99 percent
-since there are plenty utilization to trade.
+Comparing to predicting the maximum value of next windows,
+predictioning average of next windows with same model typically results in both
+higher utilization rate and higher survival rate. The reason is that average
+traces, comparing to maximum traces, are less volatile and contains fewer
+outliers and irregular behaviours. Therefore, the former results in much more
+narrow prediction interval and hence higher utilization, and the latter results
+in higher survival rate. 
+
+One may also notice that the trade-off curve for both models using offline
+training has an upward direction when cut off probabilities decreases, which
+doesn't really suggests a trade off between utilization rate and survival rate.
+The reason for such phenomenon is that the trade-off curve is normally a concave
+down quadratic curve if a wide enogh range of cut off probabilities are
+supplied. When cut off proabilities are high enough, the model schedules larger
+jobs, and if the larger jobs cannot survive, a utilization of $0$ is recorded,
+therefore when cut off probability increases, smaller jobs that can survive are
+scheduled, resulting a higher utilization rate and survival rate than with the
+higher cut off probabilities.
 \end{flushleft}
 
 \subsection{Comparing Against Autopilot}
@@ -959,7 +966,8 @@ probability $\alpha$.
 
 \begin{flushleft}
 In the data set, for each trace, the only available information for utilization
-is the average and max over five minutes period. 
+is the average and max over five minutes period. We want to reconstruct the
+traces into more granular traces, namely, period of 300 observations.
 
 Let $X(t)$ denote the utilization value of a trace at each second t. Let $\{t_0
 = 0,t_1,...,t_n\}$ ($t_i - t_{i-1} = 300$ for any i), denote the sample points
@@ -990,24 +998,67 @@ F(k_{i-1})$).
 \begin{flushleft}
 Fig \ref{fig:fig1.11.1} and Table \ref{tab:tab1.11.1} show that Version 1 and
 Version 2 have very similar trade-off curve and performance. Although Version 3
-has poor performance with high cut off probabilitie, when cut off probabilities
+has poor performance with high cut off probabilities, when cut off probabilities
 are high, it has very similar trade-off curve with Version 1 and Version 2. In a
 actual situation, only cut off proabilities in the lower right region would
 be practical. The reason for the poor perforamnce on upper left region for
 Version 3 is because the constraints on maixmum and averages normally would
-result in a few artifical observations that are outliers. 
+result in a few artifical observations that are outliers. The reconstruction frequency for such
+reconstruction determines the frequency of the appearances of those outliers,
+which in our case is at least one per $300$ observations. As cut off
+probabilities becomes smaller and the prediction interval becomes wider, the
+effect of those outliers eventually becomes diminished.
 \end{flushleft}
 
 \subsubsection{Choice of half-life}
 
-\textbf{Cut off weight}
+\begin{flushleft}
+The half life parameter controls the rate of decay for the weights applied on
+the previous histograms. This parameter represents the length of time for the
+weight to decrease by $\frac{1}{2}$. The higher this parameter is, the model
+puts more weight on previous histograms and therefore is more long-memory.
+\end{flushleft}
+
+\begin{flushleft}
+\textbf{Cut off weight}: Ideally, the decay of weight can goes to infinitly
+small, which requires the scheduler to keep track of infinitly many of past
+histograms. In a more practical setup, a cut off weight is used to determine
+after which value the weight will be regarded as zero, which means the scheduler
+only needs to keep track of finitely many of past histograms. The values of cut
+off weight and half life determie the memory required for the Autopilot model.
+\end{flushleft}
+
+\begin{flushleft}
+
+\end{flushleft}
 
 \subsubsection{Number of breaks}
 
+\begin{flushleft}
+Since the prediction upperbound is based on the quantile of weighted histograms
+of past observations, the breaks controls the way of partitioning the
+histograms. Ideally, for different historgams of different ranges, shapes and
+variations, we can come up with a reasonable way of partitioning it, making sure
+there is enough observations in each bin to guarentee the histogram contains
+precise information of the empirical distribution. However, the model needs
+throusands of histograms of previous windows, each containing $300$ observations
+of $5$-minute windows, it is not feasible to manually examine each histogram to
+find out the best partitioning nor keep track of the breaks as parameters for
+thousands of histograms.
+
+Therefore, we use the setting of breaks for all histograms to minizmie the
+number of parameters the scheduler needs to keep track of. A simple setting
+is to make sure the bin size is exactly the same in the range of $0$ and $100$,
+then we only need to specify the number of bins(or breaks).
+\end{flushleft}
+
 \subsubsection{Different Window Size}
+\begin{flushleft}
 Since using "j-quantile" only requires to tune two important parameters, j and
 half-life, one should not use the same half life for predicting different window
 sizes into the future. For example, 
+\end{flushleft}
+
 
 \subsection{Training Size}
 
@@ -1891,45 +1942,66 @@ Ref to Section 1.10, include Fig \ref{fig:fig1.10.1}, Table \ref{fig:fig1.10.1}.
 \begin{figure}
     \caption{}
     \centering
-    \includegraphics{images/ModelPerformanceatDifferentModelsforPredictingAvgWindowswithDifferentTrainingPolicies.png}
+    \includegraphics{images/ModelPerformanceatDifferentTrainingPoliciesforPredictingAverages.png}
     \label{fig:fig1.10.1}
 \end{figure}
 
-\begin{table}[htbp]
-  \begin{center}
-    \caption{Configuration and Result of Different Models Predicting Averages of Next Window with Offline Training}
-    \label{tab:tab1.10.1}
-    \begin{tabular}{l|l|l|*{4}{c}} \textbf{model} & \textbf{training policy} &
-      \textbf{cut off prob} & \textbf{score 1} & \textbf{score 1 weight} &
-      \textbf{score 2} & \textbf{score 2 weight} \\
-      \hline
-      AR1 & dynamic & 0.001 & 0.9795 & 59341 & 0.9114 & 59400\\
-      AR1 & dynamic & 0.003 & 0.9748 & 59365 & 0.9145 & 59400\\
-      AR1 & dynamic & 0.005 & 0.9717 & 59384 & 0.9152 & 59400\\
-      AR1 & dynamic & 0.010 & 0.9662 & 59397 & 0.9149 & 59400\\
-      AR1 & dynamic & 0.030 & 0.9508 & 59398 & 0.9091 & 59400\\
-      AR1 & dynamic & 0.050 & 0.9400 & 59398 & 0.9032 & 59400\\
-      AR1 & fixed & 0.001 & 0.9782 & 59342 & 0.9158 & 59400\\
-      AR1 & fixed & 0.003 & 0.9735 & 59366 & 0.9179 & 59400\\
-      AR1 & fixed & 0.005 & 0.9702 & 59385 & 0.9179 & 59400\\
-      AR1 & fixed & 0.010 & 0.9646 & 59398 & 0.9173 & 59400\\
-      AR1 & fixed & 0.030 & 0.9490 & 59399 & 0.9104 & 59400\\
-      AR1 & fixed & 0.050 & 0.9378 & 59399 & 0.9036 & 59400\\
-      ARI11 & dynamic & 0.001 & 0.9841 & 59280 & 0.9094 & 59400\\
-      ARI11 & dynamic & 0.003 & 0.9804 & 59334 & 0.9141 & 59400\\
-      ARI11 & dynamic & 0.005 & 0.9778 & 59361 & 0.9156 & 59400\\
-      ARI11 & dynamic & 0.010 & 0.9731 & 59387 & 0.9168 & 59400\\
-      ARI11 & dynamic & 0.030 & 0.9601 & 59394 & 0.9143 & 59400\\
-      ARI11 & dynamic & 0.050 & 0.9491 & 59395 & 0.9089 & 59400\\
-      ARI11 & fixed & 0.001 & 0.9831 & 59271 & 0.9139 & 59400\\
-      ARI11 & fixed & 0.003 & 0.9792 & 59332 & 0.9174 & 59400\\
-      ARI11 & fixed & 0.005 & 0.9766 & 59360 & 0.9186 & 59400\\
-      ARI11 & fixed & 0.010 & 0.9718 & 59386 & 0.9192 & 59400\\
-      ARI11 & fixed & 0.030 & 0.9586 & 59395 & 0.9157 & 59400\\
-      ARI11 & fixed & 0.050 & 0.9481 & 59396 & 0.9103 & 59400\\
-    \end{tabular}
-  \end{center}
-\end{table}
+\begin{longtable}[htbp]{l|l|l|*{4}{c}}
+  \caption{Configuration and Result of Different Models Predicting Averages of Next Window with Offline Training}
+  \label{tab:tab1.10.1}\\
+  \textbf{model} & \textbf{training policy} & \textbf{cut off prob} &
+  \textbf{score 1} & \textbf{score 1 weight} & \textbf{score 2} & \textbf{score
+  2 weight} \\
+  \hline
+  AR1 & fixed & 0.0002 & 0.9828 & 59305 & 0.9117 & 59400\\
+  AR1 & fixed & 0.0004 & 0.9808 & 59320 & 0.9133 & 59400\\
+  AR1 & fixed & 0.0006 & 0.9798 & 59327 & 0.9146 & 59400\\
+  AR1 & fixed & 0.0008 & 0.9789 & 59332 & 0.9153 & 59400\\
+  AR1 & fixed & 0.0010 & 0.9782 & 59342 & 0.9158 & 59400\\
+  AR1 & fixed & 0.0030 & 0.9735 & 59366 & 0.9179 & 59400\\
+  AR1 & fixed & 0.0050 & 0.9702 & 59385 & 0.9179 & 59400\\
+  AR1 & fixed & 0.0100 & 0.9646 & 59398 & 0.9173 & 59400\\
+  AR1 & fixed & 0.0200 & 0.9560 & 59399 & 0.9139 & 59400\\
+  AR1 & fixed & 0.0300 & 0.9490 & 59399 & 0.9104 & 59400\\
+  AR1 & fixed & 0.0400 & 0.9433 & 59399 & 0.9071 & 59400\\
+  AR1 & fixed & 0.0500 & 0.9378 & 59399 & 0.9036 & 59400\\
+  AR1 & offline & 0.0002 & 0.8537 & 59399 & 0.8006 & 59400\\
+  AR1 & offline & 0.0004 & 0.8491 & 59399 & 0.7984 & 59400\\
+  AR1 & offline & 0.0006 & 0.8461 & 59399 & 0.7969 & 59400\\
+  AR1 & offline & 0.0008 & 0.8440 & 59399 & 0.7959 & 59400\\
+  AR1 & offline & 0.0010 & 0.8419 & 59399 & 0.7947 & 59400\\
+  AR1 & offline & 0.0030 & 0.8314 & 59399 & 0.7887 & 59400\\
+  AR1 & offline & 0.0050 & 0.8251 & 59399 & 0.7845 & 59400\\
+  AR1 & offline & 0.0100 & 0.8141 & 59399 & 0.7768 & 59400\\
+  AR1 & offline & 0.0200 & 0.7996 & 59399 & 0.7657 & 59400\\
+  AR1 & offline & 0.0300 & 0.7900 & 59399 & 0.7583 & 59400\\
+  AR1 & offline & 0.0400 & 0.7815 & 59399 & 0.7513 & 59400\\
+  AR1 & offline & 0.0500 & 0.7750 & 59399 & 0.7461 & 59400\\
+  ARI11 & fixed & 0.0002 & 0.9875 & 59188 & 0.9088 & 59400\\
+  ARI11 & fixed & 0.0004 & 0.9857 & 59236 & 0.9110 & 59400\\
+  ARI11 & fixed & 0.0006 & 0.9847 & 59255 & 0.9124 & 59400\\
+  ARI11 & fixed & 0.0008 & 0.9837 & 59264 & 0.9132 & 59400\\
+  ARI11 & fixed & 0.0010 & 0.9831 & 59271 & 0.9139 & 59400\\
+  ARI11 & fixed & 0.0030 & 0.9792 & 59332 & 0.9174 & 59400\\
+  ARI11 & fixed & 0.0050 & 0.9766 & 59360 & 0.9186 & 59400\\
+  ARI11 & fixed & 0.0100 & 0.9718 & 59386 & 0.9192 & 59400\\
+  ARI11 & fixed & 0.0200 & 0.9646 & 59395 & 0.9179 & 59400\\
+  ARI11 & fixed & 0.0300 & 0.9586 & 59395 & 0.9157 & 59400\\
+  ARI11 & fixed & 0.0400 & 0.9530 & 59395 & 0.9129 & 59400\\
+  ARI11 & fixed & 0.0500 & 0.9481 & 59396 & 0.9103 & 59400\\
+  ARI11 & offline & 0.0002 & 0.9052 & 59388 & 0.8464 & 59400\\
+  ARI11 & offline & 0.0004 & 0.9020 & 59391 & 0.8460 & 59400\\
+  ARI11 & offline & 0.0006 & 0.8995 & 59394 & 0.8453 & 59400\\
+  ARI11 & offline & 0.0008 & 0.8977 & 59394 & 0.8447 & 59400\\
+  ARI11 & offline & 0.0010 & 0.8964 & 59395 & 0.8443 & 59400\\
+  ARI11 & offline & 0.0030 & 0.8854 & 59395 & 0.8385 & 59400\\
+  ARI11 & offline & 0.0050 & 0.8806 & 59398 & 0.8361 & 59400\\
+  ARI11 & offline & 0.0100 & 0.8716 & 59399 & 0.8308 & 59400\\
+  ARI11 & offline & 0.0200 & 0.8614 & 59399 & 0.8246 & 59400\\
+  ARI11 & offline & 0.0300 & 0.8533 & 59399 & 0.8189 & 59400\\
+  ARI11 & offline & 0.0400 & 0.8462 & 59399 & 0.8137 & 59400\\
+  ARI11 & offline & 0.0500 & 0.8394 & 59399 & 0.8084 & 59400\\
+\end{longtable}
 
 \subsubsection{Comparison Against Autopilot}
 

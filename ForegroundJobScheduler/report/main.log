@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020) (preloaded format=pdflatex 2020.5.9)  6 SEP 2020 01:25
+This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020) (preloaded format=pdflatex 2020.5.9)  8 SEP 2020 01:49
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -573,265 +573,266 @@ LaTeX Font Info:    External font `lmex10' loaded for size
 LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 791.
  (/usr/local/texlive/2020/texmf-dist/tex/latex/lm/ts1lmr.fd
 File: ts1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
-) [14] [15] [16] [17]
-<./images/ECDFofVarianceMaxValue.png, id=447, 875.4306pt x 586.3506pt>
+) [14] [15] [16] [17] [18]
+<./images/ECDFofVarianceMaxValue.png, id=449, 875.4306pt x 586.3506pt>
 File: ./images/ECDFofVarianceMaxValue.png Graphic file (type png)
 <use ./images/ECDFofVarianceMaxValue.png>
-Package pdftex.def Info: ./images/ECDFofVarianceMaxValue.png  used on input line 1035.
+Package pdftex.def Info: ./images/ECDFofVarianceMaxValue.png  used on input line 1086.
 (pdftex.def)             Requested size: 375.81335pt x 251.71428pt.
-<./images/ECDFofCVMaxValue.png, id=448, 875.4306pt x 586.3506pt>
+<./images/ECDFofCVMaxValue.png, id=450, 875.4306pt x 586.3506pt>
 File: ./images/ECDFofCVMaxValue.png Graphic file (type png)
 <use ./images/ECDFofCVMaxValue.png>
-Package pdftex.def Info: ./images/ECDFofCVMaxValue.png  used on input line 1042.
+Package pdftex.def Info: ./images/ECDFofCVMaxValue.png  used on input line 1093.
 (pdftex.def)             Requested size: 375.81335pt x 251.71428pt.
-<./images/ECDFofEntropyMaxValue.png, id=449, 875.4306pt x 586.3506pt>
+<./images/ECDFofEntropyMaxValue.png, id=451, 875.4306pt x 586.3506pt>
 File: ./images/ECDFofEntropyMaxValue.png Graphic file (type png)
 <use ./images/ECDFofEntropyMaxValue.png>
-Package pdftex.def Info: ./images/ECDFofEntropyMaxValue.png  used on input line 1049.
+Package pdftex.def Info: ./images/ECDFofEntropyMaxValue.png  used on input line 1100.
 (pdftex.def)             Requested size: 375.81335pt x 251.71428pt.
-<./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandMaxofpreviouswindow.png, id=450, 505.89pt x 505.89pt>
+<./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandMaxofpreviouswindow.png, id=452, 505.89pt x 505.89pt>
 File: ./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandMaxofpreviouswindow.png Graphic file (type png)
 <use ./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandMaxofpreviouswindow.png>
-Package pdftex.def Info: ./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandMaxofpreviouswindow.png  used on input line 1056.
+Package pdftex.def Info: ./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandMaxofpreviouswindow.png  used on input line 1107.
 (pdftex.def)             Requested size: 375.81166pt x 375.81166pt.
-<./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandAvgofpreviouswindow.png, id=451, 505.89pt x 505.89pt>
+<./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandAvgofpreviouswindow.png, id=453, 505.89pt x 505.89pt>
 File: ./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandAvgofpreviouswindow.png Graphic file (type png)
 <use ./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandAvgofpreviouswindow.png>
-Package pdftex.def Info: ./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandAvgofpreviouswindow.png  used on input line 1063.
+Package pdftex.def Info: ./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandAvgofpreviouswindow.png  used on input line 1114.
 (pdftex.def)             Requested size: 375.81166pt x 375.81166pt.
-<./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandAomofpreviouswindow.png, id=452, 505.89pt x 505.89pt>
+<./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandAomofpreviouswindow.png, id=454, 505.89pt x 505.89pt>
 File: ./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandAomofpreviouswindow.png Graphic file (type png)
 <use ./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandAomofpreviouswindow.png>
-Package pdftex.def Info: ./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandAomofpreviouswindow.png  used on input line 1070.
+Package pdftex.def Info: ./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandAomofpreviouswindow.png  used on input line 1121.
 (pdftex.def)             Requested size: 375.81166pt x 375.81166pt.
-<images/ModelPerformanceatDifferentCutOffProbabilityforAR1Offline.png, id=455, 3613.5pt x 2107.875pt>
+<images/ModelPerformanceatDifferentCutOffProbabilityforAR1Offline.png, id=457, 3613.5pt x 2107.875pt>
 File: images/ModelPerformanceatDifferentCutOffProbabilityforAR1Offline.png Graphic file (type png)
 <use images/ModelPerformanceatDifferentCutOffProbabilityforAR1Offline.png>
-Package pdftex.def Info: images/ModelPerformanceatDifferentCutOffProbabilityforAR1Offline.png  used on input line 1080.
+Package pdftex.def Info: images/ModelPerformanceatDifferentCutOffProbabilityforAR1Offline.png  used on input line 1131.
 (pdftex.def)             Requested size: 469.71635pt x 274.0012pt.
-<images/ModelPerformanceatAR1,AR1X,ARI11,ARI11X,AUTO,AUTOX.png, id=471, 3613.5pt x 2107.875pt>
+<images/ModelPerformanceatAR1,AR1X,ARI11,ARI11X,AUTO,AUTOX.png, id=473, 3613.5pt x 2107.875pt>
 File: images/ModelPerformanceatAR1,AR1X,ARI11,ARI11X,AUTO,AUTOX.png Graphic file (type png)
 <use images/ModelPerformanceatAR1,AR1X,ARI11,ARI11X,AUTO,AUTOX.png>
-Package pdftex.def Info: images/ModelPerformanceatAR1,AR1X,ARI11,ARI11X,AUTO,AUTOX.png  used on input line 1112.
+Package pdftex.def Info: images/ModelPerformanceatAR1,AR1X,ARI11,ARI11X,AUTO,AUTOX.png  used on input line 1163.
 (pdftex.def)             Requested size: 375.76205pt x 219.19453pt.
- [18] [19 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/./images/ECDFofVarianceMaxValue.png> </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/./images/ECDFofCVMaxValue.png>] [20 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/./images/ECDFofEntropyMaxValue.png>] [21 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandMaxofpreviouswindow.png>] [22 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandAvgofpreviouswindow.png>] [23 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandAomofpreviouswindow.png>] [24 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentCutOffProbabilityforAR1Offline.png> </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatAR1,AR1X,ARI11,ARI11X,AUTO,AUTOX.png>] [25]
-<images/ModelPerformanceatDifferentResidualDistributionOfAR1.png, id=516, 3613.5pt x 2107.875pt>
+ [19] [20 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/./images/ECDFofVarianceMaxValue.png> </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/./images/ECDFofCVMaxValue.png>] [21 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/./images/ECDFofEntropyMaxValue.png>]
+<images/ModelPerformanceatDifferentResidualDistributionOfAR1.png, id=492, 3613.5pt x 2107.875pt>
 File: images/ModelPerformanceatDifferentResidualDistributionOfAR1.png Graphic file (type png)
 <use images/ModelPerformanceatDifferentResidualDistributionOfAR1.png>
-Package pdftex.def Info: images/ModelPerformanceatDifferentResidualDistributionOfAR1.png  used on input line 1163.
+Package pdftex.def Info: images/ModelPerformanceatDifferentResidualDistributionOfAR1.png  used on input line 1214.
 (pdftex.def)             Requested size: 375.76205pt x 219.19453pt.
-<images/ModelPerformanceatDifferentOutlierTypeDetectionOfAR1.png, id=517, 3613.5pt x 2107.875pt>
+<images/ModelPerformanceatDifferentOutlierTypeDetectionOfAR1.png, id=493, 3613.5pt x 2107.875pt>
 File: images/ModelPerformanceatDifferentOutlierTypeDetectionOfAR1.png Graphic file (type png)
 <use images/ModelPerformanceatDifferentOutlierTypeDetectionOfAR1.png>
-Package pdftex.def Info: images/ModelPerformanceatDifferentOutlierTypeDetectionOfAR1.png  used on input line 1200.
+Package pdftex.def Info: images/ModelPerformanceatDifferentOutlierTypeDetectionOfAR1.png  used on input line 1251.
 (pdftex.def)             Requested size: 375.76205pt x 219.19453pt.
- [26 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentResidualDistributionOfAR1.png>]
-<images/ModelPerformanceatDifferentClusterTypeforDifferentMarkovModels.png, id=523, 3613.5pt x 2107.875pt>
+ [22]
+<images/ModelPerformanceatDifferentClusterTypeforDifferentMarkovModels.png, id=498, 3613.5pt x 2107.875pt>
 File: images/ModelPerformanceatDifferentClusterTypeforDifferentMarkovModels.png Graphic file (type png)
 <use images/ModelPerformanceatDifferentClusterTypeforDifferentMarkovModels.png>
-Package pdftex.def Info: images/ModelPerformanceatDifferentClusterTypeforDifferentMarkovModels.png  used on input line 1245.
+Package pdftex.def Info: images/ModelPerformanceatDifferentClusterTypeforDifferentMarkovModels.png  used on input line 1296.
 (pdftex.def)             Requested size: 375.76205pt x 219.19453pt.
 
-Overfull \hbox (33.43706pt too wide) in alignment at lines 1249--1274
+Overfull \hbox (33.43706pt too wide) in alignment at lines 1300--1325
  [] [] [] [] [] [] [] 
  []
 
 
-Overfull \hbox (33.43706pt too wide) in alignment at lines 1274--1281
+Overfull \hbox (33.43706pt too wide) in alignment at lines 1325--1332
+ [] [] [] [] [] [] [] 
+ []
+
+[23]
+<images/ModelPerformanceatDifferentStateNumberofMarkovModel.png, id=503, 3613.5pt x 2107.875pt>
+File: images/ModelPerformanceatDifferentStateNumberofMarkovModel.png Graphic file (type png)
+<use images/ModelPerformanceatDifferentStateNumberofMarkovModel.png>
+Package pdftex.def Info: images/ModelPerformanceatDifferentStateNumberofMarkovModel.png  used on input line 1337.
+(pdftex.def)             Requested size: 375.76205pt x 219.19453pt.
+ [24]
+<images/ModelPerformanceatMultivariateModels.png, id=508, 3613.5pt x 2107.875pt>
+File: images/ModelPerformanceatMultivariateModels.png Graphic file (type png)
+<use images/ModelPerformanceatMultivariateModels.png>
+Package pdftex.def Info: images/ModelPerformanceatMultivariateModels.png  used on input line 1376.
+(pdftex.def)             Requested size: 375.76205pt x 219.19453pt.
+<images/ModelPerformanceatDifferentNumberofLagswithNeuralNetworkModels.png, id=509, 3613.5pt x 2107.875pt>
+File: images/ModelPerformanceatDifferentNumberofLagswithNeuralNetworkModels.png Graphic file (type png)
+<use images/ModelPerformanceatDifferentNumberofLagswithNeuralNetworkModels.png>
+Package pdftex.def Info: images/ModelPerformanceatDifferentNumberofLagswithNeuralNetworkModels.png  used on input line 1425.
+(pdftex.def)             Requested size: 375.76205pt x 219.19453pt.
+ [25] [26]
+<images/ModelPerformanceatDifferentExtrapolationSteps.png, id=521, 3613.5pt x 2107.875pt>
+File: images/ModelPerformanceatDifferentExtrapolationSteps.png Graphic file (type png)
+<use images/ModelPerformanceatDifferentExtrapolationSteps.png>
+Package pdftex.def Info: images/ModelPerformanceatDifferentExtrapolationSteps.png  used on input line 1502.
+(pdftex.def)             Requested size: 375.76205pt x 219.19453pt.
+
+Overfull \hbox (3.69815pt too wide) in alignment at lines 1506--1531
+ [] [] [] [] [] [] [] 
+ []
+
+
+Overfull \hbox (3.69815pt too wide) in alignment at lines 1531--1549
  [] [] [] [] [] [] [] 
  []
 
 [27]
-<images/ModelPerformanceatDifferentStateNumberofMarkovModel.png, id=528, 3613.5pt x 2107.875pt>
-File: images/ModelPerformanceatDifferentStateNumberofMarkovModel.png Graphic file (type png)
-<use images/ModelPerformanceatDifferentStateNumberofMarkovModel.png>
-Package pdftex.def Info: images/ModelPerformanceatDifferentStateNumberofMarkovModel.png  used on input line 1286.
-(pdftex.def)             Requested size: 375.76205pt x 219.19453pt.
- [28]
-<images/ModelPerformanceatMultivariateModels.png, id=533, 3613.5pt x 2107.875pt>
-File: images/ModelPerformanceatMultivariateModels.png Graphic file (type png)
-<use images/ModelPerformanceatMultivariateModels.png>
-Package pdftex.def Info: images/ModelPerformanceatMultivariateModels.png  used on input line 1325.
-(pdftex.def)             Requested size: 375.76205pt x 219.19453pt.
-<images/ModelPerformanceatDifferentNumberofLagswithNeuralNetworkModels.png, id=534, 3613.5pt x 2107.875pt>
-File: images/ModelPerformanceatDifferentNumberofLagswithNeuralNetworkModels.png Graphic file (type png)
-<use images/ModelPerformanceatDifferentNumberofLagswithNeuralNetworkModels.png>
-Package pdftex.def Info: images/ModelPerformanceatDifferentNumberofLagswithNeuralNetworkModels.png  used on input line 1374.
-(pdftex.def)             Requested size: 375.76205pt x 219.19453pt.
- [29] [30]
-<images/ModelPerformanceatDifferentExtrapolationSteps.png, id=545, 3613.5pt x 2107.875pt>
-File: images/ModelPerformanceatDifferentExtrapolationSteps.png Graphic file (type png)
-<use images/ModelPerformanceatDifferentExtrapolationSteps.png>
-Package pdftex.def Info: images/ModelPerformanceatDifferentExtrapolationSteps.png  used on input line 1451.
-(pdftex.def)             Requested size: 375.76205pt x 219.19453pt.
-
-Overfull \hbox (3.69815pt too wide) in alignment at lines 1455--1480
- [] [] [] [] [] [] [] 
- []
-
-
-Overfull \hbox (3.69815pt too wide) in alignment at lines 1480--1498
- [] [] [] [] [] [] [] 
- []
-
-[31]
-<images/ModelPerformanceatDifferentTrainingPolicyforAR1.png, id=557, 3613.5pt x 2107.875pt>
+<images/ModelPerformanceatDifferentTrainingPolicyforAR1.png, id=532, 3613.5pt x 2107.875pt>
 File: images/ModelPerformanceatDifferentTrainingPolicyforAR1.png Graphic file (type png)
 <use images/ModelPerformanceatDifferentTrainingPolicyforAR1.png>
-Package pdftex.def Info: images/ModelPerformanceatDifferentTrainingPolicyforAR1.png  used on input line 1508.
+Package pdftex.def Info: images/ModelPerformanceatDifferentTrainingPolicyforAR1.png  used on input line 1559.
 (pdftex.def)             Requested size: 375.76205pt x 219.19453pt.
-<images/ModelPerformanceatDifferentBatchSizeforAR1DynamicTraining.png, id=558, 3613.5pt x 2107.875pt>
+<images/ModelPerformanceatDifferentBatchSizeforAR1DynamicTraining.png, id=533, 3613.5pt x 2107.875pt>
 File: images/ModelPerformanceatDifferentBatchSizeforAR1DynamicTraining.png Graphic file (type png)
 <use images/ModelPerformanceatDifferentBatchSizeforAR1DynamicTraining.png>
-Package pdftex.def Info: images/ModelPerformanceatDifferentBatchSizeforAR1DynamicTraining.png  used on input line 1545.
+Package pdftex.def Info: images/ModelPerformanceatDifferentBatchSizeforAR1DynamicTraining.png  used on input line 1596.
 (pdftex.def)             Requested size: 375.76205pt x 219.19453pt.
-<images/ModelPerformanceatDifferentModelswithDifferentTrainingPolicy.png, id=559, 3613.5pt x 2107.875pt>
+<images/ModelPerformanceatDifferentModelswithDifferentTrainingPolicy.png, id=534, 3613.5pt x 2107.875pt>
 File: images/ModelPerformanceatDifferentModelswithDifferentTrainingPolicy.png Graphic file (type png)
 <use images/ModelPerformanceatDifferentModelswithDifferentTrainingPolicy.png>
-Package pdftex.def Info: images/ModelPerformanceatDifferentModelswithDifferentTrainingPolicy.png  used on input line 1588.
+Package pdftex.def Info: images/ModelPerformanceatDifferentModelswithDifferentTrainingPolicy.png  used on input line 1639.
 (pdftex.def)             Requested size: 375.76205pt x 219.19453pt.
 
-Overfull \hbox (39.21072pt too wide) in alignment at lines 1592--1617
+Overfull \hbox (39.21072pt too wide) in alignment at lines 1643--1668
  [] [] [] [] [] [] [] 
  []
 
 
-Overfull \hbox (39.21072pt too wide) in alignment at lines 1617--1637
+Overfull \hbox (39.21072pt too wide) in alignment at lines 1668--1688
+ [] [] [] [] [] [] [] 
+ []
+
+[28]
+Overfull \hbox (39.21072pt too wide) in alignment at lines 1688--1708
  [] [] [] [] [] [] [] 
  []
 
 
-Overfull \hbox (39.21072pt too wide) in alignment at lines 1637--1657
+Overfull \hbox (39.21072pt too wide) in alignment at lines 1708--1728
  [] [] [] [] [] [] [] 
  []
 
-[32]
-Overfull \hbox (39.21072pt too wide) in alignment at lines 1657--1677
+[29]
+Overfull \hbox (39.21072pt too wide) in alignment at lines 1728--1734
  [] [] [] [] [] [] [] 
  []
 
-[33]
-Overfull \hbox (39.21072pt too wide) in alignment at lines 1677--1683
- [] [] [] [] [] [] [] 
- []
-
-<images/ModelPerformanceatDifferentModelNumsatDynamicTrainingPolicy.png, id=572, 3613.5pt x 2107.875pt>
+[30]
+<images/ModelPerformanceatDifferentModelNumsatDynamicTrainingPolicy.png, id=551, 3613.5pt x 2107.875pt>
 File: images/ModelPerformanceatDifferentModelNumsatDynamicTrainingPolicy.png Graphic file (type png)
 <use images/ModelPerformanceatDifferentModelNumsatDynamicTrainingPolicy.png>
-Package pdftex.def Info: images/ModelPerformanceatDifferentModelNumsatDynamicTrainingPolicy.png  used on input line 1692.
+Package pdftex.def Info: images/ModelPerformanceatDifferentModelNumsatDynamicTrainingPolicy.png  used on input line 1743.
 (pdftex.def)             Requested size: 375.76205pt x 219.19453pt.
-[34] [35] [36 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentOutlierTypeDetectionOfAR1.png> </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentClusterTypeforDifferentMarkovModels.png>] [37 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentStateNumberofMarkovModel.png> </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatMultivariateModels.png>] [38] [39 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentNumberofLagswithNeuralNetworkModels.png> </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentExtrapolationSteps.png>] [40 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentTrainingPolicyforAR1.png> </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentBatchSizeforAR1DynamicTraining.png>] [41] [42]
-<images/Tracewise Plot of 1948107, AR1, offline.png, id=619, 3613.5pt x 2107.875pt>
+<images/Tracewise Plot of 1948107, AR1, offline.png, id=552, 3613.5pt x 2107.875pt>
 File: images/Tracewise Plot of 1948107, AR1, offline.png Graphic file (type png)
 <use images/Tracewise Plot of 1948107, AR1, offline.png>
-Package pdftex.def Info: images/Tracewise Plot of 1948107, AR1, offline.png  used on input line 1735.
+Package pdftex.def Info: images/Tracewise Plot of 1948107, AR1, offline.png  used on input line 1786.
 (pdftex.def)             Requested size: 375.76205pt x 219.19453pt.
-<images/Tracewise Plot of 1948107, AR1, dynamic.png, id=620, 3613.5pt x 2107.875pt>
+<images/Tracewise Plot of 1948107, AR1, dynamic.png, id=553, 3613.5pt x 2107.875pt>
 File: images/Tracewise Plot of 1948107, AR1, dynamic.png Graphic file (type png)
 <use images/Tracewise Plot of 1948107, AR1, dynamic.png>
-Package pdftex.def Info: images/Tracewise Plot of 1948107, AR1, dynamic.png  used on input line 1742.
+Package pdftex.def Info: images/Tracewise Plot of 1948107, AR1, dynamic.png  used on input line 1793.
 (pdftex.def)             Requested size: 375.76205pt x 219.19453pt.
-<images/ECDFofscoresatDifferentGranularityOfAR1ModelOfflineTrainingPolicy.png, id=623, 3613.5pt x 2107.875pt>
+<images/ECDFofscoresatDifferentGranularityOfAR1ModelOfflineTrainingPolicy.png, id=556, 3613.5pt x 2107.875pt>
 File: images/ECDFofscoresatDifferentGranularityOfAR1ModelOfflineTrainingPolicy.png Graphic file (type png)
 <use images/ECDFofscoresatDifferentGranularityOfAR1ModelOfflineTrainingPolicy.png>
-Package pdftex.def Info: images/ECDFofscoresatDifferentGranularityOfAR1ModelOfflineTrainingPolicy.png  used on input line 1752.
+Package pdftex.def Info: images/ECDFofscoresatDifferentGranularityOfAR1ModelOfflineTrainingPolicy.png  used on input line 1803.
 (pdftex.def)             Requested size: 469.71635pt x 274.0012pt.
-<images/ModelPerformanceatDifferentReactSpeedforAR1offline.png, id=626, 3613.5pt x 2107.875pt>
+<images/ModelPerformanceatDifferentReactSpeedforAR1offline.png, id=559, 3613.5pt x 2107.875pt>
 File: images/ModelPerformanceatDifferentReactSpeedforAR1offline.png Graphic file (type png)
 <use images/ModelPerformanceatDifferentReactSpeedforAR1offline.png>
-Package pdftex.def Info: images/ModelPerformanceatDifferentReactSpeedforAR1offline.png  used on input line 1777.
+Package pdftex.def Info: images/ModelPerformanceatDifferentReactSpeedforAR1offline.png  used on input line 1828.
 (pdftex.def)             Requested size: 469.71635pt x 274.0012pt.
- [43 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentModelswithDifferentTrainingPolicy.png>]
-<images/ModelPerformanceatDifferentReactSpeedforAR1fixed.png, id=634, 3613.5pt x 2107.875pt>
+ [31]
+<images/ModelPerformanceatDifferentReactSpeedforAR1fixed.png, id=566, 3613.5pt x 2107.875pt>
 File: images/ModelPerformanceatDifferentReactSpeedforAR1fixed.png Graphic file (type png)
 <use images/ModelPerformanceatDifferentReactSpeedforAR1fixed.png>
-Package pdftex.def Info: images/ModelPerformanceatDifferentReactSpeedforAR1fixed.png  used on input line 1834.
+Package pdftex.def Info: images/ModelPerformanceatDifferentReactSpeedforAR1fixed.png  used on input line 1885.
 (pdftex.def)             Requested size: 469.71635pt x 274.0012pt.
- [44] [45 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentModelNumsatDynamicTrainingPolicy.png> </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/Tracewise Plot of 1948107, AR1, offline.png>] [46] [47 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/Tracewise Plot of 1948107, AR1, dynamic.png> </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ECDFofscoresatDifferentGranularityOfAR1ModelOfflineTrainingPolicy.png>] [48 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentReactSpeedforAR1offline.png>]
-<images/ModelPerformanceatDifferentModelsforPredictingAvgWindowswithDifferentTrainingPolicies.png, id=662, 3613.5pt x 2107.875pt>
-File: images/ModelPerformanceatDifferentModelsforPredictingAvgWindowswithDifferentTrainingPolicies.png Graphic file (type png)
-<use images/ModelPerformanceatDifferentModelsforPredictingAvgWindowswithDifferentTrainingPolicies.png>
-Package pdftex.def Info: images/ModelPerformanceatDifferentModelsforPredictingAvgWindowswithDifferentTrainingPolicies.png  used on input line 1894.
+ [32] [33]
+<images/ModelPerformanceatDifferentTrainingPoliciesforPredictingAverages.png, id=577, 3613.5pt x 2107.875pt>
+File: images/ModelPerformanceatDifferentTrainingPoliciesforPredictingAverages.png Graphic file (type png)
+<use images/ModelPerformanceatDifferentTrainingPoliciesforPredictingAverages.png>
+Package pdftex.def Info: images/ModelPerformanceatDifferentTrainingPoliciesforPredictingAverages.png  used on input line 1945.
 (pdftex.def)             Requested size: 469.71635pt x 274.0012pt.
-<images/ModelPerformanceatDifferentReconstructMethodswithAutopilot.png, id=663, 3613.5pt x 2107.875pt>
+ [34]
+<images/ModelPerformanceatDifferentReconstructMethodswithAutopilot.png, id=582, 3613.5pt x 2107.875pt>
 File: images/ModelPerformanceatDifferentReconstructMethodswithAutopilot.png Graphic file (type png)
 <use images/ModelPerformanceatDifferentReconstructMethodswithAutopilot.png>
-Package pdftex.def Info: images/ModelPerformanceatDifferentReconstructMethodswithAutopilot.png  used on input line 1939.
+Package pdftex.def Info: images/ModelPerformanceatDifferentReconstructMethodswithAutopilot.png  used on input line 2011.
 (pdftex.def)             Requested size: 469.71635pt x 274.0012pt.
- [49] [50]
-Overfull \hbox (2.28725pt too wide) in paragraph at lines 2006--2017
+
+Overfull \hbox (2.28725pt too wide) in paragraph at lines 2078--2089
  [] 
  []
 
 
-Overfull \hbox (23.98323pt too wide) in paragraph at lines 2024--2053
+Overfull \hbox (23.98323pt too wide) in paragraph at lines 2096--2125
  [] 
  []
 
 
-Overfull \hbox (2.6626pt too wide) in paragraph at lines 2060--2085
+Overfull \hbox (2.6626pt too wide) in paragraph at lines 2132--2157
  [] 
  []
 
-[51 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentReactSpeedforAR1fixed.png>] [52] [53] [54] [55] [56 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentModelsforPredictingAvgWindowswithDifferentTrainingPolicies.png>] [57 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentReconstructMethodswithAutopilot.png>] [58]
-<./images/uncondional_hist.pdf, id=716, 615.29875pt x 405.515pt>
+[35] [36 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandMaxofpreviouswindow.png>] [37 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandAvgofpreviouswindow.png>] [38 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/./images/ECDFofPearsoncorrelationbetweenMaxofwindowsize60minandAomofpreviouswindow.png>] [39 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentCutOffProbabilityforAR1Offline.png> </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatAR1,AR1X,ARI11,ARI11X,AUTO,AUTOX.png>] [40 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentResidualDistributionOfAR1.png> </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentOutlierTypeDetectionOfAR1.png>] [41] [42 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentClusterTypeforDifferentMarkovModels.png> </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentStateNumberofMarkovModel.png>] [43 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatMultivariateModels.png> </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentNumberofLagswithNeuralNetworkModels.png>] [44] [45 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentExtrapolationSteps.png> </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentTrainingPolicyforAR1.png>] [46] [47 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentBatchSizeforAR1DynamicTraining.png> </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentModelswithDifferentTrainingPolicy.png>] [48] [49 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentModelNumsatDynamicTrainingPolicy.png> </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/Tracewise Plot of 1948107, AR1, offline.png>] [50] [51 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/Tracewise Plot of 1948107, AR1, dynamic.png> </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ECDFofscoresatDifferentGranularityOfAR1ModelOfflineTrainingPolicy.png>] [52] [53] [54] [55] [56 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentReactSpeedforAR1offline.png>] [57 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentReactSpeedforAR1fixed.png>] [58 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentTrainingPoliciesforPredictingAverages.png>] [59 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentReconstructMethodswithAutopilot.png>]
+<./images/uncondional_hist.pdf, id=717, 615.29875pt x 405.515pt>
 File: ./images/uncondional_hist.pdf Graphic file (type pdf)
 <use ./images/uncondional_hist.pdf>
-Package pdftex.def Info: ./images/uncondional_hist.pdf  used on input line 2231.
+Package pdftex.def Info: ./images/uncondional_hist.pdf  used on input line 2303.
 (pdftex.def)             Requested size: 375.8105pt x 247.67935pt.
- [59 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/./images/uncondional_hist.pdf>] [60] [61]
-Overfull \hbox (39.58075pt too wide) in paragraph at lines 2411--2418
+ [60] [61 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/./images/uncondional_hist.pdf>] [62]
+Overfull \hbox (39.58075pt too wide) in paragraph at lines 2483--2490
  [] 
  []
 
 
-Overfull \hbox (100.31096pt too wide) in alignment at lines 2421--2446
+Overfull \hbox (100.31096pt too wide) in alignment at lines 2493--2518
+ [] [] [] [] [] [] [] [] 
+ []
+
+[63] [64]
+Overfull \hbox (100.31096pt too wide) in alignment at lines 2518--2538
  [] [] [] [] [] [] [] [] 
  []
 
 
-Overfull \hbox (100.31096pt too wide) in alignment at lines 2446--2466
+Overfull \hbox (100.31096pt too wide) in alignment at lines 2538--2544
  [] [] [] [] [] [] [] [] 
  []
 
-[62]
-Overfull \hbox (100.31096pt too wide) in alignment at lines 2466--2472
- [] [] [] [] [] [] [] [] 
- []
-
-[63]
-Overfull \hbox (74.03896pt too wide) in paragraph at lines 2478--2507
+[65]
+Overfull \hbox (74.03896pt too wide) in paragraph at lines 2550--2579
  [] 
  []
 
-<./images/sur_tree.pdf, id=757, 570.13pt x 554.07pt>
+<./images/sur_tree.pdf, id=763, 570.13pt x 554.07pt>
 File: ./images/sur_tree.pdf Graphic file (type pdf)
 <use ./images/sur_tree.pdf>
-Package pdftex.def Info: ./images/sur_tree.pdf  used on input line 2513.
+Package pdftex.def Info: ./images/sur_tree.pdf  used on input line 2585.
 (pdftex.def)             Requested size: 375.79979pt x 365.21388pt.
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 2516.
-[64] [65] [66 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/./images/sur_tree.pdf>]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 2516.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 2588.
+[66] [67] [68 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/./images/sur_tree.pdf>]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 2588.
  (/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/main.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 2516.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 2516.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 2588.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 2588.
 Package rerunfilecheck Info: File `main.out' has not changed.
 (rerunfilecheck)             Checksum: BC3138CD02761E550EAF40681F6C7EBD;4535.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 2516.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 2588.
  ) 
 Here is how much of TeX's memory you used:
- 12647 strings out of 480681
- 205344 string characters out of 5904632
- 570388 words of memory out of 5000000
- 27900 multiletter control sequences out of 15000+600000
- 601192 words of font info for 115 fonts, out of 8000000 for 9000
+ 12648 strings out of 480681
+ 205209 string characters out of 5904632
+ 611752 words of memory out of 5000000
+ 27901 multiletter control sequences out of 15000+600000
+ 601109 words of font info for 114 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 48i,9n,49p,1050b,486s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 48i,9n,49p,1050b,484s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc}{/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc}{/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}{/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc}{/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/lm/lm-mathex.enc}</usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmex10.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmmi10.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmmi5.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmmi7.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmr10.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmr12.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmr17.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmr5.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmr7.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmri10.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmsy10.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmsy5.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmsy7.pfb>
-Output written on /Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/main.pdf (66 pages, 7253817 bytes).
+Output written on /Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/main.pdf (68 pages, 7175430 bytes).
 PDF statistics:
- 879 PDF objects out of 1000 (max. 8388607)
- 732 compressed objects within 8 object streams
- 192 named destinations out of 1000 (max. 500000)
+ 887 PDF objects out of 1000 (max. 8388607)
+ 738 compressed objects within 8 object streams
+ 194 named destinations out of 1000 (max. 500000)
  12917 words of extra memory for PDF output out of 14400 (max. 10000000)
 
