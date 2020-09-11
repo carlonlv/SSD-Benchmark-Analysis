@@ -235,7 +235,7 @@ cut_off_prob <- c(0.001, 0.003, 0.005, 0.007, 0.008, 0.009, 0.010, 0.020, 0.030,
 half_life <- c(1, 3, 6, 12, 36, 72)
 bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, half_life = half_life)
 bg_param_setting <- cbind(bg_param_setting, data.frame(name = "AUTOPILOT", window_size = 300, granularity = 0, train_policy = "fixed", train_size = 840 * 300, statistics = "j-quantile", cut_off_weight = 0.01, model_num = 1, update_freq = 1, react_speed = "1,2", stringsAsFactors = FALSE))
-d <- run_sim(bg_param_setting, microsoft_generated_data, NULL, cores = 3, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/Compare/Generateddata_V2/half_life/")
+d <- run_sim(bg_param_setting, microsoft_generated_data, NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/Compare/Generateddata_V2/half_life/")
 
 ### 1.11.3
 load("~/Documents/Generateddata_V2/microsoft_generated_data_V2.rda")
@@ -243,7 +243,7 @@ cut_off_prob <- c(0.001, 0.003, 0.005, 0.010, 0.050)
 breaks <- c(10, 20, 50)
 bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, breaks = breaks)
 bg_param_setting <- cbind(bg_param_setting, data.frame(name = "AUTOPILOT", window_size = 300, half_life = 36, granularity = 0, train_policy = "fixed", train_size = 840 * 300, statistics = "j-quantile", cut_off_weight = 0.01, model_num = 1, update_freq = 1, react_speed = "1,2", stringsAsFactors = FALSE))
-d <- run_sim(bg_param_setting, microsoft_generated_data, NULL, cores = 3, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/Compare/Generateddata_V2/breaks/")
+d <- run_sim(bg_param_setting, microsoft_generated_data, NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/Compare/Generateddata_V2/breaks/")
 
 ### 1.11.5
 name = "ARIMA"
@@ -288,7 +288,7 @@ bg_param_setting$half_life <- 36
 bg_param_setting$train_args <- NULL
 bg_param_setting$cut_off_weight <- 0.01
 bg_param_setting$train_size <- 840 * 300
-d <- run_sim(bg_param_setting, microsoft_generated_data[-c(1:3600),], NULL, cores = 3, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/WindowSize/Autopilot/")
+d <- run_sim(bg_param_setting, microsoft_generated_data[-c(1:3600),], NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/WindowSize/Autopilot/")
 
 ### 1.11.7
 load("~/microsoft_generated_data_V2.rda")
@@ -371,7 +371,7 @@ d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL
 
 bg_param_setting <- data.frame(name = "AUTOPILOT", window_size = 300, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 1920 * 300, statistics = "j-quantile", cut_off_weight = 0.01, model_num = 1, react_speed = "1,2", stringsAsFactors = FALSE)
 bg_param_setting$update_freq <- 1
-d <- run_sim(bg_param_setting, microsoft_generated_data, NULL, start_point = 1, cores = 3, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize1920/Autopilot/")
+d <- run_sim(bg_param_setting, microsoft_generated_data, NULL, start_point = 1, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize1920/Autopilot/")
 
 ## 3.2
 repeats <- 10
@@ -445,14 +445,14 @@ for (model in model_name) {
 
   final_score <- data.frame()
   for (k in 1:cut_off_prob) {
+    print(paste("Cut off prob:", cut_off_prob))
+
     set.seed(10)
     param_setting_sim <- data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "offline", cut_off_prob = k, stringsAsFactors = FALSE)
     param_setting_pred <- data.frame(name = model, update_freq = update_freq, stringsAsFactors = FALSE)
 
-    print(paste("Cut off prob:", k))
     for (i in 1:repeats) {
       sampled_machine <- sample.int(100, size = machine_num)
-      if ()
       dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100[,sampled_machine], NULL, sim_length, FALSE, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], update_freq, bins = bins, write_type = "none", result_loc = "~/Documents/", cores = 8)
       final_score <- rbind(final_score, unlist(dd[["summary"]]))
       colnames(final_score) <- c("finished_utilization", "total_utilization", "optimistic_utlization", "survival_rate", "unfinished_rate", "denied_rate", "unconcluded_rate")
