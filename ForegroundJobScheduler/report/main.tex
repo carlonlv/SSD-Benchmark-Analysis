@@ -2002,7 +2002,7 @@ Ref to Section 1.10, include Fig \ref{fig:fig1.10.1}, Table \ref{fig:fig1.10.1}.
 \subsubsection{Comparison Against Autopilot}
 
 \begin{figure}
-    \caption{Examples of Reconstructed Traces with Different Methods}
+    \caption{Trade-off Curves for Different Reconstructed  Methods}
     \centering
     \includegraphics{images/ModelPerformanceatDifferentReconstructMethodswithAutopilot.png}
     \label{fig:fig1.11.1}
@@ -2041,28 +2041,98 @@ Ref to Section 1.10, include Fig \ref{fig:fig1.10.1}, Table \ref{fig:fig1.10.1}.
   \end{center}
 \end{table}
 
-\begin{longtable}[htbp]{l|l|l|*{4}{c}}
+\begin{figure}
+  \caption{Trade-off Curves for Different Half-life Settings for Autopilot}
+  \centering
+  \includegraphics{images/ModelPerformanceatDifferentHalfLifeSettingsforAutopilot.png}
+  \label{fig:fig1.11.2}
+\end{figure}
+
+\begin{longtable}[htbp]{l|l|*{4}{c}}
   \caption{Configuration and Result of Different half-life for Predicting Maximum of Next 5min Window Using Autopilot}
   \label{tab:tab1.11.2} \\
-  \textbf{reconstruct method} & \textbf{half-life} & \textbf{cut off prob} &
+  \textbf{half-life} & \textbf{cut off prob} &
   \textbf{score 1} & \textbf{score 1 weight} & \textbf{score 2} & \textbf{score2
   weight} \\
   \hline
+  1 & 0.001 & 0.9297 & 665495 & 0.6843 & 716235\\
+  1 & 0.003 & 0.9292 & 666128 & 0.6850 & 716235\\
+  1 & 0.005 & 0.9284 & 666998 & 0.6858 & 716235\\
+  1 & 0.007 & 0.9275 & 667945 & 0.6871 & 716235\\
+  1 & 0.008 & 0.9224 & 670520 & 0.6968 & 716235\\
+  1 & 0.009 & 0.9222 & 670818 & 0.6971 & 716235\\
+  1 & 0.010 & 0.9219 & 671071 & 0.6973 & 716235\\
+  1 & 0.020 & 0.9142 & 675662 & 0.7082 & 716235\\
+  1 & 0.030 & 0.9107 & 677272 & 0.7105 & 716235\\
+  1 & 0.050 & 0.8960 & 682473 & 0.7181 & 716235\\
+  3 & 0.001 & 0.9724 & 631807 & 0.5967 & 716235\\
+  3 & 0.003 & 0.9691 & 639489 & 0.6128 & 716235\\
+  3 & 0.005 & 0.9661 & 644261 & 0.6236 & 716235\\
+  3 & 0.007 & 0.9622 & 648268 & 0.6327 & 716235\\
+  3 & 0.008 & 0.9611 & 649218 & 0.6340 & 716235\\
+  3 & 0.009 & 0.9541 & 650933 & 0.6342 & 716235\\
+  3 & 0.01 & 0.9532 & 651747 & 0.6357 & 716235\\
+  3 & 0.02 & 0.9424 & 660513 & 0.6612 & 716235\\
+  3 & 0.03 & 0.9351 & 666856 & 0.6814 & 716235\\
+  3 & 0.05 & 0.9239 & 674907 & 0.7062 & 716235\\
+  6 & 0.001 & 0.9822 & 604936 & 0.534 & 716235\\
+  6 & 0.003 & 0.9791 & 619677 & 0.5633 & 716235\\
+  6 & 0.005 & 0.9753 & 628036 & 0.5807 & 716235\\
+  6 & 0.007 & 0.9733 & 633727 & 0.5939 & 716235\\
+  6 & 0.008 & 0.9722 & 635977 & 0.5989 & 716235\\
+  6 & 0.009 & 0.9713 & 638131 & 0.6040 & 716235\\
+  6 & 0.010 & 0.9704 & 640185 & 0.6089 & 716235\\
+  6 & 0.020 & 0.9593 & 654099 & 0.6406 & 716235\\
+  6 & 0.030 & 0.9479 & 663104 & 0.6651 & 716235\\
+  6 & 0.050 & 0.9323 & 676348 & 0.7099 & 716235\\
+  12 & 0.001 & 0.9873 & 570639 & 0.4632 & 716235\\
+  12 & 0.003 & 0.9846 & 594920 & 0.5071 & 716235\\
+  12 & 0.005 & 0.9825 & 608231 & 0.5322 & 716235\\
+  12 & 0.007 & 0.9806 & 618105 & 0.5518 & 716235\\
+  12 & 0.008 & 0.9797 & 622374 & 0.5608 & 716235\\
+  12 & 0.009 & 0.9787 & 625993 & 0.5684 & 716235\\
+  12 & 0.01 & 0.9778 & 629084 & 0.5746 & 716235\\
+  12 & 0.02 & 0.9677 & 652495 & 0.6288 & 716235\\
+  12 & 0.03 & 0.9554 & 666568 & 0.6674 & 716235\\
+  12 & 0.05 & 0.9354 & 677635 & 0.7148 & 716235\\
+  36 & 0.001 & 0.9934 & 499442 & 0.344 & 716235\\
+  36 & 0.003 & 0.9903 & 548546 & 0.4111 & 716235\\
+  36 & 0.005 & 0.988 & 578375 & 0.4582 & 716235\\
+  36 & 0.007 & 0.9858 & 600206 & 0.4965 & 716235\\
+  36 & 0.008 & 0.9847 & 608979 & 0.5136 & 716235\\
+  36 & 0.009 & 0.9834 & 617026 & 0.5299 & 716235\\
+  36 & 0.010 & 0.9821 & 623970 & 0.5447 & 716235\\
+  36 & 0.020 & 0.9712 & 656286 & 0.6253 & 716235\\
+  36 & 0.030 & 0.9603 & 668408 & 0.6644 & 716235\\
+  36 & 0.050 & 0.9379 & 677320 & 0.7147 & 716235\\
+  72 & 0.001 & 0.9956 & 453026 & 0.2787 & 716235\\
+  72 & 0.003 & 0.9929 & 524223 & 0.364 & 716235\\
+  72 & 0.005 & 0.9898 & 569209 & 0.4281 & 716235\\
+  72 & 0.007 & 0.9869 & 594523 & 0.4744 & 716235\\
+  72 & 0.008 & 0.9856 & 604047 & 0.4938 & 716235\\
+  72 & 0.009 & 0.9843 & 612429 & 0.5113 & 716235\\
+  72 & 0.010 & 0.983 & 619511 & 0.5267 & 716235\\
+  72 & 0.020 & 0.9716 & 656032 & 0.6184 & 716235\\
+  72 & 0.030 & 0.9611 & 668939 & 0.6612 & 716235\\
+  72 & 0.050 & 0.9384 & 677264 & 0.7117 & 716235\\
+  144 & 0.001 & 0.9969 & 414249 & 0.2298 & 716235\\
+  144 & 0.010 & 0.9834 & 614705 & 0.5077 & 716235\\
+  144 & 0.050 & 0.9385 & 678510 & 0.7093 & 716235\\
 \end{longtable}
 
-\begin{longtable}[htbp]{l|l|l|*{4}{c}}
+\begin{longtable}[htbp]{l|l|*{4}{c}}
   \caption{Configuration and Result of Different Number of Breaks for Predicting Maximum of Next 5min Window Using Autopilot}
   \label{tab:tab1.11.3} \\
-  \textbf{reconstruct method} & \textbf{number of breaks} & \textbf{cut off
+  \textbf{number of breaks} & \textbf{cut off
   prob} & \textbf{score 1} & \textbf{score 1 weight} & \textbf{score 2} &
   \textbf{score 2 weight} \\ 
   \hline
 \end{longtable}
 
-\begin{longtable}[htbp]{l|l|l|l|*{4}{c}}
+\begin{longtable}[htbp]{l|l|l|*{4}{c}}
   \caption{Configuration and Result of Different Window Sizes for Predicting Maximum of Next Window Using Autopilot}
   \label{tab:tab1.11.4}\\
-  \textbf{reconstruct method} & \textbf{window size} & \textbf{half life} &
+  \textbf{window size} & \textbf{half life} &
   \textbf{cut off prob} & \textbf{score 1} & \textbf{score1 weight} &
   \textbf{score 2} & \textbf{score 2 weight} \\
   \hline
@@ -2409,14 +2479,23 @@ used to determine the available resource at each time window.
   1500 & 0.0938 & 0.9965 & 0.1857 & 0.0003 & 0.1897\\
 \end{longtable}
 
-\begin{longtable}[htbp]{{l}|*{5}{c}} 
+\begin{longtable}[htbp]{l|l|*{5}{c}} 
   \caption{Combined Simulation of AR1 Model and Different Background Models}
   \label{tab:tab3.2.3}\\
-  \textbf{background model} & \textbf{finished
+  \textbf{background model} & \textbf{alpha} & \textbf{finished
   utilization} & \textbf{survival rate} & \textbf{load} & \textbf{unfinished
   rate} & \textbf{unscheduled rate} \\
   \hline
-  anova tree & 0.2950 & 0.9965 & 2.7880 & 0.0015 & 0.6405\\
+  anova tree &  & 0.2950 & 0.9965 & 2.7880 & 0.0015 & 0.6405\\
+  anova tree &  & 0.2950 & 0.9965 & 2.7880 & 0.0015 & 0.6405\\
+  anova tree &  & 0.2950 & 0.9965 & 2.7880 & 0.0015 & 0.6405\\
+  anova tree &  & 0.2950 & 0.9965 & 2.7880 & 0.0015 & 0.6405\\
+  anova tree &  & 0.2950 & 0.9965 & 2.7880 & 0.0015 & 0.6405\\
+  survival tree & 0.2993 & 0.9956 & 2.5562 & 0.0011 & 0.5568\\
+  survival tree & 0.2993 & 0.9956 & 2.5562 & 0.0011 & 0.5568\\
+  survival tree & 0.2993 & 0.9956 & 2.5562 & 0.0011 & 0.5568\\
+  survival tree & 0.2993 & 0.9956 & 2.5562 & 0.0011 & 0.5568\\
+  survival tree & 0.2993 & 0.9956 & 2.5562 & 0.0011 & 0.5568\\
   survival tree & 0.2993 & 0.9956 & 2.5562 & 0.0011 & 0.5568\\
 \end{longtable}
 
@@ -2439,15 +2518,6 @@ used to determine the available resource at each time window.
   Autopilot & 2000 & 0.01 & 0.1168 & 0.9914 & 0.1391 & 0.0003 & 0.0148\\
   Autopilot & 2000 & 0.02 & 0.1026 & 0.9816 & 0.1391 & 0.0003 & 0.0148\\
   Autopilot & 2000 & 0.05 & 0.0916 & 0.9733 & 0.1391 & 0.0002 & 0.0148\\
-  AR1 offline & 1000 & 0.005 & 0.1190 & 0.9839 & 0.2858 & 0.0006 & 0.1902\\
-  AR1 offline & 1000 & 0.01 & 0.1370 & 0.9846 & 0.2858 & 0.0006 & 0.1546\\
-  AR1 offline & 1000 & 0.02 & 0.1627 & 0.9844 & 0.2858 & 0.0006 & 0.0833\\
-  AR1 offline & 1000 & 0.05 & 0.1883 & 0.9862 & 0.2858 & 0.0007 & 0.0466\\
-  AR1 offline & 1500 & 0.005 & 0.1213 & 0.9947 & 0.1681 & 0.0006 & 0.0438\\
-  AR1 offline & 1500 & 0.01 & 0.1290 & 0.9946 & 0.1681 & 0.0006 & 0.0309\\
-  AR1 offline & 1500 & 0.02 & 0.1349 & 0.9940 & 0.1681 & 0.0006 & 0.0249\\
-  AR1 offline & 1500 & 0.05 & 0.1372 & 0.9936 & 0.1681 & 0.0006 & 0.0225\\
-  AR1 online & 1000 & 0.005 & 0.1195 & 0.9962 & 0.2858 & 0.0005 & 0.1908\\
   AR1 online & 1000 & 0.01 & 0.1424 & 0.9973 & 0.2858 & 0.0005 & 0.1409\\
   AR1 online & 1000 & 0.02 & 0.1712 & 0.9948 & 0.2858 & 0.0006 & 0.0884\\
   AR1 online & 1000 & 0.05 & 0.2013 & 0.9928 & 0.2858 & 0.0006 & 0.0490\\
