@@ -568,8 +568,8 @@ bins <- c(0, 1:6, 14, 18, 22, 26, 30, 50, 80, 205)
 
 cut_off_probs <- c(1 - sqrt(0.99), 0.01, 0.02, 0.05, 0.07)
 
-sim_setting_list <- list("AR1" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE),
-                         "Autopilot" = data.frame(name = "AUTOPILOT", window_size = 300, train_size = 3000 * 300, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE),
+sim_setting_list <- list("Autopilot" = data.frame(name = "AUTOPILOT", window_size = 300, train_size = 3000 * 300, update_freq = 1, statistics = "j-quantile", half_life = 36, train_policy = "fixed", stringsAsFactors = FALSE),
+                         "AR1" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE),
                          "ARI11" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", train_args = I(list(order = c(1,1,0))), stringsAsFactors = FALSE),
                          "ARI11X" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", train_args = I(list(order = c(1,1,0))), stringsAsFactors = FALSE),
                          "AR1X" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE),
@@ -594,7 +594,7 @@ for (j in names(sim_setting_list)) {
       } else if (j == "VAR1") {
         dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100[-c(1:12),sampled_machine], microsoft_avg_100[-c(1:12),sampled_machine], sim_length, TRUE, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], update_freq, bins = bins, write_type = "none", result_loc = "~/Documents/", cores = 8)
       } else if (j == "Autopilot") {
-        dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_generated_data[-c(1:3600),sampled_machine], NULL, sim_length, TRUE, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], update_freq, bins = bins, write_type = "none", result_loc = "~/Documents/", cores = 8)
+        dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_generated_data[-c(1:3600),sampled_machine], NULL, sim_length, TRUE, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], update_freq, bins = bins, write_type = "none", result_loc = "~/Documents/", cores = 1)
       } else {
         dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100[-c(1:12),sampled_machine], NULL, sim_length, TRUE, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], update_freq, bins = bins, write_type = "none", result_loc = "~/Documents/", cores = 8)
       }
@@ -602,6 +602,6 @@ for (j in names(sim_setting_list)) {
     }
     colnames(final_score) <- c("finished_utilization", "total_utilization", "optimistic_utlization", "survival_rate", "unfinished_rate", "denied_rate", "unconcluded_rate")
     print("Summary========================")
-    print(paste(names(colMeans(final_score)), colMeans(final_score), sep = ":"))
+    print(paste(names(colMeans(final_score, na.rm = TRUE)), colMeans(final_score, na.rm = TRUE), sep = ":"))
   }
 }
