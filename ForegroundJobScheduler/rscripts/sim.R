@@ -373,235 +373,191 @@ bg_param_setting <- data.frame(name = "AUTOPILOT", window_size = 300, cut_off_pr
 bg_param_setting$update_freq <- 1
 d <- run_sim(bg_param_setting, microsoft_generated_data, NULL, start_point = 1, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize1920/Autopilot/")
 
-## 2.6
-repeats <- 10
+## 2.3
+load("~/Documents/Generateddata_V2/microsoft_generated_data_V2.rda")
 
-machine_num <- 3
-
-use_actuals <- c(TRUE, FALSE)
-
-machine_num <- 3
-
-update_freq <- 5000
-
-sim_length <- 200
+total_num_jobs <- 10000
 
 bins <- c(0, 1:6, 14, 18, 22, 26, 30, 50, 80, 205)
 
+sim_length <- 200
+
+machine_num <- 3
+
+model_name <- c("ANOVATREE", "SURTREE")
+
 cut_off_prob <- c(1 - sqrt(0.99), 0.01, 0.02, 0.05)
 
-for (l in use_actuals) {
-  print(paste("Use actual:", l))
+for (i in model_name) {
+  print(paste("Model Name:", i))
 
-  final_score <- data.frame()
-  for (k in 1:cut_off_prob) {
-    print(paste("Cut off prob:", cut_off_prob))
+  for (k in cut_off_prob) {
+    print(paste("Cut off prob:", k))
 
     set.seed(10)
     param_setting_sim <- data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "offline", cut_off_prob = k, stringsAsFactors = FALSE)
-    param_setting_pred <- data.frame(name = "ANOVATREE", update_freq = update_freq, stringsAsFactors = FALSE)
+    param_setting_pred <- data.frame(name = model, train_size = 5000, stringsAsFactors = FALSE)
 
-    for (i in 1:repeats) {
-      sampled_machine <- sample.int(100, size = machine_num)
-      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100[,sampled_machine], NULL, sim_length, FALSE, l, google_runtime_data[, 9], google_runtime_data[, -9], update_freq, bins = bins, write_type = "none", result_loc = "~/Documents/", cores = 8)
-      final_score <- rbind(final_score, unlist(dd[["summary"]]))
-      colnames(final_score) <- c("finished_utilization", "total_utilization", "optimistic_utlization", "survival_rate", "unfinished_rate", "denied_rate", "unconcluded_rate")
-      print("Summary========================")
-      print(paste(names(colMeans(final_score)), colMeans(final_score), sep = ":"))
-    }
+    dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], TRUE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/BgModels/")
   }
 }
 
 ## 3.2
-repeats <- 10
 
 ### 3.2.1
-machine_num <- 3
+load("~/Documents/Generateddata_V2/microsoft_generated_data_V2.rda")
 
-update_freq <- c(1000, 2000, 3000, 5000)
-
-sim_length <- 100
+total_num_jobs <- c(6000, 7000, 8000, 10000)
 
 bins <- c(0, 1:6, 14, 18, 22, 26, 30, 50, 80, 205)
-
-for (num_jobs in update_freq) {
-  set.seed(10)
-  param_setting_sim <- data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "offline", cut_off_prob = 1 - sqrt(0.99), stringsAsFactors = FALSE)
-  param_setting_pred <- data.frame(name = "ANOVATREE", update_freq = num_jobs, stringsAsFactors = FALSE)
-
-  final_score <- data.frame()
-  for (i in 1:repeats) {
-    sampled_machine <- sample.int(100, size = machine_num)
-    dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100[,sampled_machine], NULL, sim_length, FALSE, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], num_jobs, bins = bins, write_type = "none", result_loc = "~/Documents/", cores = 8)
-    final_score <- rbind(final_score, unlist(dd[["summary"]]))
-  }
-  colnames(final_score) <- c("finished_utilization", "total_utilization", "optimistic_utlization", "survival_rate", "unfinished_rate", "denied_rate", "unconcluded_rate")
-  print("Summary========================")
-  print(paste(names(colMeans(final_score)), colMeans(final_score), sep = ":"))
-  .rs.restartR()
-}
-
-machine_num <- 3
-
-update_freq <- 5000
-
-sim_length <- c(100, 200, 500, 1000)
-
-bins <- c(0, 1:6, 14, 18, 22, 26, 30, 50, 80, 205)
-
-param_setting_sim <- data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "offline", cut_off_prob = 1 - sqrt(0.99), stringsAsFactors = FALSE)
-param_setting_pred <- data.frame(name = "ANOVATREE", update_freq = update_freq, stringsAsFactors = FALSE)
-
-for (j in sim_length) {
-  set.seed(10)
-  final_score <- data.frame()
-  for (i in 1:repeats) {
-    sampled_machine <- sample.int(100, size = machine_num)
-    dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100[,sampled_machine], NULL, j, FALSE, FALSE, google_runtime_data[, 9], google_runtime_data[, 9], update_freq, bins = bins, write_type = "none", result_loc = "~/Documents/", cores = 8)
-    final_score <- rbind(final_score, unlist(dd[["summary"]]))
-  }
-  colnames(final_score) <- c("finished_utilization", "total_utilization", "optimistic_utlization", "survival_rate", "unfinished_rate", "denied_rate", "unconcluded_rate")
-  print("Summary========================")
-  print(paste(names(colMeans(final_score)), colMeans(final_score), sep = ":"))
-}
-
-### 3.2.2
-model_name <- c("ANOVATREE", "SURTREE")
-
-machine_num <- 3
-
-update_freq <- 5000
 
 sim_length <- 200
 
+machine_num <- 3
+
+for (i in total_num_jobs) {
+  print(paste("Number of Jobs:", i))
+
+  set.seed(10)
+  param_setting_sim <- data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "offline", cut_off_prob = 1 - sqrt(0.99), stringsAsFactors = FALSE)
+  param_setting_pred <- data.frame(name = "ANOVATREE", train_size = 5000, stringsAsFactors = FALSE)
+
+  dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, i, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/NumJobs/")
+}
+
+total_num_jobs <- 10000
+
 bins <- c(0, 1:6, 14, 18, 22, 26, 30, 50, 80, 205)
+
+sim_length <- c(100, 200, 500, 1000)
+
+machine_num <- 3
+
+param_setting_sim <- data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "offline", cut_off_prob = 1 - sqrt(0.99), stringsAsFactors = FALSE)
+param_setting_pred <- data.frame(name = "ANOVATREE", train_size = 5000, stringsAsFactors = FALSE)
+
+for (i in sim_length) {
+  print(paste("Sim Length:", i))
+
+  set.seed(10)
+  param_setting_sim <- data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "offline", cut_off_prob = 1 - sqrt(0.99), stringsAsFactors = FALSE)
+  param_setting_pred <- data.frame(name = "ANOVATREE", train_size = 5000, stringsAsFactors = FALSE)
+
+  dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, i, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/SimLength/")
+}
+
+### 3.2.2
+load("~/Documents/Generateddata_V2/microsoft_generated_data_V2.rda")
+
+total_num_jobs <- 10000
+
+bins <- c(0, 1:6, 14, 18, 22, 26, 30, 50, 80, 205)
+
+sim_length <- 200
+
+machine_num <- 3
+
+model_name <- c("ANOVATREE", "SURTREE")
 
 cut_off_prob <- c(1 - sqrt(0.99), 0.01, 0.02, 0.05)
 
-for (model in model_name) {
-  print(paste("Model Name:", model))
+for (i in model_name) {
+  print(paste("Model Name:", i))
 
-  final_score <- data.frame()
-  for (k in 1:cut_off_prob) {
-    print(paste("Cut off prob:", cut_off_prob))
+    for (k in cut_off_prob) {
+    print(paste("Cut off prob:", k))
 
     set.seed(10)
     param_setting_sim <- data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "offline", cut_off_prob = k, stringsAsFactors = FALSE)
-    param_setting_pred <- data.frame(name = model, update_freq = update_freq, stringsAsFactors = FALSE)
+    param_setting_pred <- data.frame(name = model, train_size = 5000, stringsAsFactors = FALSE)
 
-    for (i in 1:repeats) {
-      sampled_machine <- sample.int(100, size = machine_num)
-      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100[,sampled_machine], NULL, sim_length, FALSE, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], update_freq, bins = bins, write_type = "none", result_loc = "~/Documents/", cores = 8)
-      final_score <- rbind(final_score, unlist(dd[["summary"]]))
-      colnames(final_score) <- c("finished_utilization", "total_utilization", "optimistic_utlization", "survival_rate", "unfinished_rate", "denied_rate", "unconcluded_rate")
-      print("Summary========================")
-      print(paste(names(colMeans(final_score)), colMeans(final_score), sep = ":"))
-    }
+    dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/BgModels/")
   }
 }
 
 ### 3.2.3
-load("~/microsoft_generated_data_V2.rda")
+load("~/Documents/Generateddata_V2/microsoft_generated_data_V2.rda")
 
-repeats <- 10
-
-machine_num <- 3
-
-update_freq <- 5000
-
-sim_length <- 200
+total_num_jobs <- 10000
 
 bins <- c(0, 1:6, 14, 18, 22, 26, 30, 50, 80, 205)
 
-cut_off_probs <- c(1 - sqrt(0.99), 0.01, 0.02, 0.05, 0.07)
-
-sim_setting_list <- list("AR1" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE),
-                         "Autopilot" = data.frame(name = "AUTOPILOT", window_size = 300, train_size = 3000 * 300, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE),
-                         "ARI11" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", train_args = I(list(order = c(1,1,0))), stringsAsFactors = FALSE),
-                         "ARI11X" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", train_args = I(list(order = c(1,1,0))), stringsAsFactors = FALSE),
-                         "AR1X" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE),
-                         "VAR1" = data.frame(name = "VAR", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE))
-
-for (j in names(sim_setting_list)) {
-  print(paste("Model name", j))
-
-  for (cut_off_prob in cut_off_probs) {
-    print(paste("Cut off prob", cut_off_prob))
-    set.seed(10)
-
-    param_setting_sim <- sim_setting_list[[j]]
-    param_setting_sim$cut_off_prob <- cut_off_prob
-    param_setting_pred <- data.frame(name = "ANOVATREE", update_freq = update_freq, stringsAsFactors = FALSE)
-
-    final_score <- data.frame()
-    for (i in 1:repeats) {
-      sampled_machine <- sample.int(100, size = machine_num)
-      if (grepl("X", j)) {
-        dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100[-c(1:12),sampled_machine], as.matrix(dplyr::mutate_all(as.data.frame(microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), sim_length, FALSE, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], update_freq, bins = bins, write_type = "none", result_loc = "~/Documents/", cores = 8)
-      } else if (j == "VAR1") {
-        dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100[-c(1:12),sampled_machine], microsoft_avg_100[-c(1:12),sampled_machine], sim_length, FALSE, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], update_freq, bins = bins, write_type = "none", result_loc = "~/Documents/", cores = 8)
-      } else if (j == "Autopilot") {
-        dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_generated_data[-c(1:3600),sampled_machine], NULL, sim_length, FALSE, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], update_freq, bins = bins, write_type = "none", result_loc = "~/Documents/", cores = 8)
-      } else {
-        dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100[-c(1:12),sampled_machine], NULL, sim_length, FALSE, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], update_freq, bins = bins, write_type = "none", result_loc = "~/Documents/", cores = 8)
-      }
-      final_score <- rbind(final_score, unlist(dd[["summary"]]))
-    }
-    colnames(final_score) <- c("finished_utilization", "total_utilization", "optimistic_utlization", "survival_rate", "unfinished_rate", "denied_rate", "unconcluded_rate")
-    print("Summary========================")
-    print(paste(names(colMeans(final_score)), colMeans(final_score), sep = ":"))
-  }
-}
-
-### 3.2.4
-load("~/microsoft_generated_data_V2.rda")
-
-repeats <- 10
+sim_length <- 200
 
 machine_num <- 3
 
-update_freq <- 5000
+cut_off_probs <- c(1 - sqrt(0.99), 0.01, 0.02, 0.05, 0.07, 0.08, 0.09, 0.10)
 
-sim_length <- 200
-
-bins <- c(0, 1:6, 14, 18, 22, 26, 30, 50, 80, 205)
-
-cut_off_probs <- c(1 - sqrt(0.99), 0.01, 0.02, 0.05, 0.07)
-
-sim_setting_list <- list("Autopilot" = data.frame(name = "AUTOPILOT", window_size = 300, train_size = 3000 * 300, update_freq = 1, statistics = "j-quantile", half_life = 36, train_policy = "fixed", stringsAsFactors = FALSE),
+sim_setting_list <- list("Autopilot" = data.frame(name = "AUTOPILOT", window_size = 300, train_size = 3000, update_freq = 1, train_policy = "fixed", half_life = 36, stringsAsFactors = FALSE),
                          "AR1" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE),
                          "ARI11" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", train_args = I(list(order = c(1,1,0))), stringsAsFactors = FALSE),
                          "ARI11X" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", train_args = I(list(order = c(1,1,0))), stringsAsFactors = FALSE),
                          "AR1X" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE),
                          "VAR1" = data.frame(name = "VAR", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE))
 
-for (j in names(sim_setting_list)) {
-  print(paste("Model name", j))
+for (i in names(sim_setting_list)) {
+  print(paste("Model name", i))
 
-  for (cut_off_prob in cut_off_probs) {
-    print(paste("Cut off prob", cut_off_prob))
+  for (j in cut_off_probs) {
+    print(paste("Cut off prob", j))
     set.seed(10)
 
-    param_setting_sim <- sim_setting_list[[j]]
-    param_setting_sim$cut_off_prob <- cut_off_prob
-    param_setting_pred <- data.frame(name = "ANOVATREE", update_freq = update_freq, stringsAsFactors = FALSE)
+    param_setting_sim <- sim_setting_list[[i]]
+    param_setting_sim$cut_off_prob <- j
+    param_setting_pred <- data.frame(name = "ANOVATREE", train_size = 5000, stringsAsFactors = FALSE)
 
-    final_score <- data.frame()
-    for (i in 1:repeats) {
-      sampled_machine <- sample.int(100, size = machine_num)
-      if (grepl("X", j)) {
-        dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100[-c(1:12),sampled_machine], as.matrix(dplyr::mutate_all(as.data.frame(microsoft_avg_100), dplyr::lag, 12)[-c(1:12),]), sim_length, TRUE, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], update_freq, bins = bins, write_type = "none", result_loc = "~/Documents/", cores = 8)
-      } else if (j == "VAR1") {
-        dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100[-c(1:12),sampled_machine], microsoft_avg_100[-c(1:12),sampled_machine], sim_length, TRUE, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], update_freq, bins = bins, write_type = "none", result_loc = "~/Documents/", cores = 8)
-      } else if (j == "Autopilot") {
-        dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_generated_data[-c(1:3600),sampled_machine], NULL, sim_length, TRUE, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], update_freq, bins = bins, write_type = "none", result_loc = "~/Documents/", cores = 1)
-      } else {
-        dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100[-c(1:12),sampled_machine], NULL, sim_length, TRUE, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], update_freq, bins = bins, write_type = "none", result_loc = "~/Documents/", cores = 8)
-      }
-      final_score <- rbind(final_score, unlist(dd[["summary"]]))
+    if (grepl("X", i)) {
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, microsoft_avg_100, TRUE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
+    } else if (i == "VAR1") {
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, microsoft_avg_100, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
+    } else if (i == "Autopilot") {
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_generated_data, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
+    } else {
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
     }
-    colnames(final_score) <- c("finished_utilization", "total_utilization", "optimistic_utlization", "survival_rate", "unfinished_rate", "denied_rate", "unconcluded_rate")
-    print("Summary========================")
-    print(paste(names(colMeans(final_score, na.rm = TRUE)), colMeans(final_score, na.rm = TRUE), sep = ":"))
+  }
+}
+
+
+### 3.2.4
+load("~/Documents/Generateddata_V2/microsoft_generated_data_V2.rda")
+
+total_num_jobs <- 10000
+
+bins <- c(0, 1:6, 14, 18, 22, 26, 30, 50, 80, 205)
+
+sim_length <- 200
+
+machine_num <- 3
+
+cut_off_probs <- c(1 - sqrt(0.99), 0.01, 0.02, 0.05, 0.07, 0.08, 0.09, 0.10)
+
+sim_setting_list <- list("Autopilot" = data.frame(name = "AUTOPILOT", window_size = 300, train_size = 3000, update_freq = 1, train_policy = "fixed", half_life = 36, stringsAsFactors = FALSE),
+                         "AR1" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE),
+                         "ARI11" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", train_args = I(list(order = c(1,1,0))), stringsAsFactors = FALSE),
+                         "ARI11X" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", train_args = I(list(order = c(1,1,0))), stringsAsFactors = FALSE),
+                         "AR1X" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE),
+                         "VAR1" = data.frame(name = "VAR", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE))
+
+for (i in names(sim_setting_list)) {
+  print(paste("Model name", i))
+
+  for (j in cut_off_probs) {
+    print(paste("Cut off prob", j))
+    set.seed(10)
+
+    param_setting_sim <- sim_setting_list[[i]]
+    param_setting_sim$cut_off_prob <- j
+    param_setting_pred <- data.frame(name = "ANOVATREE", train_size = 5000, stringsAsFactors = FALSE)
+
+    if (grepl("X", i)) {
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, microsoft_avg_100, TRUE, sim_length, machine_num, TRUE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
+    } else if (i == "VAR1") {
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, microsoft_avg_100, FALSE, sim_length, machine_num, TRUE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
+    } else if (i == "Autopilot") {
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_generated_data, NULL, FALSE, sim_length, machine_num, TRUE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
+    } else {
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, TRUE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
+    }
   }
 }

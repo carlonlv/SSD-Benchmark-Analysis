@@ -48,9 +48,9 @@
 \BOOKMARK [3][-]{subsubsection.2.3.2}{Gaussian Mixture Model Method}{subsection.2.3}% 48
 \BOOKMARK [2][-]{subsection.2.4}{Building probability vector}{section.2}% 49
 \BOOKMARK [2][-]{subsection.2.5}{Diagnosis and Updating}{section.2}% 50
-\BOOKMARK [2][-]{subsection.2.6}{Evaluations on Background Models}{section.2}% 51
-\BOOKMARK [2][-]{subsection.2.7}{Appendix}{section.2}% 52
-\BOOKMARK [3][-]{subsubsection.2.7.1}{Discretization}{subsection.2.7}% 53
+\BOOKMARK [2][-]{subsection.2.6}{Appendix}{section.2}% 51
+\BOOKMARK [3][-]{subsubsection.2.6.1}{Discretization}{subsection.2.6}% 52
+\BOOKMARK [3][-]{subsubsection.2.6.2}{Clustering of jobs}{subsection.2.6}% 53
 \BOOKMARK [1][-]{section.3}{Combining Predictions of Two Parts}{}% 54
 \BOOKMARK [2][-]{subsection.3.1}{Overview of Current method}{section.3}% 55
 \BOOKMARK [2][-]{subsection.3.2}{Simulation Study}{section.3}% 56
