@@ -396,7 +396,7 @@ for (i in model_name) {
 
     set.seed(10)
     param_setting_sim <- data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "offline", cut_off_prob = k, stringsAsFactors = FALSE)
-    param_setting_pred <- data.frame(name = model, train_size = 5000, stringsAsFactors = FALSE)
+    param_setting_pred <- data.frame(name = i, train_size = 5000, stringsAsFactors = FALSE)
 
     dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], TRUE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/BgModels/")
   }
@@ -469,7 +469,7 @@ for (i in model_name) {
 
     set.seed(10)
     param_setting_sim <- data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "offline", cut_off_prob = k, stringsAsFactors = FALSE)
-    param_setting_pred <- data.frame(name = model, train_size = 5000, stringsAsFactors = FALSE)
+    param_setting_pred <- data.frame(name = i, train_size = 5000, stringsAsFactors = FALSE)
 
     dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/BgModels/")
   }
