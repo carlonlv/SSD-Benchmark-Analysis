@@ -398,7 +398,7 @@ for (i in model_name) {
     param_setting_sim <- data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "offline", cut_off_prob = k, stringsAsFactors = FALSE)
     param_setting_pred <- data.frame(name = i, train_size = 5000, stringsAsFactors = FALSE)
 
-    dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], TRUE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/BgModels/")
+    dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], TRUE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/BgEfficacy/")
   }
 }
 
@@ -422,7 +422,7 @@ for (i in total_num_jobs) {
   param_setting_sim <- data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "offline", cut_off_prob = 1 - sqrt(0.99), stringsAsFactors = FALSE)
   param_setting_pred <- data.frame(name = "ANOVATREE", train_size = 5000, stringsAsFactors = FALSE)
 
-  dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, i, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/NumJobs/")
+  dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, i, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/NumJobs/")
 }
 
 total_num_jobs <- 10000
@@ -438,12 +438,11 @@ param_setting_pred <- data.frame(name = "ANOVATREE", train_size = 5000, stringsA
 
 for (i in sim_length) {
   print(paste("Sim Length:", i))
-
   set.seed(10)
   param_setting_sim <- data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "offline", cut_off_prob = 1 - sqrt(0.99), stringsAsFactors = FALSE)
   param_setting_pred <- data.frame(name = "ANOVATREE", train_size = 5000, stringsAsFactors = FALSE)
 
-  dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, i, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/SimLength/")
+  dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, i, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/SimLength/")
 }
 
 ### 3.2.2
@@ -466,12 +465,11 @@ for (i in model_name) {
 
     for (k in cut_off_prob) {
     print(paste("Cut off prob:", k))
-
     set.seed(10)
     param_setting_sim <- data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "offline", cut_off_prob = k, stringsAsFactors = FALSE)
     param_setting_pred <- data.frame(name = i, train_size = 5000, stringsAsFactors = FALSE)
 
-    dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/BgModels/")
+    dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/BgModels/")
   }
 }
 
@@ -490,10 +488,13 @@ cut_off_probs <- c(1 - sqrt(0.99), 0.01, 0.02, 0.05, 0.07, 0.08, 0.09, 0.10)
 
 sim_setting_list <- list("Autopilot" = data.frame(name = "AUTOPILOT", window_size = 300, train_size = 3000, update_freq = 1, train_policy = "fixed", half_life = 36, stringsAsFactors = FALSE),
                          "AR1" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE),
-                         "ARI11" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", train_args = I(list(order = c(1,1,0))), stringsAsFactors = FALSE),
-                         "ARI11X" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", train_args = I(list(order = c(1,1,0))), stringsAsFactors = FALSE),
+                         "ARI11" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE),
+                         "ARI11X" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE),
                          "AR1X" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE),
                          "VAR1" = data.frame(name = "VAR", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE))
+
+sim_setting_list[["ARI11"]]$train_args <- list(order = c(1,1,0))
+sim_setting_list[["ARI11X"]]$train_args <- list(order = c(1,1,0))
 
 for (i in names(sim_setting_list)) {
   print(paste("Model name", i))
@@ -507,13 +508,13 @@ for (i in names(sim_setting_list)) {
     param_setting_pred <- data.frame(name = "ANOVATREE", train_size = 5000, stringsAsFactors = FALSE)
 
     if (grepl("X", i)) {
-      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, microsoft_avg_100, TRUE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, microsoft_avg_100, TRUE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
     } else if (i == "VAR1") {
-      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, microsoft_avg_100, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, microsoft_avg_100, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
     } else if (i == "Autopilot") {
-      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_generated_data, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_generated_data, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
     } else {
-      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
     }
   }
 }
@@ -534,10 +535,13 @@ cut_off_probs <- c(1 - sqrt(0.99), 0.01, 0.02, 0.05, 0.07, 0.08, 0.09, 0.10)
 
 sim_setting_list <- list("Autopilot" = data.frame(name = "AUTOPILOT", window_size = 300, train_size = 3000, update_freq = 1, train_policy = "fixed", half_life = 36, stringsAsFactors = FALSE),
                          "AR1" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE),
-                         "ARI11" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", train_args = I(list(order = c(1,1,0))), stringsAsFactors = FALSE),
-                         "ARI11X" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", train_args = I(list(order = c(1,1,0))), stringsAsFactors = FALSE),
+                         "ARI11" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE),
+                         "ARI11X" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE),
                          "AR1X" = data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE),
-                         "VAR1" = data.frame(name = "VAR", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", stringsAsFactors = FALSE))
+                         "NN" = data.frame(name = "NN", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", p = 1, stringsAsFactors = FALSE))
+
+sim_setting_list[["ARI11"]]$train_args <- list(order = c(1,1,0))
+sim_setting_list[["ARI11X"]]$train_args <- list(order = c(1,1,0))
 
 for (i in names(sim_setting_list)) {
   print(paste("Model name", i))
@@ -551,13 +555,13 @@ for (i in names(sim_setting_list)) {
     param_setting_pred <- data.frame(name = "ANOVATREE", train_size = 5000, stringsAsFactors = FALSE)
 
     if (grepl("X", i)) {
-      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, microsoft_avg_100, TRUE, sim_length, machine_num, TRUE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, microsoft_avg_100, TRUE, sim_length, machine_num, TRUE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
     } else if (i == "VAR1") {
-      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, microsoft_avg_100, FALSE, sim_length, machine_num, TRUE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, microsoft_avg_100, FALSE, sim_length, machine_num, TRUE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
     } else if (i == "Autopilot") {
-      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_generated_data, NULL, FALSE, sim_length, machine_num, TRUE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_generated_data, NULL, FALSE, sim_length, machine_num, TRUE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
     } else {
-      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, TRUE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 10, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, TRUE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
     }
   }
 }

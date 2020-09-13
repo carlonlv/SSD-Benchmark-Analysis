@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020) (preloaded format=pdflatex 2020.5.9)  12 SEP 2020 03:45
+This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020) (preloaded format=pdflatex 2020.5.9)  12 SEP 2020 21:23
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -766,79 +766,88 @@ File: images/ModelPerformanceatDifferentHalfLifeSettingsforAutopilot.png Graphic
 Package pdftex.def Info: images/ModelPerformanceatDifferentHalfLifeSettingsforAutopilot.png  used on input line 2047.
 (pdftex.def)             Requested size: 469.71635pt x 274.0012pt.
  [52] [53 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentReactSpeedforAR1fixed.png>] [54]
-Overfull \hbox (2.6626pt too wide) in alignment at lines 2141--2165
+<images/ModelPerformanceatDifferentBreaksNumbersforAutopilot.png, id=694, 3613.5pt x 2107.875pt>
+File: images/ModelPerformanceatDifferentBreaksNumbersforAutopilot.png Graphic file (type png)
+<use images/ModelPerformanceatDifferentBreaksNumbersforAutopilot.png>
+Package pdftex.def Info: images/ModelPerformanceatDifferentBreaksNumbersforAutopilot.png  used on input line 2126.
+(pdftex.def)             Requested size: 469.71635pt x 274.0012pt.
+ [55]
+Overfull \hbox (2.6626pt too wide) in alignment at lines 2157--2181
  [] [] [] [] [] [] [] 
  []
 
 
-Overfull \hbox (2.6626pt too wide) in alignment at lines 2165--2167
+Overfull \hbox (2.6626pt too wide) in alignment at lines 2181--2183
  [] [] [] [] [] [] [] 
  []
 
-[55] [56] [57 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentTrainingPoliciesforPredictingAverages.png>] [58 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentReconstructMethodswithAutopilot.png>] [59 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentHalfLifeSettingsforAutopilot.png>]
-<./images/uncondional_hist.pdf, id=725, 615.29875pt x 405.515pt>
+[56] [57 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentTrainingPoliciesforPredictingAverages.png>] [58 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentReconstructMethodswithAutopilot.png>] [59 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentHalfLifeSettingsforAutopilot.png>] [60 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/images/ModelPerformanceatDifferentBreaksNumbersforAutopilot.png>]
+<./images/uncondional_hist.pdf, id=731, 615.29875pt x 405.515pt>
 File: ./images/uncondional_hist.pdf Graphic file (type pdf)
 <use ./images/uncondional_hist.pdf>
-Package pdftex.def Info: ./images/uncondional_hist.pdf  used on input line 2312.
+Package pdftex.def Info: ./images/uncondional_hist.pdf  used on input line 2328.
 (pdftex.def)             Requested size: 375.8105pt x 247.67935pt.
 
-Overfull \hbox (203.8176pt too wide) in alignment at lines 2318--2324
+Overfull \hbox (203.8176pt too wide) in alignment at lines 2334--2340
  [] [] [] [] [] [] [] [] 
  []
 
-[60] [61 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/./images/uncondional_hist.pdf>] [62] [63]
-Overfull \hbox (78.95103pt too wide) in alignment at lines 2490--2505
- [] [] [] [] [] [] [] [] 
- []
-
-[64]
-Overfull \hbox (100.31096pt too wide) in alignment at lines 2507--2532
+[61] [62 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/./images/uncondional_hist.pdf>] [63] [64]
+Overfull \hbox (78.95103pt too wide) in alignment at lines 2505--2520
  [] [] [] [] [] [] [] [] 
  []
 
 
-Overfull \hbox (100.31096pt too wide) in alignment at lines 2532--2549
+Overfull \vbox (6.67648pt too high) has occurred while \output is active []
+
+ [65]
+Overfull \hbox (100.31096pt too wide) in alignment at lines 2522--2547
  [] [] [] [] [] [] [] [] 
  []
 
-[65]
-Overfull \hbox (74.03896pt too wide) in alignment at lines 2551--2576
+
+Overfull \hbox (100.31096pt too wide) in alignment at lines 2547--2564
+ [] [] [] [] [] [] [] [] 
+ []
+
+[66]
+Overfull \hbox (60.01149pt too wide) in alignment at lines 2566--2591
  [] [] [] [] [] [] [] 
  []
 
 
-Overfull \hbox (74.03896pt too wide) in alignment at lines 2576--2578
+Overfull \hbox (60.01149pt too wide) in alignment at lines 2591--2593
  [] [] [] [] [] [] [] 
  []
 
-<./images/sur_tree.pdf, id=771, 570.13pt x 554.07pt>
+<./images/sur_tree.pdf, id=777, 570.13pt x 554.07pt>
 File: ./images/sur_tree.pdf Graphic file (type pdf)
 <use ./images/sur_tree.pdf>
-Package pdftex.def Info: ./images/sur_tree.pdf  used on input line 2583.
+Package pdftex.def Info: ./images/sur_tree.pdf  used on input line 2598.
 (pdftex.def)             Requested size: 375.79979pt x 365.21388pt.
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 2586.
-[66] [67 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/./images/sur_tree.pdf>]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 2586.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 2601.
+[67] [68 </Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/./images/sur_tree.pdf>]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 2601.
  (/Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/main.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 2586.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 2586.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 2601.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 2601.
 Package rerunfilecheck Info: File `main.out' has not changed.
 (rerunfilecheck)             Checksum: C480FD458E83D133DEAB8D401271705A;4613.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 2586.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 2601.
  ) 
 Here is how much of TeX's memory you used:
- 12669 strings out of 480681
- 205694 string characters out of 5904632
- 571667 words of memory out of 5000000
- 27919 multiletter control sequences out of 15000+600000
+ 12675 strings out of 480681
+ 206094 string characters out of 5904632
+ 571526 words of memory out of 5000000
+ 27923 multiletter control sequences out of 15000+600000
  601109 words of font info for 114 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  48i,9n,49p,1050b,490s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc}{/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc}{/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}{/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc}{/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/lm/lm-mathex.enc}</usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmex10.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmmi10.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmmi5.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmmi7.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmr10.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmr12.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmr17.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmr5.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmr7.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmri10.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmsy10.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmsy5.pfb></usr/local/texlive/2020/texmf-dist/fonts/type1/public/lm/lmsy7.pfb>
-Output written on /Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/main.pdf (67 pages, 7425977 bytes).
+Output written on /Users/carlonlv/Documents/GitHub/Research-Projects/ForegroundJobScheduler/report/main.pdf (68 pages, 7635177 bytes).
 PDF statistics:
- 891 PDF objects out of 1000 (max. 8388607)
- 741 compressed objects within 8 object streams
- 196 named destinations out of 1000 (max. 500000)
- 12930 words of extra memory for PDF output out of 14400 (max. 10000000)
+ 897 PDF objects out of 1000 (max. 8388607)
+ 744 compressed objects within 8 object streams
+ 197 named destinations out of 1000 (max. 500000)
+ 12935 words of extra memory for PDF output out of 14400 (max. 10000000)
 
