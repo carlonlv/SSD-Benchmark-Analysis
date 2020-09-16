@@ -237,6 +237,14 @@ bg_param_setting <- expand.grid(cut_off_prob = cut_off_prob, half_life = half_li
 bg_param_setting <- cbind(bg_param_setting, data.frame(name = "AUTOPILOT", window_size = 300, granularity = 0, train_policy = "fixed", train_size = 840 * 300, statistics = "j-quantile", cut_off_weight = 0.01, model_num = 1, update_freq = 1, react_speed = "1,2", stringsAsFactors = FALSE))
 d <- run_sim(bg_param_setting, microsoft_generated_data, NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/Compare/Generateddata_V2/half_life/")
 
+load("~/Documents/Generateddata_V2/microsoft_generated_data_V2.rda")
+cut_off_prob <- c(0.001, 0.003, 0.007, 0.009, 0.010, 0.020, 0.050)
+half_life <- c(12, 36, 72)
+window_size <- c(2, 6, 12, 36) * 300
+bg_param_setting <- expand.grid(window_size = window_size, half_life = half_life, cut_off_prob = cut_off_prob)
+bg_param_setting <- cbind(bg_param_setting, data.frame(name = "AUTOPILOT", granularity = 0, train_policy = "fixed", train_size = 840 * 300, statistics = "j-quantile", cut_off_weight = 0.01, model_num = 1, update_freq = 1, react_speed = "1,2", stringsAsFactors = FALSE))
+d <- run_sim(bg_param_setting, microsoft_generated_data, NULL, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/Compare/Generateddata_V2/half_life/")
+
 ### 1.11.3
 load("~/Documents/Generateddata_V2/microsoft_generated_data_V2.rda")
 cut_off_prob <- c(0.001, 0.003, 0.005, 0.010, 0.050)
@@ -293,120 +301,91 @@ d <- run_sim(bg_param_setting, microsoft_generated_data[-c(1:3600),], NULL, core
 ### 1.11.7
 load("~/microsoft_generated_data_V2.rda")
 
-bg_param_setting <- data.frame(name = "ARIMA", window_size = 1, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 120, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+cut_off_prob <- c(0.001, 0.003, 0.005, 0.01, 0.03)
+
+bg_param_setting <- data.frame(name = "ARIMA", window_size = 1, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 120, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, start_point = 1801, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize120/AR1/")
 
-bg_param_setting <- data.frame(name = "MARKOV", window_size = 1, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 120, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "MARKOV", window_size = 1, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 120, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, start_point = 1801, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize120/Markov/")
 
-bg_param_setting <- data.frame(name = "VAR", p = 1, window_size = 1, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 120, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "VAR", p = 1, window_size = 1, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 120, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], DataCenterSim::microsoft_avg_100[-c(1:12),], start_point = 1801, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize120/VAR1/")
 
-bg_param_setting <- data.frame(name = "NN", P = 0, window_size = 1, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 120, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "NN", P = 0, window_size = 1, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 120, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, start_point = 1801, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize120/NN/")
 
-bg_param_setting <- data.frame(name = "AUTOPILOT", window_size = 300, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 120 * 300, statistics = "j-quantile", cut_off_weight = 0.01, model_num = 1, react_speed = "1,2", stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "AUTOPILOT", window_size = 300, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 120 * 300, statistics = "j-quantile", cut_off_weight = 0.01, model_num = 1, react_speed = "1,2", stringsAsFactors = FALSE)
 bg_param_setting$update_freq <- 1
 d <- run_sim(bg_param_setting, microsoft_generated_data, NULL, start_point = 1800 * 300 + 1, cores = 3, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize120/Autopilot/")
 
-bg_param_setting <- data.frame(name = "ARIMA", window_size = 1, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 240, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "ARIMA", window_size = 1, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 240, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, start_point = 1681, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize240/AR1/")
 
-bg_param_setting <- data.frame(name = "MARKOV", window_size = 1, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 240, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "MARKOV", window_size = 1, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 240, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, start_point = 1681, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize240/Markov/")
 
-bg_param_setting <- data.frame(name = "VAR", p = 1, window_size = 1, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 240, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "VAR", p = 1, window_size = 1, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 240, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], DataCenterSim::microsoft_avg_100[-c(1:12),], start_point = 1681, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize240/VAR1/")
 
-bg_param_setting <- data.frame(name = "NN", P = 0, window_size = 1, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 240, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "NN", P = 0, window_size = 1, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 240, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, start_point = 1681, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize240/NN/")
 
-bg_param_setting <- data.frame(name = "AUTOPILOT", window_size = 300, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 240 * 300, statistics = "j-quantile", cut_off_weight = 0.01, model_num = 1, react_speed = "1,2", stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "AUTOPILOT", window_size = 300, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 240 * 300, statistics = "j-quantile", cut_off_weight = 0.01, model_num = 1, react_speed = "1,2", stringsAsFactors = FALSE)
 bg_param_setting$update_freq <- 1
 d <- run_sim(bg_param_setting, microsoft_generated_data, NULL, start_point = 1680 * 300 + 1, cores = 3, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize240/Autopilot/")
 
-bg_param_setting <- data.frame(name = "ARIMA", window_size = 1, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 480, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "ARIMA", window_size = 1, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 480, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, start_point = 1441, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize480/AR1/")
 
-bg_param_setting <- data.frame(name = "MARKOV", window_size = 1, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 480, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "MARKOV", window_size = 1, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 480, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, start_point = 1441, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize480/Markov/")
 
-bg_param_setting <- data.frame(name = "VAR", p = 1, window_size = 1, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 480, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "VAR", p = 1, window_size = 1, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 480, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], DataCenterSim::microsoft_avg_100[-c(1:12),], start_point = 1441, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize480/VAR1/")
 
-bg_param_setting <- data.frame(name = "NN", P = 0, window_size = 1, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 480, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "NN", P = 0, window_size = 1, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 480, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, start_point = 1441, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize480/NN/")
 
-bg_param_setting <- data.frame(name = "AUTOPILOT", window_size = 300, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 480 * 300, statistics = "j-quantile", cut_off_weight = 0.01, model_num = 1, react_speed = "1,2", stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "AUTOPILOT", window_size = 300, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 480 * 300, statistics = "j-quantile", cut_off_weight = 0.01, model_num = 1, react_speed = "1,2", stringsAsFactors = FALSE)
 bg_param_setting$update_freq <- 1
 d <- run_sim(bg_param_setting, microsoft_generated_data, NULL, start_point = 1440 * 300 + 1, cores = 3, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize480/Autopilot/")
 
-bg_param_setting <- data.frame(name = "ARIMA", window_size = 1, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 960, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "ARIMA", window_size = 1, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 960, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, start_point = 961, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize960/AR1/")
 
-bg_param_setting <- data.frame(name = "MARKOV", window_size = 1, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 960, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "MARKOV", window_size = 1, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 960, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, start_point = 961, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize960/Markov/")
 
-bg_param_setting <- data.frame(name = "VAR", p = 1, window_size = 1, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 960, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "VAR", p = 1, window_size = 1, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 960, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], DataCenterSim::microsoft_avg_100[-c(1:12),], start_point = 961, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize960/VAR1/")
 
-bg_param_setting <- data.frame(name = "NN", P = 0, window_size = 1, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 960, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "NN", P = 0, window_size = 1, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 960, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, start_point = 961, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize960/NN/")
 
-bg_param_setting <- data.frame(name = "AUTOPILOT", window_size = 300, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 960 * 300, statistics = "j-quantile", cut_off_weight = 0.01, model_num = 1, react_speed = "1,2", stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "AUTOPILOT", window_size = 300, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 960 * 300, statistics = "j-quantile", cut_off_weight = 0.01, model_num = 1, react_speed = "1,2", stringsAsFactors = FALSE)
 bg_param_setting$update_freq <- 1
 d <- run_sim(bg_param_setting, microsoft_generated_data, NULL, start_point = 960 * 300 + 1, cores = 3, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize960/Autopilot/")
 
-bg_param_setting <- data.frame(name = "ARIMA", window_size = 1, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 1920, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "ARIMA", window_size = 1, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 1920, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, start_point = 1, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize1920/AR1/")
 
-bg_param_setting <- data.frame(name = "MARKOV", window_size = 1, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 1920, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "MARKOV", window_size = 1, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 1920, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, start_point = 1, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize1920/Markov/")
 
-bg_param_setting <- data.frame(name = "VAR", p = 1, window_size = 1, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 1920, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "VAR", p = 1, window_size = 1, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 1920, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], DataCenterSim::microsoft_avg_100[-c(1:12),], start_point = 1, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize1920/VAR1/")
 
-bg_param_setting <- data.frame(name = "NN", P = 0, window_size = 1, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 1920, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "NN", P = 0, window_size = 1, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 1920, model_num = 1, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, DataCenterSim::microsoft_max_100[-c(1:12),], NULL, start_point = 1, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize1920/NN/")
 
-bg_param_setting <- data.frame(name = "AUTOPILOT", window_size = 300, cut_off_prob = 0.01, granularity = 0, train_policy = c("offline", "fixed"), train_size = 1920 * 300, statistics = "j-quantile", cut_off_weight = 0.01, model_num = 1, react_speed = "1,2", stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(name = "AUTOPILOT", window_size = 300, cut_off_prob = cut_off_prob, granularity = 0, train_policy = c("offline", "fixed"), train_size = 1920 * 300, statistics = "j-quantile", cut_off_weight = 0.01, model_num = 1, react_speed = "1,2", stringsAsFactors = FALSE)
 bg_param_setting$update_freq <- 1
 d <- run_sim(bg_param_setting, microsoft_generated_data, NULL, start_point = 1, cores = 8, write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/TrainSize/TrainSize1920/Autopilot/")
-
-## 2.3
-load("~/Documents/Generateddata_V2/microsoft_generated_data_V2.rda")
-
-total_num_jobs <- 10000
-
-bins <- c(0, 1:6, 14, 18, 22, 26, 30, 50, 80, 205)
-
-sim_length <- 200
-
-machine_num <- 3
-
-model_name <- c("ANOVATREE", "SURTREE")
-
-cut_off_prob <- c(1 - sqrt(0.99), 0.01, 0.02, 0.05)
-
-for (i in model_name) {
-  print(paste("Model Name:", i))
-
-  for (k in cut_off_prob) {
-    print(paste("Cut off prob:", k))
-
-    set.seed(10)
-    param_setting_sim <- data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "offline", cut_off_prob = k, stringsAsFactors = FALSE)
-    param_setting_pred <- data.frame(name = i, train_size = 5000, stringsAsFactors = FALSE)
-
-    dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], TRUE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/BgEfficacy/")
-  }
-}
 
 ## 3.2
 
 ### 3.2.1
-load("~/Documents/Generateddata_V2/microsoft_generated_data_V2.rda")
-
 total_num_jobs <- c(6000, 7000, 8000, 10000)
 
 bins <- c(0, 1:6, 14, 18, 22, 26, 30, 50, 80, 205)
@@ -420,9 +399,9 @@ for (i in total_num_jobs) {
 
   set.seed(10)
   param_setting_sim <- data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "offline", cut_off_prob = 1 - sqrt(0.99), stringsAsFactors = FALSE)
-  param_setting_pred <- data.frame(name = "ANOVATREE", train_size = 5000, stringsAsFactors = FALSE)
+  param_setting_pred <- data.frame(name = "SURTREE", train_size = 5000, stringsAsFactors = FALSE)
 
-  dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, i, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/NumJobs/")
+  dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[,c(1,4:8)], FALSE, i, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/NumJobs/")
 }
 
 total_num_jobs <- 10000
@@ -434,20 +413,18 @@ sim_length <- c(100, 200, 500, 1000)
 machine_num <- 3
 
 param_setting_sim <- data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "offline", cut_off_prob = 1 - sqrt(0.99), stringsAsFactors = FALSE)
-param_setting_pred <- data.frame(name = "ANOVATREE", train_size = 5000, stringsAsFactors = FALSE)
+param_setting_pred <- data.frame(name = "SURTREE", train_size = 5000, stringsAsFactors = FALSE)
 
 for (i in sim_length) {
   print(paste("Sim Length:", i))
   set.seed(10)
   param_setting_sim <- data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "offline", cut_off_prob = 1 - sqrt(0.99), stringsAsFactors = FALSE)
-  param_setting_pred <- data.frame(name = "ANOVATREE", train_size = 5000, stringsAsFactors = FALSE)
+  param_setting_pred <- data.frame(name = "SURTREE", train_size = 5000, stringsAsFactors = FALSE)
 
-  dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, i, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/SimLength/")
+  dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, i, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[,c(1, 4:8)], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/SimLength/")
 }
 
 ### 3.2.2
-load("~/Documents/Generateddata_V2/microsoft_generated_data_V2.rda")
-
 total_num_jobs <- 10000
 
 bins <- c(0, 1:6, 14, 18, 22, 26, 30, 50, 80, 205)
@@ -456,7 +433,7 @@ sim_length <- 200
 
 machine_num <- 3
 
-model_name <- c("ANOVATREE", "SURTREE")
+model_name <- c("SURTREE", "GMM", "ANOVATREE")
 
 cut_off_prob <- c(1 - sqrt(0.99), 0.01, 0.02, 0.05)
 
@@ -466,10 +443,10 @@ for (i in model_name) {
     for (k in cut_off_prob) {
     print(paste("Cut off prob:", k))
     set.seed(10)
-    param_setting_sim <- data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "offline", cut_off_prob = k, stringsAsFactors = FALSE)
+    param_setting_sim <- data.frame(name = "ARIMA", window_size = 1, train_size = 3000, update_freq = 1, train_policy = "fixed", cut_off_prob = k, stringsAsFactors = FALSE)
     param_setting_pred <- data.frame(name = i, train_size = 5000, stringsAsFactors = FALSE)
 
-    dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/BgModels/")
+    dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[,c(1, 4:8)], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/BgModels/")
   }
 }
 
@@ -505,16 +482,16 @@ for (i in names(sim_setting_list)) {
 
     param_setting_sim <- sim_setting_list[[i]]
     param_setting_sim$cut_off_prob <- j
-    param_setting_pred <- data.frame(name = "ANOVATREE", train_size = 5000, stringsAsFactors = FALSE)
+    param_setting_pred <- data.frame(name = "SURTREE", train_size = 5000, stringsAsFactors = FALSE)
 
     if (grepl("X", i)) {
-      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, microsoft_avg_100, TRUE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, microsoft_avg_100, TRUE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[,c(1, 4:8)], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
     } else if (i == "VAR1") {
-      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, microsoft_avg_100, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, microsoft_avg_100, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[,c(1, 4:8)], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
     } else if (i == "Autopilot") {
-      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_generated_data, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_generated_data, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[,c(1, 4:8)], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
     } else {
-      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, FALSE, google_runtime_data[, 9], google_runtime_data[,c(1, 4:8)], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
     }
   }
 }
@@ -552,16 +529,16 @@ for (i in names(sim_setting_list)) {
 
     param_setting_sim <- sim_setting_list[[i]]
     param_setting_sim$cut_off_prob <- j
-    param_setting_pred <- data.frame(name = "ANOVATREE", train_size = 5000, stringsAsFactors = FALSE)
+    param_setting_pred <- data.frame(name = "SURTREE", train_size = 5000, stringsAsFactors = FALSE)
 
     if (grepl("X", i)) {
-      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, microsoft_avg_100, TRUE, sim_length, machine_num, TRUE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, microsoft_avg_100, TRUE, sim_length, machine_num, TRUE, google_runtime_data[, 9], google_runtime_data[,c(1, 4:8)], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModelsadj/")
     } else if (i == "VAR1") {
-      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, microsoft_avg_100, FALSE, sim_length, machine_num, TRUE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, microsoft_avg_100, FALSE, sim_length, machine_num, TRUE, google_runtime_data[, 9], google_runtime_data[,c(1, 4:8)], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModelsadj/")
     } else if (i == "Autopilot") {
-      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_generated_data, NULL, FALSE, sim_length, machine_num, TRUE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_generated_data, NULL, FALSE, sim_length, machine_num, TRUE, google_runtime_data[, 9], google_runtime_data[,c(1, 4:8)], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModelsadj/")
     } else {
-      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, TRUE, google_runtime_data[, 9], google_runtime_data[, -9], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModels/")
+      dd <- run_sim_pred(param_setting_sim, param_setting_pred, microsoft_max_100, NULL, FALSE, sim_length, machine_num, TRUE, google_runtime_data[, 9], google_runtime_data[,c(1, 4:8)], FALSE, total_num_jobs, bins, repeats = 20, cores = 8, write_type = "summary", result_loc = "~/Documents/CombinedFgBg/FgModelsadj/")
     }
   }
 }

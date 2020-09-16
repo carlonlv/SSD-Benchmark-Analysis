@@ -22,7 +22,7 @@
 \BOOKMARK [3][-]{subsubsection.1.11.2}{Generate more granular traces}{subsection.1.11}% 22
 \BOOKMARK [3][-]{subsubsection.1.11.3}{Choice of half-life}{subsection.1.11}% 23
 \BOOKMARK [3][-]{subsubsection.1.11.4}{Number of breaks}{subsection.1.11}% 24
-\BOOKMARK [3][-]{subsubsection.1.11.5}{Different Window Size}{subsection.1.11}% 25
+\BOOKMARK [3][-]{subsubsection.1.11.5}{Predicting Larger Window Sizes}{subsection.1.11}% 25
 \BOOKMARK [2][-]{subsection.1.12}{Training Size}{section.1}% 26
 \BOOKMARK [3][-]{subsubsection.1.12.1}{AR1}{subsection.1.12}% 27
 \BOOKMARK [3][-]{subsubsection.1.12.2}{Markov}{subsection.1.12}% 28
