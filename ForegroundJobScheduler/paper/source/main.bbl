@@ -1,0 +1,321 @@
+%%% -*-BibTeX-*-
+%%% Do NOT edit. File created by BibTeX with style
+%%% ACM-Reference-Format-Journals [18-Jan-2012].
+
+\begin{thebibliography}{18}
+
+%%% ====================================================================
+%%% NOTE TO THE USER: you can override these defaults by providing
+%%% customized versions of any of these macros before the \bibliography
+%%% command.  Each of them MUST provide its own final punctuation,
+%%% except for \shownote{}, \showDOI{}, and \showURL{}.  The latter two
+%%% do not use final punctuation, in order to avoid confusing it with
+%%% the Web address.
+%%%
+%%% To suppress output of a particular field, define its macro to expand
+%%% to an empty string, or better, \unskip, like this:
+%%%
+%%% \newcommand{\showDOI}[1]{\unskip}   % LaTeX syntax
+%%%
+%%% \def \showDOI #1{\unskip}           % plain TeX syntax
+%%%
+%%% ====================================================================
+
+\ifx \showCODEN    \undefined \def \showCODEN     #1{\unskip}     \fi
+\ifx \showDOI      \undefined \def \showDOI       #1{#1}\fi
+\ifx \showISBNx    \undefined \def \showISBNx     #1{\unskip}     \fi
+\ifx \showISBNxiii \undefined \def \showISBNxiii  #1{\unskip}     \fi
+\ifx \showISSN     \undefined \def \showISSN      #1{\unskip}     \fi
+\ifx \showLCCN     \undefined \def \showLCCN      #1{\unskip}     \fi
+\ifx \shownote     \undefined \def \shownote      #1{#1}          \fi
+\ifx \showarticletitle \undefined \def \showarticletitle #1{#1}   \fi
+\ifx \showURL      \undefined \def \showURL       {\relax}        \fi
+% The following commands are used for tagged output and should be
+% invisible to TeX
+\providecommand\bibfield[2]{#2}
+\providecommand\bibinfo[2]{#2}
+\providecommand\natexlab[1]{#1}
+\providecommand\showeprint[2][]{arXiv:#2}
+
+\bibitem[\protect\citeauthoryear{Ben-Haim and Tom-Tov}{Ben-Haim and
+  Tom-Tov}{2010}]%
+        {756006.1756034}
+\bibfield{author}{\bibinfo{person}{Yael Ben-Haim} {and} \bibinfo{person}{Elad
+  Tom-Tov}.} \bibinfo{year}{2010}\natexlab{}.
+\newblock \showarticletitle{A Streaming Parallel Decision Tree Algorithm}.
+\newblock \bibinfo{journal}{\emph{Journal of Machine Learning Research}}
+  \bibinfo{volume}{11} (\bibinfo{date}{02} \bibinfo{year}{2010}),
+  \bibinfo{pages}{849--872}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/1756006.1756034}
+\showDOI{\tempurl}
+
+
+\bibitem[\protect\citeauthoryear{Bondon}{Bondon}{2009}]%
+        {BONDON20091761}
+\bibfield{author}{\bibinfo{person}{Pascal Bondon}.}
+  \bibinfo{year}{2009}\natexlab{}.
+\newblock \showarticletitle{Estimation of autoregressive models with
+  epsilon-skew-normal innovations}.
+\newblock \bibinfo{journal}{\emph{Journal of Multivariate Analysis}}
+  \bibinfo{volume}{100}, \bibinfo{number}{8} (\bibinfo{year}{2009}),
+  \bibinfo{pages}{1761 -- 1776}.
+\newblock
+\showISSN{0047-259X}
+\urldef\tempurl%
+\url{https://doi.org/10.1016/j.jmva.2009.02.006}
+\showDOI{\tempurl}
+
+
+\bibitem[\protect\citeauthoryear{Breiman}{Breiman}{1984}]%
+        {Breimanbook}
+\bibfield{author}{\bibinfo{person}{L Breiman}.}
+  \bibinfo{year}{1984}\natexlab{}.
+\newblock \bibinfo{booktitle}{\emph{Classification and regression trees}}.
+\newblock
+
+
+\bibitem[\protect\citeauthoryear{Chen and Liu}{Chen and Liu}{1993}]%
+        {10.2307/2290724}
+\bibfield{author}{\bibinfo{person}{Chung Chen} {and} \bibinfo{person}{Lon-Mu
+  Liu}.} \bibinfo{year}{1993}\natexlab{}.
+\newblock \showarticletitle{Joint Estimation of Model Parameters and Outlier
+  Effects in Time Series}.
+\newblock \bibinfo{journal}{\emph{J. Amer. Statist. Assoc.}}
+  \bibinfo{volume}{88}, \bibinfo{number}{421} (\bibinfo{year}{1993}),
+  \bibinfo{pages}{284--297}.
+\newblock
+\showISSN{01621459}
+\urldef\tempurl%
+\url{http://www.jstor.org/stable/2290724}
+\showURL{%
+\tempurl}
+
+
+\bibitem[\protect\citeauthoryear{Cortez, Bonde, Muzio, Russinovich, Fontoura,
+  and Bianchini}{Cortez et~al\mbox{.}}{2017}]%
+        {cortez2017resource}
+\bibfield{author}{\bibinfo{person}{Eli Cortez}, \bibinfo{person}{Anand Bonde},
+  \bibinfo{person}{Alexandre Muzio}, \bibinfo{person}{Mark Russinovich},
+  \bibinfo{person}{Marcus Fontoura}, {and} \bibinfo{person}{Ricardo
+  Bianchini}.} \bibinfo{year}{2017}\natexlab{}.
+\newblock \showarticletitle{Resource Central: Understanding and Predicting
+  Workloads for Improved Resource Management in Large Cloud Platforms}. In
+  \bibinfo{booktitle}{\emph{Proceedings of the International Symposium on
+  Operating Systems Principles (SOSP)} (\bibinfo{edition}{proceedings of the
+  international symposium on operating systems principles (sosp)} ed.)}.
+\newblock
+\urldef\tempurl%
+\url{https://www.microsoft.com/en-us/research/publication/resource-central-understanding-predicting-workloads-improved-resource-management-large-cloud-platforms/}
+\showURL{%
+\tempurl}
+
+
+\bibitem[\protect\citeauthoryear{{Dyer} and {Dyer}}{{Dyer} and {Dyer}}{2001}]%
+        {911175}
+\bibfield{author}{\bibinfo{person}{S.~A. {Dyer}} {and} \bibinfo{person}{J.~S.
+  {Dyer}}.} \bibinfo{year}{2001}\natexlab{}.
+\newblock \showarticletitle{Cubic-spline interpolation. 1}.
+\newblock \bibinfo{journal}{\emph{IEEE Instrumentation and Measurement
+  Magazine}} \bibinfo{volume}{4}, \bibinfo{number}{1} (\bibinfo{date}{March}
+  \bibinfo{year}{2001}), \bibinfo{pages}{44--46}.
+\newblock
+\showISSN{1941-0123}
+\urldef\tempurl%
+\url{https://doi.org/10.1109/5289.911175}
+\showDOI{\tempurl}
+
+
+\bibitem[\protect\citeauthoryear{Freedman and Diaconis}{Freedman and
+  Diaconis}{1981}]%
+        {Freedman1981}
+\bibfield{author}{\bibinfo{person}{David Freedman} {and} \bibinfo{person}{Persi
+  Diaconis}.} \bibinfo{year}{1981}\natexlab{}.
+\newblock \showarticletitle{On the histogram as a density estimator:L2 theory}.
+\newblock \bibinfo{journal}{\emph{Zeitschrift f{\"u}r
+  Wahrscheinlichkeitstheorie und Verwandte Gebiete}} \bibinfo{volume}{57},
+  \bibinfo{number}{4} (\bibinfo{date}{01 Dec} \bibinfo{year}{1981}),
+  \bibinfo{pages}{453--476}.
+\newblock
+\showISSN{1432-2064}
+\urldef\tempurl%
+\url{https://doi.org/10.1007/BF01025868}
+\showDOI{\tempurl}
+
+
+\bibitem[\protect\citeauthoryear{LeBlanc~M}{LeBlanc~M}{1992}]%
+        {LeBlanc}
+\bibfield{author}{\bibinfo{person}{Crowley~J LeBlanc~M}.}
+  \bibinfo{year}{1992}\natexlab{}.
+\newblock \showarticletitle{Relative risk trees for censored survival data}.
+\newblock \bibinfo{journal}{\emph{Biometrics}} \bibinfo{volume}{48},
+  \bibinfo{number}{2} (\bibinfo{date}{06} \bibinfo{year}{1992}),
+  \bibinfo{pages}{411--25}.
+\newblock
+
+
+\bibitem[\protect\citeauthoryear{Liu, Hoi, Zhao, and Sun}{Liu
+  et~al\mbox{.}}{2016}]%
+        {Liu2016OnlineAA}
+\bibfield{author}{\bibinfo{person}{Chenghao Liu}, \bibinfo{person}{S. Hoi},
+  \bibinfo{person}{P. Zhao}, {and} \bibinfo{person}{Jianling Sun}.}
+  \bibinfo{year}{2016}\natexlab{}.
+\newblock \showarticletitle{Online ARIMA Algorithms for Time Series
+  Prediction}. In \bibinfo{booktitle}{\emph{AAAI}}.
+\newblock
+
+
+\bibitem[\protect\citeauthoryear{Loh and Shih}{Loh and Shih}{1997}]%
+        {10.2307/24306157}
+\bibfield{author}{\bibinfo{person}{Wei-Yin Loh} {and} \bibinfo{person}{Yu-Shan
+  Shih}.} \bibinfo{year}{1997}\natexlab{}.
+\newblock \showarticletitle{SPLIT SELECTION METHODS FOR CLASSIFICATION TREES}.
+\newblock \bibinfo{journal}{\emph{Statistica Sinica}} \bibinfo{volume}{7},
+  \bibinfo{number}{4} (\bibinfo{year}{1997}), \bibinfo{pages}{815--840}.
+\newblock
+\showISSN{10170405, 19968507}
+\urldef\tempurl%
+\url{http://www.jstor.org/stable/24306157}
+\showURL{%
+\tempurl}
+
+
+\bibitem[\protect\citeauthoryear{Ozaki}{Ozaki}{1977}]%
+        {10.2307/2346970}
+\bibfield{author}{\bibinfo{person}{T. Ozaki}.} \bibinfo{year}{1977}\natexlab{}.
+\newblock \showarticletitle{On the Order Determination of ARIMA Models}.
+\newblock \bibinfo{journal}{\emph{Journal of the Royal Statistical Society.
+  Series C (Applied Statistics)}} \bibinfo{volume}{26}, \bibinfo{number}{3}
+  (\bibinfo{year}{1977}), \bibinfo{pages}{290--301}.
+\newblock
+\showISSN{00359254, 14679876}
+\urldef\tempurl%
+\url{http://www.jstor.org/stable/2346970}
+\showURL{%
+\tempurl}
+
+
+\bibitem[\protect\citeauthoryear{Pan and Politis}{Pan and Politis}{2016}]%
+        {PAN20161}
+\bibfield{author}{\bibinfo{person}{Li Pan} {and} \bibinfo{person}{Dimitris~N.
+  Politis}.} \bibinfo{year}{2016}\natexlab{}.
+\newblock \showarticletitle{Bootstrap prediction intervals for linear,
+  nonlinear and nonparametric autoregressions}.
+\newblock \bibinfo{journal}{\emph{Journal of Statistical Planning and
+  Inference}}  \bibinfo{volume}{177} (\bibinfo{year}{2016}), \bibinfo{pages}{1
+  -- 27}.
+\newblock
+\showISSN{0378-3758}
+\urldef\tempurl%
+\url{https://doi.org/10.1016/j.jspi.2014.10.003}
+\showDOI{\tempurl}
+
+
+\bibitem[\protect\citeauthoryear{Park, Tumanov, Jiang, Kozuch, and Ganger}{Park
+  et~al\mbox{.}}{2018}]%
+        {10.1145/3190508.3190515}
+\bibfield{author}{\bibinfo{person}{Jun~Woo Park}, \bibinfo{person}{Alexey
+  Tumanov}, \bibinfo{person}{Angela Jiang}, \bibinfo{person}{Michael~A.
+  Kozuch}, {and} \bibinfo{person}{Gregory~R. Ganger}.}
+  \bibinfo{year}{2018}\natexlab{}.
+\newblock \showarticletitle{3Sigma: Distribution-Based Cluster Scheduling for
+  Runtime Uncertainty}. In \bibinfo{booktitle}{\emph{Proceedings of the
+  Thirteenth EuroSys Conference}} (Porto, Portugal)
+  \emph{(\bibinfo{series}{EuroSys '18})}. \bibinfo{publisher}{Association for
+  Computing Machinery}, \bibinfo{address}{New York, NY, USA}, Article
+  \bibinfo{articleno}{2}, \bibinfo{numpages}{17}~pages.
+\newblock
+\showISBNx{9781450355841}
+\urldef\tempurl%
+\url{https://doi.org/10.1145/3190508.3190515}
+\showDOI{\tempurl}
+
+
+\bibitem[\protect\citeauthoryear{Pinto and Engel}{Pinto and Engel}{2015}]%
+        {10.1371/journal.pone.0139931}
+\bibfield{author}{\bibinfo{person}{Rafael~Coimbra Pinto} {and}
+  \bibinfo{person}{Paulo~Martins Engel}.} \bibinfo{year}{2015}\natexlab{}.
+\newblock \showarticletitle{A Fast Incremental Gaussian Mixture Model}.
+\newblock \bibinfo{journal}{\emph{PLOS ONE}} \bibinfo{volume}{10},
+  \bibinfo{number}{10} (\bibinfo{date}{10} \bibinfo{year}{2015}),
+  \bibinfo{pages}{1--12}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1371/journal.pone.0139931}
+\showDOI{\tempurl}
+
+
+\bibitem[\protect\citeauthoryear{Rzadca, Findeisen, Swiderski, Zych, Broniek,
+  Kusmierek, Nowak, Strack, Witusowski, Hand, and Wilkes}{Rzadca
+  et~al\mbox{.}}{2020}]%
+        {10.1145/3342195.3387524}
+\bibfield{author}{\bibinfo{person}{Krzysztof Rzadca}, \bibinfo{person}{Pawel
+  Findeisen}, \bibinfo{person}{Jacek Swiderski}, \bibinfo{person}{Przemyslaw
+  Zych}, \bibinfo{person}{Przemyslaw Broniek}, \bibinfo{person}{Jarek
+  Kusmierek}, \bibinfo{person}{Pawel Nowak}, \bibinfo{person}{Beata Strack},
+  \bibinfo{person}{Piotr Witusowski}, \bibinfo{person}{Steven Hand}, {and}
+  \bibinfo{person}{John Wilkes}.} \bibinfo{year}{2020}\natexlab{}.
+\newblock \showarticletitle{Autopilot: Workload Autoscaling at Google}. In
+  \bibinfo{booktitle}{\emph{Proceedings of the Fifteenth European Conference on
+  Computer Systems}} (Heraklion, Greece) \emph{(\bibinfo{series}{EuroSys
+  '20})}. \bibinfo{publisher}{Association for Computing Machinery},
+  \bibinfo{address}{New York, NY, USA}, Article \bibinfo{articleno}{16},
+  \bibinfo{numpages}{16}~pages.
+\newblock
+\showISBNx{9781450368827}
+\urldef\tempurl%
+\url{https://doi.org/10.1145/3342195.3387524}
+\showDOI{\tempurl}
+
+
+\bibitem[\protect\citeauthoryear{Tang and Fishwick}{Tang and Fishwick}{1993}]%
+        {5.4.374}
+\bibfield{author}{\bibinfo{person}{Zaiyong Tang} {and} \bibinfo{person}{Paul
+  Fishwick}.} \bibinfo{year}{1993}\natexlab{}.
+\newblock \showarticletitle{Feedforward Neural Nets as Models for Time Series
+  Forecasting}.
+\newblock \bibinfo{journal}{\emph{INFORMS Journal on Computing}}
+  \bibinfo{volume}{5} (\bibinfo{date}{11} \bibinfo{year}{1993}),
+  \bibinfo{pages}{374--385}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1287/ijoc.5.4.374}
+\showDOI{\tempurl}
+
+
+\bibitem[\protect\citeauthoryear{Tirmazi, Barker, Deng, Haque, Qin, Hand,
+  Harchol-Balter, and Wilkes}{Tirmazi et~al\mbox{.}}{2020}]%
+        {10.1145/3342195.3387517}
+\bibfield{author}{\bibinfo{person}{Muhammad Tirmazi}, \bibinfo{person}{Adam
+  Barker}, \bibinfo{person}{Nan Deng}, \bibinfo{person}{Md~E. Haque},
+  \bibinfo{person}{Zhijing~Gene Qin}, \bibinfo{person}{Steven Hand},
+  \bibinfo{person}{Mor Harchol-Balter}, {and} \bibinfo{person}{John Wilkes}.}
+  \bibinfo{year}{2020}\natexlab{}.
+\newblock \showarticletitle{Borg: The next Generation}. In
+  \bibinfo{booktitle}{\emph{Proceedings of the Fifteenth European Conference on
+  Computer Systems}} (Heraklion, Greece) \emph{(\bibinfo{series}{EuroSys
+  '20})}. \bibinfo{publisher}{Association for Computing Machinery},
+  \bibinfo{address}{New York, NY, USA}, Article \bibinfo{articleno}{30},
+  \bibinfo{numpages}{14}~pages.
+\newblock
+\showISBNx{9781450368827}
+\urldef\tempurl%
+\url{https://doi.org/10.1145/3342195.3387517}
+\showDOI{\tempurl}
+
+
+\bibitem[\protect\citeauthoryear{Verma, Pedrosa, Korupolu, Oppenheimer, Tune,
+  and Wilkes}{Verma et~al\mbox{.}}{2015}]%
+        {43438}
+\bibfield{author}{\bibinfo{person}{Abhishek Verma}, \bibinfo{person}{Luis
+  Pedrosa}, \bibinfo{person}{Madhukar~R. Korupolu}, \bibinfo{person}{David
+  Oppenheimer}, \bibinfo{person}{Eric Tune}, {and} \bibinfo{person}{John
+  Wilkes}.} \bibinfo{year}{2015}\natexlab{}.
+\newblock \showarticletitle{Large-scale cluster management at {Google} with
+  {Borg}}. In \bibinfo{booktitle}{\emph{Proceedings of the European Conference
+  on Computer Systems (EuroSys)}}. \bibinfo{address}{Bordeaux, France}.
+\newblock
+
+
+\end{thebibliography}
