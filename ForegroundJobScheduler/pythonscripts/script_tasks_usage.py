@@ -12,53 +12,60 @@ import itertools
 import multiprocessing as mp
 
 def filter(single_line_dat):
-    if single_line_dat['collection_id'].isin(selected_collection_ids).to_list()[0]:
+    if single_line_dat['collection_id'].isin(selected_collection_ids).to_list()[0] and int(single_line_dat['instance_index']) == 0:
         return single_line_dat
     else:
         return None
 
 def normalize(line):
     result = pd.json_normalize(json.loads(line))
-    if int(result['instance_index']) == 0:
-        return result
+    return filter(result)
+
+def process(file_name, path, enough_sampled):
+    if not enough_sampled:
+        r = gzip.open(path + 'task_usage' + '/' + file_name, 'rt')
+        r.seek(0, 0)
+        r = r.readlines()
+        temp_df = []
+        #pool = mp.Pool(processes = mp.cpu_count() - 1)
+        #temp_df.extend(pool.map(normalize, r))
+        #pool.close()
+        #pool.join()
+        #with mp.Pool(processes = mp.cpu_count() - 1) as p:
+            #temp_df.extend(list(tqdm(p.imap(normalize, r), total=len(r))))
+        for line in tqdm(r):
+            temp_df.append(normalize(line))
+        if all(v is None for v in temp_df):
+            temp_df = []
+            numer_of_traces.append(0)
+            return 0
+        else:
+            temp_df = pd.concat(temp_df, sort = False)
+            unique_collection_ids = set(temp_df['collection_id'])
+            for ids in unique_collection_ids:
+                unique_df = temp_df[temp_df['collection_id'] == ids]
+                unique_df.to_csv(path + 'task_usage_df' + ',' + ids + '.csv', header = True)
+            numer_of_traces.append(len(unique_collection_ids))
+            return len(unique_collection_ids)
     else:
-        return None 
+        numer_of_traces.append(0)
+        return 0
 
-head_path = '/mnt/scratch/'
 
+manager = mp.Manager()
+numer_of_traces = manager.list()
+head_path = '/home/carlonlv/Documents/Research-Projects/ForegroundJobScheduler/pythonscripts/'
 path = head_path + 'google_2019_data/'
 
-with open(path + 'selected_job_ids.txt', 'rb') as r:
+with open(path + 'selected_job_ids_high_prior.pkl', 'rb') as r:
     selected_collection_ids = pickle.load(r)
 
-st = time.time()
 task_usage = sorted(os.listdir(path + 'task_usage'))
-
-target_file_name = 'task_usage_df' + ',' + str(st) + '.csv'
-temp_df = []
-for f in tqdm(task_usage[0:]):
-    r = gzip.open(path + 'task_usage' + '/' + f, 'rt')
-    r.seek(0, 0)
-    r = r.readlines()
-    pool = mp.Pool(processes = mp.cpu_count() - 1)
-    temp_df.extend(pool.map(normalize, r))
-    pool.close()
-    pool.join()
-    if all(v is None for v in temp_df):
-        temp_df = []
-    else:
-        temp_df = pd.concat(temp_df, sort = False)
-        temp_df = temp_df[temp_df['collection_id'].isin(selected_collection_ids)]
-        temp_df = temp_df.groupby(['collection_id', 'instance_index']).agg({
-            'start_time':lambda y: min([int(i) for i in y]),
-            'end_time': lambda x: max([int(i) for i in x])
-        })
-        if os.path.exists(path + target_file_name):
-            temp_df.to_csv(path + target_file_name, mode = 'a', header = False)
-        else:
-            temp_df.to_csv(path + target_file_name, header = True)
-
-        temp_df = []
-
+st = time.time()
+with mp.Pool(processes = mp.cpu_count() - 1) as p:
+    total_count = sum(list(tqdm(p.imap(normalize, r), total=len(r))))
+#for f in tqdm(task_usage[0:]):
+    #total_count += process(f, path, total_count >= 10000)
 et = time.time()
+print("Total count is:" + str(total_count))
 print("Processing task usage took" ,et - st ," seconds")

@@ -41,15 +41,14 @@ for f in tqdm(task_events[0:]):
     r = gzip.open(path + 'task_events' + '/' + f, 'rt')
     r.seek(0, 0)
     r = r.readlines()
-    pool = mp.Pool(processes = 20)
-    mp_result = pool.map(normalize, r)
-    temp_df.extend(mp_result)
-    pool.close()
-    pool.join()
-    time.sleep(30)
+    #pool = mp.Pool(processes = 20)
+    #mp_result = pool.map(normalize, r)
+    #temp_df.extend(mp_result)
+    #pool.close()
+    #pool.join()
     #temp_df.extend(list(map(normalize, r)))
-    #for line in tqdm(r):
-        #temp_df.append(normalize(line))
+    for line in tqdm(r):
+        temp_df.append(normalize(line))
     if all(v is None for v in temp_df):
         temp_df = []
     else:

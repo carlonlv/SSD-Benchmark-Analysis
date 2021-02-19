@@ -38,18 +38,17 @@ for f in tqdm(job_events[0:]):
     r = gzip.open(path + 'job_events' + '/' + f, 'rt')
     r.seek(0, 0)
     r = r.readlines()
-    #pool = mp.Pool(processes = mp.cpu_count() - 1)
-    #mp_result = pool.map(normalize_and_filter, r)
-    mp_result = []
-    for i in tqdm(r):
-        mp_result.append(normalize_and_filter(i))
-    selected_job_ids.extend(mp_result)
-    #pool.close()
-    #pool.join()
+    pool = mp.Pool(processes = 10)
+    selected_job_ids.extend(pool.map(normalize_and_filter, r))
+    pool.close()
+    pool.join()
+    #for line in tqdm(r):
+        #selected_job_ids.append(normalize_and_filter(line))
+    
     selected_job_ids = [x for x in selected_job_ids if x is not None]
+    print(selected_job_ids)
 
 et = time.time()
 print("Processing task events took" ,et - st ," seconds")
-print(len(selected_job_ids))
-selected_job_ids = pd.DataFrame(selected_job_ids, columns = ['job_id'])
+selected_job_ids = pd.Series(selected_job_ids)
 selected_job_ids.to_pickle(path + target_file_name)
