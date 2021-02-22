@@ -38,14 +38,16 @@ for f in tqdm(job_events[0:]):
     r = gzip.open(path + 'job_events' + '/' + f, 'rt')
     r.seek(0, 0)
     r = r.readlines()
-    pool = mp.Pool(processes = 10)
-    selected_job_ids.extend(pool.map(normalize_and_filter, r))
-    pool.close()
-    pool.join()
-    #for line in tqdm(r):
-        #selected_job_ids.append(normalize_and_filter(line))
-    
-    selected_job_ids = [x for x in selected_job_ids if x is not None]
+    #pool = mp.Pool(processes = 10)
+    #tmp = pool.map(normalize_and_filter, r)
+    #tmp = [x for x in tmp if x is not None]
+    #selected_job_ids.extend(tmp)
+    #pool.close()
+    #pool.join()
+    for line in tqdm(r):
+        tmp = normalize_and_filter(line)
+        if tmp is not None:
+            selected_job_ids.append(tmp)
     print(selected_job_ids)
 
 et = time.time()
