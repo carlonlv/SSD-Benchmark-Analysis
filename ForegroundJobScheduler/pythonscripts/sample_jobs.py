@@ -31,9 +31,9 @@ path = head_path + 'google_2019_data/'
 st = time.time()
 job_events = sorted(os.listdir(path + 'job_events'))
 
-target_file_name = 'selected_job_ids_high_prior' + ',' + str(st) + '.pkl'
+target_file_name = 'selected_job_ids_high_prior.pkl'
 
-selected_job_ids = []
+selected_collection_ids = []
 for f in tqdm(job_events[0:]):
     r = gzip.open(path + 'job_events' + '/' + f, 'rt')
     r.seek(0, 0)
@@ -41,16 +41,16 @@ for f in tqdm(job_events[0:]):
     #pool = mp.Pool(processes = 10)
     #tmp = pool.map(normalize_and_filter, r)
     #tmp = [x for x in tmp if x is not None]
-    #selected_job_ids.extend(tmp)
+    #selected_collection_ids.extend(tmp)
     #pool.close()
     #pool.join()
     for line in tqdm(r):
         tmp = normalize_and_filter(line)
         if tmp is not None:
-            selected_job_ids.append(tmp)
-    print(selected_job_ids)
+            selected_collection_ids.append(tmp)
+    print(selected_collection_ids)
 
 et = time.time()
 print("Processing task events took" ,et - st ," seconds")
-selected_job_ids = pd.Series(selected_job_ids)
-selected_job_ids.to_pickle(path + target_file_name)
+selected_collection_ids = pd.Series(selected_collection_ids)
+selected_collection_ids.to_pickle(path + target_file_name)

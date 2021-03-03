@@ -47,7 +47,10 @@ def process(file_name):
         print("Found " + str(len(unique_collection_ids)) + " in " + file_name)
         for ids in unique_collection_ids:
             collections_found.append(int(ids))
+            instance_id = temp_df[temp_df['collection_id'] == ids]['instance_index'][0]
             unique_df = temp_df[temp_df['collection_id'] == ids]
+            unique_df = unique_df[unique_df['instance_index'] == instance_id]
+            unique_df = unique_df.sort_values(by='start_time', ascending = True)
             unique_df.to_csv(path + 'processed_task_usage/' + 'task_usage_df' + ',' + ids + '.csv', header = True)
         return len(unique_collection_ids)
 
@@ -70,7 +73,7 @@ st = time.time()
 #with mp.Pool(processes = mp.cpu_count() - 1) as p:
     #total_count = sum(list(tqdm(p.imap(process, task_usage[0:]),
     #total=len(task_usage[0:]))))
-collections_found = []
+collections_found = [1298, 1925, 200068, 200071, 200492, 200525, 200531, 201425, 201849, 201853, 201857, 201978, 2806, 2947, 3017080, 3159, 32238, 32339, 32345, 32442, 33143, 33240, 359, 47833, 48031, 48708, 48710, 48712, 49340, 49800, 49802, 50887, 530, 58392, 7531, 7536, 786858, 786925]
 for f in tqdm(task_usage[0:]):
     if total_count >= 10000:
         break
