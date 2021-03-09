@@ -31,13 +31,13 @@ d <- run_sim(bg_param_setting, additional_setting, microsoft_max_10000, microsof
 
 ## Adding past window size of 12
 additional_setting <- list("cut_off_prob" = cut_off_prob, "window_size_for_reg" = 12, "window_type_for_reg" = "max")
-bg_param_setting <- data.frame(class = "ARIMA", name = "AR1X(Avg,Max12)", window_size = window_size, window_size_for_reg = window_size, window_type_for_reg = "avg", granularity = 0, train_policy = "fixed", train_size = 2000, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(class = "ARIMA", name = "AR1X(Avg/Max12)", window_size = window_size, window_size_for_reg = window_size, window_type_for_reg = "avg", granularity = 0, train_policy = "fixed", train_size = 2000, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, additional_setting, microsoft_max_10000, list("avg" = microsoft_avg_10000, "max_12" = microsoft_max_10000), cores = parallel::detectCores(), write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/FindBestPredictor/AR1/")
 
-bg_param_setting <- data.frame(class = "MARKOV", name = "MarkovX(Avg,Max12)", window_size = window_size, window_size_for_reg = window_size, window_type_for_reg = "avg", granularity = 0, train_policy = "fixed", train_size = 2000, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(class = "MARKOV", name = "MarkovX(Avg/Max12)", window_size = window_size, window_size_for_reg = window_size, window_type_for_reg = "avg", granularity = 0, train_policy = "fixed", train_size = 2000, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, additional_setting, microsoft_max_10000, list("avg" = microsoft_avg_10000, "max_12" = microsoft_max_10000), cores = parallel::detectCores(), write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/FindBestPredictor/Markov/")
 
-bg_param_setting <- data.frame(class = "LM", name = "LM(Avg,Max12)", window_size = window_size, window_size_for_reg = window_size, window_type_for_reg = "avg", granularity = 0, train_policy = "fixed", train_size = 2000, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
+bg_param_setting <- data.frame(class = "LM", name = "LM(Avg/Max12)", window_size = window_size, window_size_for_reg = window_size, window_type_for_reg = "avg", granularity = 0, train_policy = "fixed", train_size = 2000, update_freq = 3, react_speed = "1,2", extrap_step = 1, stringsAsFactors = FALSE)
 d <- run_sim(bg_param_setting, additional_setting, microsoft_max_10000, list("avg" = microsoft_avg_10000, "max_12" = microsoft_max_10000), cores = parallel::detectCores(), write_type = c("charwise", "paramwise"), plot_type = "none", result_loc = "~/Documents/FindBestPredictor/LM/")
 
 ## ARIMA-like
@@ -151,7 +151,7 @@ d <- run_sim(bg_param_setting, microsoft_max_10000, NULL, start_point = 2, cores
 
 ### Half life
 load("~/microsoft_generated_data_2000.rda")
-microsoft_generated_data_2000.rda <- microsoft_generated_data_2000.rda[1:(3000 * 30),]
+microsoft_generated_data_2000 <- microsoft_generated_data_2000[1:(3000 * 30),]
 
 cut_off_prob <- c(0.001, 0.003, 0.005, 0.010, 0.050)
 half_life <- c(1, 3, 6, 12, 36, 72)
