@@ -11,14 +11,9 @@ import pickle
 import itertools
 import multiprocessing as mp
 
-def filter(single_line_dat):
-    if single_line_dat['collection_id'].isin(selected_collection_ids).to_list()[0]:
-        return single_line_dat
-    else:
-        return None
-
 def normalize(line):
-    result = pd.json_normalize(json.loads(line))
+    result = pd.json_normalize(json.loads(line), max_level=2)
+    #return filter(result)
     if int(result['instance_index']) == 0:
         return result
     else:
@@ -28,7 +23,7 @@ head_path = '/mnt/scratch/'
 
 path = head_path + 'google_2019_data/'
 
-with open(path + 'selected_job_ids.txt', 'rb') as r:
+with open(path + 'selected_job_ids_low_priority.pkl', 'rb') as r:
     selected_collection_ids = pickle.load(r)
 
 st = time.time()
@@ -41,18 +36,15 @@ for f in tqdm(task_events[0:]):
     r = gzip.open(path + 'task_events' + '/' + f, 'rt')
     r.seek(0, 0)
     r = r.readlines()
-    #pool = mp.Pool(processes = 20)
-    #mp_result = pool.map(normalize, r)
-    #temp_df.extend(mp_result)
-    #pool.close()
-    #pool.join()
-    #temp_df.extend(list(map(normalize, r)))
-    for line in tqdm(r):
-        temp_df.append(normalize(line))
+    #for line in tqdm(r):
+        #temp_df.append(normalize(line))
+    with mp.Pool(processes = mp.cpu_count() - 1) as p:
+            temp_df.extend(list(tqdm(p.imap(normalize, r), total = len(r))))
     if all(v is None for v in temp_df):
         temp_df = []
     else:
         temp_df = pd.concat(temp_df, sort = False)
+        temp_df['collection_id'] = temp_df['collection_id'].astype(int)
         temp_df = temp_df[temp_df['collection_id'].isin(selected_collection_ids)]
         if os.path.exists(path + target_file_name):
             temp_df.to_csv(path + target_file_name, mode = 'a', header = False)
