@@ -28,13 +28,11 @@ def process(file_name):
         temp_df.extend(list(tqdm(p.imap(normalize, r), total=len(r))))
     #for line in r:
         #temp_df.append(normalize(line))
-    if all(v is None for v in temp_df):
-        temp_df = []
-    else:
-        temp_df = pd.concat(temp_df, sort = False)
-        temp_df['collection_id'] = temp_df['collection_id'].astype(int)
-        temp_df['instance_index'] = temp_df['instance_index'].astype(int)
-        temp_df = temp_df[temp_df['collection_id'].isin(selected_collection_ids)]
+    temp_df = pd.concat(temp_df, sort = False)
+    temp_df['collection_id'] = temp_df['collection_id'].astype(int)
+    temp_df['instance_index'] = temp_df['instance_index'].astype(int)
+    temp_df = temp_df[temp_df['collection_id'].isin(selected_collection_ids)]
+    if len(temp_df.index) > 0:
         temp_df = temp_df.groupby(['collection_id', 'instance_index']).agg({
             'start_time':lambda y: min([int(i) for i in y]),
             'end_time': lambda x: max([int(i) for i in x])
