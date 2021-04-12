@@ -12,7 +12,7 @@ import multiprocessing as mp
 
 def filter(dat):
     ## You can add more constraints here.
-    if int(dat['priority']) <= 119:
+    if int(dat['priority']) <= 119 and (not (int(dat['type']) in [4, 5, 7, 8])):
         return True
     else:
         return False
@@ -31,7 +31,7 @@ path = head_path + 'google_2019_data/'
 st = time.time()
 job_events = sorted(os.listdir(path + 'job_events'))
 
-target_file_name = 'selected_job_ids_low_priority' + ',' + str(st) + '.pkl'
+target_file_name = 'selected_job_ids_batch' + ',' + str(st) + '.pkl'
 
 selected_job_ids = []
 for f in tqdm(job_events[0:]):

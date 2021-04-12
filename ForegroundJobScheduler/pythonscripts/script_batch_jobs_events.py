@@ -19,10 +19,13 @@ head_path = '/mnt/scratch/'
 
 path = head_path + 'google_2019_data/'
 
+with open(path + 'selected_job_ids_batch.pkl', 'rb') as r:
+    selected_collection_ids = pickle.load(r)
+
 st = time.time()
 job_events = sorted(os.listdir(path + 'job_events'))
 
-target_file_name = 'job_events_df' + ',' + str(st) + '.csv'
+target_file_name = 'job_events_batch_df' + ',' + str(st) + '.csv'
 temp_df = []
 
 for f in tqdm(job_events[0:]):
@@ -41,6 +44,8 @@ for f in tqdm(job_events[0:]):
         temp_df = []
     else:
         temp_df = pd.concat(temp_df, sort = False)
+        temp_df['collection_id'] = temp_df['collection_id'].astype(int)
+        temp_df = temp_df[temp_df['collection_id'].isin(selected_collection_ids)]
         if os.path.exists(path + target_file_name):
             temp_df.to_csv(path + target_file_name, mode = 'a', header = False)
         else:

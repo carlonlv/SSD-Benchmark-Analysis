@@ -23,13 +23,13 @@ head_path = '/mnt/scratch/'
 
 path = head_path + 'google_2019_data/'
 
-with open(path + 'selected_job_ids_low_priority.pkl', 'rb') as r:
+with open(path + 'selected_job_ids_batch.pkl', 'rb') as r:
     selected_collection_ids = pickle.load(r)
 
 st = time.time()
 task_events = sorted(os.listdir(path + 'task_events'))
 
-target_file_name = 'task_events_df' + ',' + str(st) + '.csv'
+target_file_name = 'parsed_task_usage/task_events_df' + ',' + str(st) + '.csv'
 temp_df = []
 
 for f in tqdm(task_events[0:]):
@@ -38,7 +38,7 @@ for f in tqdm(task_events[0:]):
     r = r.readlines()
     #for line in tqdm(r):
         #temp_df.append(normalize(line))
-    with mp.Pool(processes = mp.cpu_count() - 1) as p:
+    with mp.Pool(processes = mp.cpu_count() - 4) as p:
             temp_df.extend(list(tqdm(p.imap(normalize, r), total = len(r))))
     if all(v is None for v in temp_df):
         temp_df = []
