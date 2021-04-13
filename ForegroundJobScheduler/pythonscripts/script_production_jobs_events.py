@@ -44,9 +44,9 @@ for f in tqdm(job_events[0:]):
     temp_df['collection_id'] = temp_df['collection_id'].astype(int)
     temp_df = temp_df[temp_df['collection_id'].isin(selected_collection_ids)]
     if os.path.exists(path + target_file_name):
-        temp_df.to_csv(path + "parsed_job_events" + target_file_name, mode = 'a', header = False)
+        temp_df.to_csv(path + "parsed_job_events/" + target_file_name, mode = 'a', header = False)
     else:
-        temp_df.to_csv(path + "parsed_job_events" + target_file_name, header = True)
+        temp_df.to_csv(path + "parsed_job_events/" + target_file_name, header = True)
     temp_df = []
         
 et = time.time()

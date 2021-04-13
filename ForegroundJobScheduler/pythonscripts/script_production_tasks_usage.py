@@ -31,6 +31,9 @@ def process(file_name):
     temp_df = pd.concat(temp_df, sort = False)
     temp_df['collection_id'] = temp_df['collection_id'].astype(int)
     temp_df = temp_df[temp_df['collection_id'].isin(selected_collection_ids)]
+
+    val = 0
+
     if len(temp_df.index) > 0 :
         unique_collection_ids = set(temp_df['collection_id'])
         print("Found " + str(len(unique_collection_ids)) + " in " + file_name)
@@ -39,8 +42,11 @@ def process(file_name):
             unique_df = temp_df[temp_df['collection_id'] == ids]
             unique_df = unique_df[unique_df['instance_index'] == instance_id]
             unique_df = unique_df.sort_values(by='start_time', ascending = True)
+            if len(unique_df.index) >= 3000:
+                unique_df.to_csv(path + 'parsed_task_usage/' + 'production_task_usage_df' + ',' + str(ids) + '.csv', header = True)
+                val += 1
             unique_df.to_csv(path + 'parsed_task_usage/' + 'production_task_usage_df' + ',' + ids + '.csv', header = True)
-        return len(unique_collection_ids)
+        return val
     else:
         return 0
 

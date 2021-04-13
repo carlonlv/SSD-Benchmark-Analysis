@@ -35,17 +35,8 @@ def process(file_name):
     temp_production_df = temp_df[temp_df['collection_id'].isin(selected__production_collection_ids)]
     temp_batch_df = temp_df[temp_df['collection_id'].isin(selected__batch_collection_ids)]
 
-    if len(temp_production_df.index) > 0:
-        unique_collection_ids = set(temp_production_df['collection_id'])
-        print("Found " + str(len(unique_collection_ids)) + " in " + file_name)
-        for ids in unique_collection_ids:
-            instance_id = temp_production_df[temp_production_df['collection_id'] == ids]['instance_index'][0]
-            unique_df = temp_production_df[temp_production_df['collection_id'] == ids]
-            unique_df = unique_df[unique_df['instance_index'] == instance_id]
-            unique_df = unique_df.sort_values(by='start_time', ascending = True)
-            unique_df.to_csv(path + 'parsed_task_usage/' + 'production_task_usage_df' + ',' + ids + '.csv', header = True)
-        return len(unique_collection_ids)
-    
+    val = 0
+
     if len(temp_batch_df.index) > 0:
         temp_batch_df = temp_batch_df.groupby(['collection_id', 'instance_index']).agg({
             'start_time':lambda y: min([int(i) for i in y]),
@@ -55,8 +46,19 @@ def process(file_name):
             temp_batch_df.to_csv(path + 'parsed_task_usage/' + target_file_name, mode = 'a', header = False)
         else:
             temp_batch_df.to_csv(path + 'parsed_task_usage/' + target_file_name, header = True)
-        return 0
-    return 0
+            
+    if len(temp_production_df.index) > 0 and current_production_count < max_production_count:
+        unique_collection_ids = set(temp_production_df['collection_id'])
+        print("Found " + str(len(unique_collection_ids)) + " in " + file_name)
+        for ids in unique_collection_ids:
+            instance_id = temp_production_df[temp_production_df['collection_id'] == ids]['instance_index'][0]
+            unique_df = temp_production_df[temp_production_df['collection_id'] == ids]
+            unique_df = unique_df[unique_df['instance_index'] == instance_id]
+            unique_df = unique_df.sort_values(by='start_time', ascending = True)
+            if len(unique_df.index) >= 3000:
+                unique_df.to_csv(path + 'parsed_task_usage/' + 'production_task_usage_df' + ',' + str(ids) + '.csv', header = True)
+                val += 1
+    return val
 
 
 #manager = mp.Manager()
@@ -71,13 +73,14 @@ with open(path + 'selected_job_ids_batch.pkl', 'rb') as r:
 
 task_usage = sorted(os.listdir(path + 'task_usage'))
 
-print("Starting multi-core processing.")
+max_production_count = 5000
+current_production_count = 0
 
 st = time.time()
 target_file_name = 'batch_task_usage_df' + ',' + str(st) + '.csv'
 #with mp.Pool(processes = mp.cpu_count() - 1) as p:
     #tqdm(p.imap(process, task_usage), total=len(task_usage))
 for f in tqdm(task_usage[0:]):
-    process(f)
+    current_production_count += process(f)
 et = time.time()
 print("Processing task usage took" ,et - st ," seconds")
