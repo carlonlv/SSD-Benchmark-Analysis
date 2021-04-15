@@ -10,6 +10,7 @@ from tqdm import tqdm
 import pickle
 import itertools
 import multiprocessing as mp
+import re
 
 def normalize(line):
     result = pd.json_normalize(json.loads(line), max_level=2)
@@ -24,8 +25,8 @@ def process(file_name):
     #temp_df.extend(pool.map(normalize, r))
     #pool.close()
     #pool.join()
-    with mp.Pool(processes = mp.cpu_count() - 1) as p:
-        temp_df.extend(list(tqdm(p.imap(normalize, r), total=len(r))))
+    with mp.Pool(processes = mp.cpu_count()) as p:
+        temp_df.extend(list(tqdm(p.imap(normalize, r, chunksize = 100), total=len(r))))
     #for line in r:
         #temp_df.append(normalize(line))
 
@@ -49,7 +50,6 @@ def process(file_name):
             
     if len(temp_production_df.index) > 0 and current_production_count < max_production_count:
         unique_collection_ids = set(temp_production_df['collection_id'])
-        print("Found " + str(len(unique_collection_ids)) + " in " + file_name)
         for ids in unique_collection_ids:
             instance_id = temp_production_df[temp_production_df['collection_id'] == ids]['instance_index'][0]
             unique_df = temp_production_df[temp_production_df['collection_id'] == ids]
@@ -58,6 +58,8 @@ def process(file_name):
             if len(unique_df.index) >= 3000:
                 unique_df.to_csv(path + 'parsed_task_usage/' + 'production_task_usage_df' + ',' + str(ids) + '.csv', header = True)
                 val += 1
+        print("Found " + str(val) + " in " + file_name)
+    os.remove(path + 'task_usage' + '/' + file_name)
     return val
 
 
@@ -71,9 +73,13 @@ with open(path + 'selected_job_ids_production.pkl', 'rb') as r:
 with open(path + 'selected_job_ids_batch.pkl', 'rb') as r:
     selected__batch_collection_ids = pickle.load(r)
 
+processed_tasks = sorted(os.listdir(path + 'parsed_task_usage'))
+processed_production_tasks = [x for x in processed_tasks if re.match("production_task_usage_df,*", x)]
+print("Already processed " +  str(len(processed_production_tasks)) + " production tasks.")
+
 task_usage = sorted(os.listdir(path + 'task_usage'))
 
-max_production_count = 5000
+max_production_count = 5000 - len(processed_production_tasks)
 current_production_count = 0
 
 st = time.time()
