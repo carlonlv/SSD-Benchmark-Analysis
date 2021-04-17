@@ -23,17 +23,14 @@ def process(file_name):
     r.seek(0, 0)
     r = r.readlines()
     with mp.Pool(processes = mp.cpu_count()) as p:
-        temp_df.extend(list(tqdm(p.imap(normalize, r, chunksize = 200), total=len(r))))
+        temp_df.extend(list(tqdm(p.imap(normalize, r, chunksize = 3000), total=len(r))))
     del r[:]
     del r
 
     manager = mp.Manager()
     temp_df = manager.list(temp_df)
 
-    temp_production_df = manager.list()
-    temp_batch_df = manager.list()
-
-    indices = np.arange(0, len(temp_df), 200)
+    indices = np.arange(0, len(temp_df), len(temp_df) // (32 * mp.cpu_count()))
     indices.append(len(temp_df))
 
     def filter(index):
@@ -41,23 +38,21 @@ def process(file_name):
         temp_df[indices[index]:indices[index + 1]] = [None for _ in range(indices[index], indices[index + 1])]
         tt_df['collection_id'] = tt_df['collection_id'].astype(int)
         tt_batch_indicator = tt_df['collection_id'].isin(selected__batch_collection_ids)
-        temp_batch_df.append(tt_df[tt_batch_indicator])
-        tt_df = tt_df[~tt_batch_indicator]
+        tt_batch_df = tt_df[tt_batch_indicator]
+        tt_df = tt_df[~tt_batch_df]
         tt_production_df = tt_df[tt_df['collection_id'].isin(selected__production_collection_ids)]
-        temp_production_df.append(tt_production_df)
-        return
+        return [tt_production_df, tt_batch_df]
 
-    del temp_df[:]
-    del temp_df
-
+    ab_temp_df = []
     with mp.Pool(processes = mp.cpu_count()) as p:
-        tqdm(p.imap(filter, range(0, len(indices) - 1), chunksize = 2), total=len(indices) - 1)
-    
-    temp_production_df = list(temp_production_df)
-    temp_batch_df = list(temp_batch_df)
-    temp_production_df = pd.concat(temp_production_df)
-    temp_batch_df = pd.concat(temp_batch_df)
+         ab_temp_df.extend(list(tqdm(p.imap(filter, range(0, len(indices) - 1), chunksize = 2), total=len(indices) - 1)))
 
+    temp_batch_df = pd.DataFrame()
+    temp_production_df = pd.DataFrame()
+    for x in tqdm(ab_temp_df):
+        temp_batch_df = temp_batch_df.append(x[1], ignore_index = True)
+        temp_production_df = temp_production_df.append(x[0], ignore_index = True)
+    
     val = 0
 
     if len(temp_batch_df.index) > 0:
@@ -115,7 +110,6 @@ target_file_name = 'batch_task_usage_df' + ',' + str(st) + '.csv'
 #with mp.Pool(processes = mp.cpu_count() - 1) as p:
     #tqdm(p.imap(process, task_usage), total=len(task_usage))
 for f in tqdm(task_usage[0:]):
-    print(f)
     current_production_count += process(f)
 et = time.time()
 print("Processing task usage took" ,et - st ," seconds")
