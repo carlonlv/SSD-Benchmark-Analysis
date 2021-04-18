@@ -11,10 +11,24 @@ import pickle
 import itertools
 import multiprocessing as mp
 import re
+import functools
+
 
 def normalize(line):
     result = pd.json_normalize(json.loads(line), max_level=2)
     return result
+
+
+def filter(temp_df, indices, index):
+        tt_df = pd.concat(temp_df[indices[index]:indices[index + 1]], sort = False)
+        temp_df[indices[index]:indices[index + 1]] = [None for _ in range(indices[index], indices[index + 1])]
+        tt_df['collection_id'] = tt_df['collection_id'].astype(int)
+        tt_batch_indicator = tt_df['collection_id'].isin(selected__batch_collection_ids)
+        temp_batch_df = tt_df[tt_batch_indicator]
+        tt_df = tt_df[~tt_batch_indicator]
+        temp_production_df = tt_df[tt_df['collection_id'].isin(selected__production_collection_ids)]
+        return [temp_batch_df, temp_production_df]
+
 
 def process(file_name):
     temp_df = []
@@ -27,36 +41,22 @@ def process(file_name):
     del r[:]
     del r
 
-    manager = mp.Manager()
-    temp_df = manager.list(temp_df)
-
-    temp_production_df = manager.list()
-    temp_batch_df = manager.list()
-
     indices = np.arange(0, len(temp_df), 200)
+    indices = indices.tolist()
     indices.append(len(temp_df))
 
-    def filter(index):
-        tt_df = pd.concat(temp_df[indices[index]:indices[index + 1]], sort = False)
-        temp_df[indices[index]:indices[index + 1]] = [None for _ in range(indices[index], indices[index + 1])]
-        tt_df['collection_id'] = tt_df['collection_id'].astype(int)
-        tt_batch_indicator = tt_df['collection_id'].isin(selected__batch_collection_ids)
-        temp_batch_df.append(tt_df[tt_batch_indicator])
-        tt_df = tt_df[~tt_batch_indicator]
-        tt_production_df = tt_df[tt_df['collection_id'].isin(selected__production_collection_ids)]
-        temp_production_df.append(tt_production_df)
-        return
-
-    del temp_df[:]
-    del temp_df
-
-    with mp.Pool(processes = mp.cpu_count()) as p:
-        tqdm(p.imap(filter, range(0, len(indices) - 1), chunksize = 2), total=len(indices) - 1)
+    dd_temp_df = []
+    with mp.Pool(processes = 3) as p:
+        dd_temp_df.extend(list(tqdm(p.imap(functools.partial(filter, temp_df, indices), range(0, len(indices) - 1)), total = len(indices) - 1)))
     
-    temp_production_df = list(temp_production_df)
-    temp_batch_df = list(temp_batch_df)
-    temp_production_df = pd.concat(temp_production_df)
-    temp_batch_df = pd.concat(temp_batch_df)
+    temp_batch_df = pd.DataFrame()
+    temp_production_df = pd.DataFrame()
+    for x in tqdm(dd_temp_df):
+        temp_batch_df.append(x[0], ignore_index = True)
+        temp_production_df.append(x[1], ignore_index = True)
+    
+    del dd_temp_df[:]
+    del dd_temp_df
 
     val = 0
 
@@ -89,8 +89,6 @@ def process(file_name):
     return val
 
 
-#manager = mp.Manager()
-#numer_of_traces = manager.list()
 head_path = '/mnt/scratch/'
 path = head_path + 'google_2019_data/'
 
@@ -112,8 +110,6 @@ current_production_count = 0
 
 st = time.time()
 target_file_name = 'batch_task_usage_df' + ',' + str(st) + '.csv'
-#with mp.Pool(processes = mp.cpu_count() - 1) as p:
-    #tqdm(p.imap(process, task_usage), total=len(task_usage))
 for f in tqdm(task_usage[0:]):
     print(f)
     current_production_count += process(f)
