@@ -1,23 +1,14 @@
 library("DataCenterSim")
 library("dplyr")
 
-overall_df <- data.frame()
-feature <- "granularity"
-for (i in 1:4) {
-  feature_df <- read.csv(file.choose())
-  paramwise_df <- read.csv(file.choose())
-  overall_df <- rbind(overall_df, cbind(paramwise_df, feature = feature_df[1, feature]))
-}
+path = "~/Documents/PDSF Dataset/WindowSize/"
 
-plot_ecdf_traces_performance(overall_df, "Granularity", FALSE, "AR1 Model Offline Training Policy", "~/Documents/")
-
+lsfiles <- list.files(path = path, pattern = "Charwise*", recursive = TRUE)
 
 overall_df <- data.frame()
-feature <- "granularity"
-feature_df <- read.csv(file.choose())
-for (i in 1:4) {
-  paramwise_df <- read.csv(file.choose())
-  overall_df <- rbind(overall_df, cbind(paramwise_df, feature = feature_df[i, feature]))
+for (i in lsfiles) {
+  temp_df <- read.csv(paste0(path, i))
+  temp_df <- temp_df[temp_df$name %in% c("AR1", "LM"), c("name", "window_size", "cut_off_prob", "score1.n", "score1.w", "score1_adj.n", "score1_adj.w", "score1_adj.w",  "score2.n", "score2.w", "score2_adj.n", "score2_adj.w")]
+  overall_df <- rbind(overall_df, temp_df)
 }
-
-plot_ecdf_traces_performance(overall_df, "granularity", FALSE, "AR1 Model Offline Training Policy", "~/Documents/")
+DataCenterSim:::plot_sim_charwise(overall_df, mapping = list("color" = "name", "linetype" = "window_size"), adjusted = FALSE, point_or_line = NA, name = "Different Models Under Different Window Sizes", path)

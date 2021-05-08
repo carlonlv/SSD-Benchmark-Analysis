@@ -19,6 +19,9 @@ def normalize(line):
     else:
         return None 
 
+def process(file_name):
+    return file_name
+
 head_path = '/mnt/scratch/'
 
 path = head_path + 'google_2019_data/'
