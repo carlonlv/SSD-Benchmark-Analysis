@@ -11,47 +11,44 @@ import pickle
 import itertools
 import multiprocessing as mp
 import re
+import functools
+from tqdm.contrib.concurrent import process_map
+import gc
+
 
 def normalize(line):
     result = pd.json_normalize(json.loads(line), max_level=2)
     return result
 
 def process(file_name):
-    temp_df = []
-
     r = gzip.open(path + 'task_usage' + '/' + file_name, 'rt')
     r.seek(0, 0)
     r = r.readlines()
-    with mp.Pool(processes = mp.cpu_count()) as p:
-        temp_df.extend(list(tqdm(p.imap(normalize, r, chunksize = 3000), total=len(r))))
-    del r[:]
+
+    #process_map(functools.partial(normalize_and_filter, selected__batch_collection_ids, selected__production_collection_ids), r, max_workers = mp.cpu_count(), chunksize = 600)
+    temp_df = process_map(normalize, r, max_workers = mp.cpu_count(), chunksize = 400)
+
     del r
+    gc.collect()
+    print("Memory drop from r")
+    
+    temp_df = pd.concat(temp_df, sort = False)
+    #column_names = temp_df[0].columns
+    #df_dict = dict.fromkeys(column_names, [])
+    #for col in tqdm(column_names):
+        #extracted = [frame[col] for frame in temp_df]
+        #df_dict[col] = extracted
+    #temp_df = pd.DataFrame.from_dict(df_dict)[column_names]
+    #dict.clear(df_dict)
+    temp_df['collection_id'] = temp_df['collection_id'].astype(int, copy = False)
+    
 
-    manager = mp.Manager()
-    temp_df = manager.list(temp_df)
-
-    indices = np.arange(0, len(temp_df), len(temp_df) // (32 * mp.cpu_count()))
-    indices.append(len(temp_df))
-
-    def filter(index):
-        tt_df = pd.concat(temp_df[indices[index]:indices[index + 1]], sort = False)
-        temp_df[indices[index]:indices[index + 1]] = [None for _ in range(indices[index], indices[index + 1])]
-        tt_df['collection_id'] = tt_df['collection_id'].astype(int)
-        tt_batch_indicator = tt_df['collection_id'].isin(selected__batch_collection_ids)
-        tt_batch_df = tt_df[tt_batch_indicator]
-        tt_df = tt_df[~tt_batch_df]
-        tt_production_df = tt_df[tt_df['collection_id'].isin(selected__production_collection_ids)]
-        return [tt_production_df, tt_batch_df]
-
-    ab_temp_df = []
-    with mp.Pool(processes = mp.cpu_count()) as p:
-         ab_temp_df.extend(list(tqdm(p.imap(filter, range(0, len(indices) - 1), chunksize = 2), total=len(indices) - 1)))
-
-    temp_batch_df = pd.DataFrame()
-    temp_production_df = pd.DataFrame()
-    for x in tqdm(ab_temp_df):
-        temp_batch_df = temp_batch_df.append(x[1], ignore_index = True)
-        temp_production_df = temp_production_df.append(x[0], ignore_index = True)
+    temp_batch_df = pd.merge(selected__batch_collection_ids, temp_df, how = 'inner', on = 'collection_id')
+    temp_production_df = pd.merge(selected__production_collection_ids, temp_df, how = 'inner', on = 'collection_id')
+    
+    del temp_df
+    gc.collect()
+    print("Memory drop from temp_df")
     
     val = 0
 
@@ -77,8 +74,10 @@ def process(file_name):
                 val += 1
         print("Found " + str(val) + " in " + file_name)
 
-    temp_production_df = []
-    temp_batch_df = []
+    del temp_batch_df
+    del temp_production_df
+    gc.collect()
+    print("Memory drop from temp_batch_df, temp_batch_df")
 
     os.remove(path + 'task_usage' + '/' + file_name)
     return val
@@ -91,10 +90,10 @@ path = head_path + 'google_2019_data/'
 
 with open(path + 'selected_job_ids_production.pkl', 'rb') as r:
     selected__production_collection_ids = pickle.load(r)
-#selected__production_collection_ids = pd.Series(selected__production_collection_ids, name = 'collection_id', dtype = 'int')
+selected__production_collection_ids = pd.Series(selected__production_collection_ids, name = 'collection_id', dtype = 'int')
 with open(path + 'selected_job_ids_batch.pkl', 'rb') as r:
     selected__batch_collection_ids = pickle.load(r)
-#selected__batch_collection_ids = pd.Series(selected__batch_collection_ids, name = 'collection_id', dtype = 'int')
+selected__batch_collection_ids = pd.Series(selected__batch_collection_ids, name = 'collection_id', dtype = 'int')
 
 processed_tasks = sorted(os.listdir(path + 'parsed_task_usage'))
 processed_production_tasks = [x for x in processed_tasks if re.match("production_task_usage_df,*", x)]
@@ -110,6 +109,7 @@ target_file_name = 'batch_task_usage_df' + ',' + str(st) + '.csv'
 #with mp.Pool(processes = mp.cpu_count() - 1) as p:
     #tqdm(p.imap(process, task_usage), total=len(task_usage))
 for f in tqdm(task_usage[0:]):
+    print(f)
     current_production_count += process(f)
 et = time.time()
 print("Processing task usage took" ,et - st ," seconds")
