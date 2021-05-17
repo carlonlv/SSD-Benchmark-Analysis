@@ -14,7 +14,8 @@ from tqdm.contrib.concurrent import process_map
 
 
 def process(f):
-    r = gzip.open(path + 'task_events' + '/' + f, 'rt')
+    #r = gzip.open(path + 'task_events' + '/' + f, 'rt')
+    r = open(path + 'task_events' + '/' + f, 'rt')
     r.seek(0, 0)
     r = r.readlines()
 
@@ -45,7 +46,7 @@ st = time.time()
 task_events = sorted(os.listdir(path + 'task_events'))
 
 target_file_name = 'parsed_task_events/task_events_df' + ',' + str(st) + '.csv'
-process_map(process, task_events, max_workers = mp.cpu_count(), chunksize = 2)        
+process_map(process, task_events, max_workers = 4, chunksize = 2)        
 et = time.time()
 print("Processing task events took" ,et - st ," seconds")
 
