@@ -1,2 +1,0 @@
-"","name","window_size","extrap_step","response","target","train_policy","res_dist","outlier_type","cut_off_prob","granularity","train_size","model_num","update_freq","react_speed","outlier_cval","score1.n","score1.w","score1_adj.n","score1_adj.w","score2.n","score2.w","score2_adj.n","score2_adj.w"
-"1","ARIMA",2,1,"max",0.999,"fixed","normal","None",0.001,0,840,1,3,"1,2",NA,0.977138074785245,316640,0.979743643899992,303016,0.507494123222903,357435,0.487651839299533,357435

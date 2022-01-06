@@ -1,5 +1,0 @@
-"","name","window_size","extrap_step","response","target","train_policy","res_dist","outlier_type","cut_off_prob","granularity","train_size","model_num","update_freq","react_speed","outlier_cval","score1.n","score1.w","score1_adj.n","score1_adj.w","score2.n","score2.w","score2_adj.n","score2_adj.w"
-"1","ARIMA",12,1,"max",0.97,"offline","normal","None",0.03,0,840,1,3,"1,2",NA,0.89648111332008,50300,0.943562693663221,42277,0.402356357907136,59249,0.35178460005507,59249
-"2","ARIMA",12,1,"max",0.97,"offline","normal","None",0.03,0,840,2,3,"1,2",NA,0.890203101629536,50812,0.941066527869783,42268,0.408179926696298,59249,0.354936446157065,59249
-"3","ARIMA",12,1,"max",0.97,"offline","normal","None",0.03,0,840,3,3,"1,2",NA,0.888700420110057,50701,0.940030911901082,42055,0.40903804507802,59249,0.354739788601079,59249
-"4","ARIMA",12,1,"max",0.97,"offline","normal","None",0.03,0,840,4,3,"1,2",NA,0.887738323611165,51086,0.939490671774136,42291,0.41031835844328,59249,0.355621071915653,59249

@@ -1,2 +1,0 @@
-"","name","window_size","extrap_step","response","target","train_policy","statistics","cut_off_prob","granularity","train_size","model_num","update_freq","react_speed","n","half_life","score1.n","score1.w","score1_adj.n","score1_adj.w","score2.n","score2.w","score2_adj.n","score2_adj.w"
-"1","AUTOPILOT",900,1,"max",0.97,"fixed","j-quantile",0.03,0,252000,1,1,"1,2",288,144,0.899429326122942,224121,0.912397844609621,183911,0.641564283216417,238238,0.537416217466071,238238
